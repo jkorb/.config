@@ -1,3 +1,4 @@
 #!/usr/bin/env zsh
 
-alacritty --class "tmux-client, tmux-client" -e zsh -c ta
+# alacritty --class "tmux-client, tmux-client" -e zsh -c ta
+alacritty -e zsh -c ta

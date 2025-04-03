@@ -2,10 +2,6 @@ export HISTSIZE=100000   # Max events to store in internal history.
 export SAVEHIST=100000   # Max events to store in history file.
 export HISTFILE=~/.zsh_history
 
-if [[ -n $TMUX ]]; then
-  export NVIM_LISTEN_ADDRESS="/tmp/nvim_${$(tmux display-message -p '#S')//\//_}_$(tmux display-message -p "#{window_id}")"
-fi
-
 # For gpg-agent
 export GPG_TTY=$(tty)
 
@@ -58,11 +54,9 @@ alias pkg_purge='sudo pacman -Rns $(pacman -Qtdq)'
 
 alias tmux="tmux -2"
 
-alias dmenu_wifi="networkmanager_dmenu"
-
-# [[ ! -z $DISPLAY ]] && alias sudo="sudo -A"
-
 alias mk=make
+
+alias mail=neomutt
 
 bindkey -v
 

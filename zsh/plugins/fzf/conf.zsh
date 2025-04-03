@@ -22,13 +22,20 @@ FZF_DEFAULT_OPTS+="
   --history=$XDG_CACHE_DIR/fzf/history
   --history-size=1000000000"
 
-FZF_DEFAULT_OPTS+="
-  --color bg:-1,fg:7,hl:5
-  --color bg+:4,fg+:0,hl+:2
-  --color preview-bg:-1,preview-fg:7
-  --color border:-1,gutter:-1,header:8
-  --color info:8,marker:5,pointer:-1
-  --color prompt:2,spinner:-1"
+# FZF_DEFAULT_OPTS+=" \
+# --color=bg+:-1,bg:-1,spinner:#f5e0dc,hl:#f38ba8 \
+# --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
+# --color=marker:#b4befe,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8 \
+# --color=selected-bg:#45475a \
+# "
+
+ FZF_DEFAULT_OPTS+="
+   --color bg:-1,fg:7,hl:5
+   --color bg+:4,fg+:0,hl+:2
+   --color preview-bg:-1,preview-fg:7
+   --color border:-1,gutter:-1,header:8
+   --color info:8,marker:5,pointer:-1
+   --color prompt:2,spinner:-1"
 
 export FZF_DEFAULT_OPTS
 

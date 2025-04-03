@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+
+import json
+import subprocess
+import csv
+import argparse
+from ldap3 import Server, Connection, ALL
+
+
+def get_password(pass_name):
+    """Retrieve a password using the pass password manager."""
+    try:
+        completed_process = subprocess.run(
+            ["pass", pass_name], check=True, text=True, stdout=subprocess.PIPE
+        )
+        return completed_process.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        print(f"Error retrieving password: {e}")
+        return None
+
+
+def get_mu_contacts(pattern):
+    """Run 'mu cfind --format=csv' with a pattern and parse the CSV output."""
+    try:
+        completed_process = subprocess.run(
+            ["mu", "cfind", "--format=csv", "-q", pattern],
+            check=True,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+
+        # Using csv.reader to handle CSV without headers
+        csv_reader = csv.reader(completed_process.stdout.splitlines())
+
+        # Iterate through rows directly, knowing the first item is the name and the second is the email
+        contacts = [
+            {"display_name": row[0], "address": row[1]} for row in csv_reader if row
+        ]
+        return contacts
+    except subprocess.CalledProcessError as e:
+        # print(f"Error retrieving mu contacts: {e}")
+        return []
+
+
+def search_ldap(search_input):
+    """Search LDAP for entries matching the search_input in email or cn."""
+    if not isinstance(search_input, str):
+        raise ValueError("Search input must be a string.")
+
+    server = Server("ldap://localhost:1389", get_info=ALL)
+    user = "uid=j.korbmacher@uu.nl,ou=people"
+    password = get_password("uu-vdirsync")
+    search_base = "ou=people"
+    search_filter = f"(&(objectClass=*)(|(mail=*{search_input}*)(cn=*{search_input}*)))"
+
+    with Connection(server, user, password) as conn:
+        conn.search(search_base, search_filter, attributes=["cn", "mail"])
+        results = [
+            {"display_name": entry.cn.value, "address": entry.mail.value}
+            for entry in conn.entries
+        ]
+        return results
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Search LDAP and mu for contacts matching a pattern."
+    )
+    parser.add_argument(
+        "search_pattern", help="The pattern to search for in the contacts."
+    )
+
+    args = parser.parse_args()
+
+    mu_contacts = get_mu_contacts(args.search_pattern)
+    ldap_results = search_ldap(args.search_pattern)
+
+    # Combine results, avoiding duplicates
+    combined_results = mu_contacts
+    for ldap_entry in ldap_results:
+        if ldap_entry not in combined_results:
+            combined_results.append(ldap_entry)
+
+    print(json.dumps(combined_results, separators=(",", ":")))

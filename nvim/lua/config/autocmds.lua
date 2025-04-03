@@ -2,14 +2,13 @@
 -- Default autocmds that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/autocmds.lua
 -- Add any additional autocmds here
 
-local function augroup(name)
-  return vim.api.nvim_create_augroup("lazyvim_custom_" .. name, { clear = true })
-end
+local utils = require("config.utils")
 
-local map = require("config.utils").map
+local custom_augroup = utils.create_custom_augroup
+local custom_map = utils.custom_map
 
 vim.api.nvim_create_autocmd("FileType", {
-  -- group = augroup("filetype_keybinds"),
+  group = custom_augroup("filetype_keybinds"),
   pattern = { "plaintex", "latex", "tex" },
   callback = function()
     vim.api.nvim_buf_create_user_command(0, "TexlabClean", function(_)
@@ -22,17 +21,46 @@ vim.api.nvim_create_autocmd("FileType", {
       vim.lsp.buf.execute_command({ command = "texlab.cleanArtifacts", arguments = { arguments } })
     end, { desc = "Texlab: purge" })
 
-    map("n", "<leader>mc", "<cmd>TexlabBuild<cr>", { desc = "Texlab: build" })
-    map("n", "<leader>mx", "<cmd>TexlabClean<cr>", { desc = "Texlab: clean" })
-    map("n", "<leader>mX", "<cmd>TexlabPurge<cr>", { desc = "Texlab: purge" })
-    map("n", "<leader>mv", "<cmd>TexlabForward<cr>", { desc = "Texlab: view" })
+    vim.opt.spell = true
+    vim.opt.tw = 80
+    vim.opt.conceallevel = 0
+    custom_map("n", "<leader>mc", "<cmd>TexlabBuild<cr>", { desc = "Texlab: build" })
+    custom_map("n", "<leader>mx", "<cmd>TexlabClean<cr>", { desc = "Texlab: clean" })
+    custom_map("n", "<leader>mX", "<cmd>TexlabPurge<cr>", { desc = "Texlab: purge" })
+    custom_map("n", "<leader>mv", "<cmd>TexlabForward<cr>", { desc = "Texlab: view" })
   end,
 })
 
+-- vim.api.nvim_create_autocmd("FileType", {
+--   group = augroup("filetype_keybinds"),
+--   pattern = { "markdown", "mail", "pandoc" },
+--   callback = function()
+--     map("v", "mf", "<cmd>Tabularize /|<cr>", { desc = "Markdown preview Toggle" })
+--   end,
+-- })
+
 vim.api.nvim_create_autocmd("FileType", {
-  -- group = augroup("filetype_keybinds"),
-  pattern = { "plaintex", "tex", "latex", "bib", "markdown", "mail", "txt", "gitcommit" },
+  pattern = { "pandoc", "markdown", "mail" },
+  -- pattern = "pandoc",
   callback = function()
-    map("n", "<leader>ml", "<cmd>LtexSwitchLang<cr>", { desc = "Ltex-ls: Switch language" })
+    vim.api.nvim_set_hl(0, "@markup.italic", { italic = true })
   end,
 })
+
+-- vim.api.nvim_create_autocmd("Syntax", {
+--   -- group = "PandocSyntax",
+--   pattern = { "pandoc", "markdown", "mail" },
+--   -- pattern = "pandoc",
+--   callback = function()
+--     vim.cmd("source ~/.config/nvim/after/syntax/pandoc.vim")
+--   end,
+-- })
+
+-- vim.api.nvim_create_augroup("PandocSyntax", {clear = true})
+-- vim.api.nvim_create_autocmd("Syntax", {
+--   -- group = "PandocSyntax",
+--   pattern = "pandoc",
+--   callback = function()
+--     vim.cmd("source ~/.config/nvim/syntax/pandoc.vim")
+--   end,
+-- })

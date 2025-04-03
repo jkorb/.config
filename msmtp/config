@@ -12,17 +12,25 @@ tls             off
 from            j.korbmacher@uu.nl
 user            j.korbmacher@uu.nl
 auth            plain
-passwordeval    "pass show uu | sed -n '1p'"
+passwordeval    "pass login.uu.nl | sed -n 's/^pass: //p'"
 
 
-account         logica
+account         lm
 host            localhost
 port            1025
 tls             off
-from            inleiding.logica@uu.nl
+from            logische.methoden@uu.nl
 user            j.korbmacher@uu.nl
 auth            plain
-passwordeval    "pass show uu | sed -n '1p'"
+passwordeval    "pass login.uu.nl | sed -n 's/^pass: //p'"
 
+account         gmail
+host            smtp.gmail.com
+port            465
+tls_starttls    off
+from            jkorbmacher@gmail.com
+user            jkorbmacher
+auth            plain
+passwordeval    "pass accounts.google.com | sed -n 's/^app: //p'"
 
 account default : uu

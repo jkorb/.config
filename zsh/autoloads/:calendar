@@ -2,7 +2,7 @@
 
 :calendar () {
 
-  tmux display-popup -E calendar
+  tmux display-popup -E calendar -s bg="#181725"
 
 }
 

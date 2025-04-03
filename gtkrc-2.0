@@ -1,3 +1,5 @@
-gtk-icon-theme-name = "Material-Palenight"
-gtk-theme-name = "Materia-dark"
-gtk-font-name = NotoSans Nerd Font 12
+# created by KDE Plasma, Fri Mar 28 15:28:14 2025
+#
+
+gtk-alternative-button-order = 1
+

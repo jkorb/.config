@@ -1,9 +1,18 @@
 [icons.nnn]
-nerdfont = "󰡘"
-color = "blue"
-emoji = "♞"
+# nerdfont = "󰡘"
+# color = "blue"
+emoji = "📂"
+
+[icons.neomutt]
+# nerdfont = "󰡘"
+# color = "blue"
+# emoji = "📫"
+emoji = "✉️ "
+
+[icons.nvim]
+emoji = ""
 
 [default]
-nerdfont = ""
-color = "red"
+# nerdfont = ""
+# color = "red"
 emoji = "⚡"

@@ -7,6 +7,12 @@ n (){
         return
       fi
 
+    # Set the editor to open files in a tmux split only if we're in a tmux session
+      # if [ -n "$TMUX" ]; then
+      #   # export NVIM_SID="$TMUX$(tmux display-message -p '#{window_id}')"
+      #   EDITOR="tmux split-window -h nvr"
+      # fi
+
       # The default behaviour is to cd on quit (nnn checks if NNN_TMPFILE is set)
       # To cd on quit only on ^G, remove the "export" as in:
       #     NNN_TMPFILE="${XDG_CONFIG_HOME:-$HOME/.config}/nnn/.lastd"

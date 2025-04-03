@@ -1,7 +1,0 @@
-#!/usr/bin/env zsh
-
-if uname | grep -q Darwin &> /dev/null; then
-  msyncd &
-fi
-
-neomutt

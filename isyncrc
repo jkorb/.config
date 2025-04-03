@@ -1,45 +1,37 @@
-IMAPAccount logica
+IMAPAccount lm
 Host localhost
 Port 1143
 AuthMechs LOGIN
-PassCmd "pass show uu | sed -n '1p'"
+PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
 SSLType None
 CertificateFile /etc/ssl/certs/ca-certificates.crt
-User j.korbmacher@uu.nl/inleiding.logica@uu.nl
+User j.korbmacher@uu.nl/logische.methoden@uu.nl
 Timeout 0
 
-IMAPStore logica-remote
-Account logica
-# Path "inleiding.logica@uu.nl/"
+IMAPStore lm-remote
+Account lm
 PathDelimiter "/"
 
-
-MaildirStore logica-local
+MaildirStore lm-local
 SubFolders Verbatim
-# The trailing "/" is important
-Path ~/.mail/logica/
-Inbox ~/.mail/logica/Inbox
+Path ~/.mail/lm/
+Inbox ~/.mail/lm/Inbox
 
-Channel logica
-Far :logica-remote:
-Near :logica-local:
-# Patterns "INBOX" "Archive"  # "Archive" "Drafts" "Sent" "Trash" "Junk" "Unsent Messages"
-Patterns *
-# Patterns  "Archive"  "Drafts" "Inbox" "Sent Items" "Deleted Items"
+Channel lm
+Far :lm-remote:
+Near :lm-local:
+Patterns "INBOX" "Archive" "Drafts" "Sent" "Trash" "Junk" "Unsent Messages"
 Sync All
-# Automatically create missing mailboxes, both locally and on the server
 Create Both
 Remove Both
 Expunge Both
-# Save the synchronization state files in the relevant directory
 SyncState *
-
 
 IMAPAccount uu
 Host localhost
 Port 1143
 AuthMechs LOGIN
-PassCmd "pass show uu | sed -n '1p'"
+PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
 SSLType None
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 User j.korbmacher@uu.nl
@@ -50,28 +42,65 @@ Account uu
 
 MaildirStore uu-local
 SubFolders Verbatim
-# The trailing "/" is important
 Path ~/.mail/uu/
-Inbox ~/.mail/uu/INBOX
+Inbox ~/.mail/uu/Inbox
 
 Channel uu
 Far :uu-remote:
 Near :uu-local:
 Patterns "INBOX" "Archive" "Drafts" "Sent" "Trash" "Junk" "Unsent Messages"
-# Patterns *
-# Patterns "Archive" "Inbox" "Drafts" "Sent Items" "Deleted Items"
 Sync All
-# Automatically create missing mailboxes, both locally and on the server
 Create Both
 Remove Both
 Expunge Both
-# Save the synchronization state files in the relevant directory
 SyncState *
 
-# Use SSL
-# =======
-# TLSType IMAPS
-# The following line should work. If you get certificate errors, uncomment the two following lines and read the "Troubleshooting" section.
-# CertificateFile /etc/ssl/certs/ca-certificates.crt
-# CertificateFile ~/.cert/imap.gmail.com.pem
-# CertificateFile ~/.cert/Equifax_Secure_CA.pem
+IMAPAccount gmail
+Host imap.gmail.com
+User jkorbmacher@gmail.com
+PassCmd "pass accounts.google.com | sed -n 's/^app: //p'"
+SSLType IMAPS
+CertificateFile /etc/ssl/certs/ca-certificates.crt
+
+IMAPStore gmail-remote
+Account gmail
+
+MaildirStore gmail-local
+SubFolders Verbatim
+Path ~/.mail/gmail/
+Inbox ~/.mail/gmail/Inbox
+
+Channel gmail-default
+Far :gmail-remote:
+Near :gmail-local:
+Patterns * !"[Google Mail]"*  #"[Google Mail]/All Mail" "[Google Mail]/Sent Mail" "[Google Mail]/Spam" "[Google Mail]/Trash"
+Create Both
+Expunge Both
+SyncState *
+
+Channel gmail-all
+Far :gmail-remote:"[Google Mail]/All Mail"
+Near :gmail-local:"All Mail"
+Create Near
+
+Channel gmail-sent
+Far :gmail-remote:"[Google Mail]/Sent Mail"
+Near :gmail-local:"Sent Mail"
+Create Near
+
+Channel gmail-spam
+Far :gmail-remote:"[Google Mail]/Spam"
+Near :gmail-local:"Spam"
+Create Near
+
+Channel gmail-trash
+Far :gmail-remote:"[Google Mail]/Trash"
+Near :gmail-local:"Trash"
+Create Near
+
+Group gmail
+Channel gmail-default
+Channel gmail-all
+Channel gmail-sent
+Channel gmail-spam
+Channel gmail-trash

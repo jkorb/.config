@@ -1,0 +1,33 @@
+# vim: filetype=muttrc
+
+set   forward_attribution_intro = "---------- Forwarded message ---------"
+set   attribution               = "On %d, %n wrote:\n"
+
+# Colors
+color index     green       default ~Q #replied
+color status        blue            black
+color indicator     black           blue      # Currently selected message
+
+set sig_dashes
+
+set   status_format       = "󰩃  %D %<u?󰇮(%u)>\n"
+
+set   mailcap_path        = "~/.config/neomutt/core/mailcap"
+
+# unhook folder-hook
+#
+# folder-hook '~/.mail/gmail'  'source ~/.config/neomutt/accounts/gmail.conf'
+# folder-hook '~/.mail/lm'     'source ~/.config/neomutt/accounts/lm.conf'
+# folder-hook '~/.mail/uu'     'source ~/.config/neomutt/accounts/uu.conf'
+
+unset pager
+
+unhook reply-hook
+
+reply-hook '~t jkorbmacher@gmail.com'   "set signature   = '~/.config/neomutt/accounts/gmail_signature.txt'"
+reply-hook '~t logische.methoden@uu.nl' "set signature   = '~/.config/neomutt/accounts/lm_signature.txt'"
+reply-hook '~t j.korbmacher@uu.nl'      "set signature   = '~/.config/neomutt/accounts/uu_signature.txt'"
+
+unbind ch
+unbind gh
+macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_on'<enter>"

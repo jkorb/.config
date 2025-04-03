@@ -1,0 +1,52 @@
+#! /usr/bin/env python3
+
+import mailbox
+import os
+import subprocess
+from datetime import datetime
+from email.utils import parsedate_to_datetime
+import tzlocal  # Ensure tzlocal is installed
+
+def check_new_mail(maildir_path, last_check_file):
+    # Load the last check time if it exists
+    if os.path.exists(last_check_file):
+        with open(last_check_file, 'r') as f:
+            last_check_str = f.read().strip()
+            last_check = datetime.strptime(last_check_str, '%a, %d %b %Y %H:%M:%S %z').replace(tzinfo=tzlocal.get_localzone())
+    else:
+        last_check = datetime.now(tzlocal.get_localzone())
+
+    # Open the mailbox
+    mbox = mailbox.Maildir(maildir_path, factory=None)
+    new_mails = []
+
+    # Check each message to see if it's new
+    for key, message in mbox.iteritems():
+        message_date = parsedate_to_datetime(message['date'])
+        if message_date > last_check:
+            sender = message['from'][:20]
+            subject = message['subject'][:50]  # First part of the subject
+            new_mails.append(f"From: {sender}, Subject: {subject[:50]}...")
+
+    # Update the last check time
+    with open(last_check_file, 'w') as f:
+        f.write(datetime.now(tzlocal.get_localzone()).strftime('%a, %d %b %Y %H:%M:%S %z'))
+
+    return new_mails
+
+def send_notification(new_mails):
+    if new_mails:
+        # Sending a notification for each new mail
+        for mail in new_mails:
+            subprocess.run(['notify-send', '--app-name="Email notify"', '--icon=mail-message-new', mail])
+
+if __name__ == '__main__':
+
+    subprocess.run(['/usr/bin/mu', 'index', '-qq'])
+
+    maildir_path = os.path.join(os.environ['MAILDIR'], 'uu', 'INBOX')
+    last_check_file = os.path.join(os.environ['XDG_CACHE_DIR'], 'eml_notify')
+    os.makedirs(os.path.dirname(last_check_file), exist_ok=True)
+
+    new_mails = check_new_mail(maildir_path, last_check_file)
+    send_notification(new_mails)

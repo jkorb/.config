@@ -22,3 +22,5 @@ bind index,pager   G        sidebar-last
 
 macro index,pager <Tab>     "<enter-command>toggle sidebar_visible<enter><enter-command>source '~/.config/neomutt/dynamic/sidebar_off'<enter>" "toggle sidebar"
 macro index,pager q         "<enter-command>toggle sidebar_visible<enter><enter-command>source '~/.config/neomutt/dynamic/sidebar_off'<enter>" "toggle sidebar"
+
+set sidebar_divider_char = "│"

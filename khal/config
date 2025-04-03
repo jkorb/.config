@@ -2,7 +2,7 @@
 
 [[uu]]
 path                      = $XDG_DATA_HOME/khal/calendars/uu/calendar
-color                     = light blue
+color                     = dark blue
 type                      = calendar
 
 [[private]]

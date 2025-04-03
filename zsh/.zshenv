@@ -14,24 +14,21 @@ export MAILDIR="$HOME/.mail"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 
 export SUDO_EDITOR="nvim"
+# export EDITOR="tmux split-window nvim"
 export EDITOR="nvim"
+# export VISUAL="nvimwrap"
 
-# if uname | grep -q Darwin &> /dev/null; then
-#   alias alacritty="alacritty --config-file=$XDG_CONFIG_HOME/alacritty/alacritty_macOS.yml"
-# else
-#   alias alacritty="alacritty --config-file=$XDG_CONFIG_HOME/alacritty/alacritty_arch.yml"
-# fi
-#
-scripts=('tmux' 'neomutt' 'davmail' 'khal' 'vdirsyncer' 'statnot' 'hypr')
+export ELECTRON_OZONE_PLATFORM_HINT="wayland"
 
-for i in "${scripts[@]}"; do
-  [[ -d $XDG_CONFIG_HOME/$i/scripts ]] && path=("$XDG_CONFIG_HOME/$i/scripts" "${path[@]}")
+export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
+
+for dir in $XDG_CONFIG_HOME/*/scripts/; do
+  path+=("$dir")
 done
 
 path+=$HOME/.cargo/bin
 
-export BROWSER='brave'
-
+export BROWSER='firefox'
 
 typeset -U path
 path+=$HOME/.local/bin

@@ -15,6 +15,7 @@ macro generic,index,pager         <Space>r "<enter-command>source ~/.config/neom
 # ----------------------------------------
 
 macro  generic,index,pager        q '<sync-mailbox><exit>'
+bind   generic,index,pager        Q exit
 
 # # Movements
 # # ----------------------------------------
@@ -22,8 +23,8 @@ macro  generic,index,pager        q '<sync-mailbox><exit>'
 bind index,attach,compose,browser j   next-entry
 bind index,attach,compose,browser k   previous-entry
 
-bind generic,pager                j   next-line 
-bind generic,pager                k   previous-line 
+bind generic,pager                j   next-line
+bind generic,pager                k   previous-line
 
 bind generic,index,pager,browser  \Cd half-down
 bind generic,index,pager,browser  \Cu half-up
@@ -31,18 +32,22 @@ bind generic,index,pager,browser  \Cu half-up
 # Viewing
 # ----------------------------------------
 
-bind  index      l        display-message
-bind  attach     l        view-mailcap
-bind  pager      A        view-attachments
-bind  index      <Return> display-message
-bind  attach     <Return> view-mailcap
+bind  index              l         display-message
+bind  attach             l         view-mailcap
+bind  index,pager        A         view-attachments
+bind  index              <Return>  display-message
+bind  attach             <Return>  view-mailcap
+bind  attach,compose     <Return>  view-mailcap
+
+bind  attach,compose gt    view-text
+# bind  attach,compose
 
 # Searching
 # ----------------------------------------
 
 bind generic,index,pager /  search
 bind index,pager         N  search-opposite
-bind index               L  limit
+bind index               ?  limit
 
 # Folding
 # ----------------------------------------
@@ -63,14 +68,14 @@ bind pager               gg         top
 bind pager               G          bottom
 
 macro index,pager        gf         "<change-folder>?"                                                                "open ..."
-macro generic        gi         "<change-folder>!<enter>"                                                         "open inbox"
+macro generic            gi         "<change-folder>!<enter>"                                                         "open inbox"
 macro index,pager        gi         "<change-folder>!<enter>"                                                         "open inbox"
 # macro index,pager        /          "<shell-escape>mu find --clearlinks --format=links --linksdir="$MAILDIR/recent-search" "  "mu find"
 macro index,pager        gs         "<change-folder-readonly>~/.mail/recent-search\n"                                 "goto recent search"
 # macro index,pager        gs         "<shell-escape>mu find --clearlinks --format=links --linksdir=~/.mail/search "  "mu find"
 # macro index,pager        gS         "<change-folder-readonly>~/.mail/search\n"                                      "mu find results"
 macro index,pager        /          "<shell-escape>$XDG_CONFIG_HOME/neomutt/scripts/neomutt_search<enter><enter-command>source $XDG_CACHE_DIR/neomutt/tmp_searchfile <enter>"  "find mail"
-macro index,pager        gr         "<shell-escape> mailsync & <enter><sync-mailbox>"                                 "sync all mailboxes"
+macro index,pager        gr         "<shell-escape> systemctl --user start isync.service <enter><sync-mailbox>"                                 "sync all mailboxes"
 # macro index,pager        gr         "<shell-escape> ~/.config/neomutt/scripts/sync & <enter><sync-mailbox>"         "sync all mailboxes"
 
 # Moving things around
@@ -78,23 +83,24 @@ macro index,pager        gr         "<shell-escape> mailsync & <enter><sync-mail
 
 bind index               ss         save-message
 
-# Attachment 
+# Attachment
 # ----------------------------------------
 
-# bind attach              s          save-entry
+# bind attach             s          save-entry
 macro attach              s         "<shell-escape>neomutt_dirpicker<enter><enter-command>source $XDG_CACHE_DIR/neomutt/save_tmp<enter><enter-command>" "Save file to ..."
+macro index,pager         H         "<view-attachments>/text\/html<enter><view-mailcap><exit>"
 
 # Composing
 # ----------------------------------------
 
-bind  index,pager        cc         mail               
-bind  index,pager        cr         reply             
+bind  index,pager        cc         mail
+bind  index,pager        cr         reply
 bind  index,pager        cf         forward-message
 bind  index,pager        ca         group-reply
 bind  index,pager        c@         compose-to-sender
 
 bind  compose            cc         send-message
-bind  compose            ce         edit-message 
+bind  compose            ce         edit-message
 macro compose            ca         "<shell-escape>$XDG_CONFIG_HOME/neomutt/scripts/neomutt_filepicker<enter><enter-command>source $XDG_CACHE_DIR/neomutt/attach_tmp<enter><shell-escape>bash $XDG_CONFIG_HOME/neomutt/scripts/neomutt_filepicker clean<enter>" "Attach ..."
 
 bind  compose            dd         detach-file
@@ -121,8 +127,12 @@ bind pager               \005      next-line		# Mouse wheel
 
 macro index,pager        dat "<delete-thread><sync-mailbox>"                  "move thread to trash"
 macro index              dd  "<tag-prefix><delete-message><sync-mailbox>"     "delete current/tagged message(s)"
+macro compose            dd  "<detach-file>"     "delete current/tagged message(s)"
 bind  index,pager        D   purge-message
 bind  index              du  undelete-message
+
+bind  postpone           dd  delete-entry
+bind  postpone           du  undelete-entry
 
 # Sidebar
 # ----------------------------------------
@@ -135,4 +145,21 @@ macro index,pager          <Tab>  "<enter-command>toggle sidebar_visible<enter><
 # bind  editor            <Tab> complete-query
 # bind  editor             ^T   complete
 
+# macro compose Y "<first-entry>\
+# <pipe-entry>convert_email<enter>\
+# <enter-command>source /tmp/neomutt-commands<enter>
 
+macro compose ch \
+"<enter-command>set pipe_decode<enter>\
+<pipe-message> pandoc -f markdown -t plain -o /tmp/msg.txt<enter>\
+<pipe-message> pandoc -s -f markdown --embed-resources -o /tmp/msg.html --resource-path ~/.config/neomutt/shared/ --template email<enter>\
+<enter-command>unset pipe_decode<enter>\
+<attach-file>/tmp/msg.txt<enter><toggle-disposition><toggle-unlink>\
+<attach-file>/tmp/msg.html<enter><toggle-disposition><toggle-unlink>\
+<tag-entry><previous-entry><tag-entry><group-alternatives>\
+" \
+"Convert markdown to HTML5 and plaintext alternative content types"
+
+# bind index,pager gr sync-mailbox
+
+macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_on'<enter>"

@@ -8,7 +8,7 @@ set   folder              = $HOME/.mail/
 
 set   mailcap_path        = "~/.config/neomutt/core/mailcap"
 set   header_cache        = "~/.cache/neomutt"
-set   message_cachedir    = "~/.cache/neomutt"
+set   message_cache_dir   = "~/.cache/neomutt"
 # set   tmpdir              = "~/.cache/mutt" # where to keep temp files
 
 set   attach_save_dir     = "~/Downloads"
@@ -16,39 +16,46 @@ set   attach_save_dir     = "~/Downloads"
 # Mailboxes 
 # ----------------------------------------
 
-# named-mailboxes gmail/inbox   '+gmail/Inbox'
-# named-mailboxes gmail/archive '+gmail/[Google Mail]/All Mail'
-# named-mailboxes gmail/sent    '+gmail/[Google Mail]/Sent Mail'
-# named-mailboxes gmail/drafts  '+gmail/[Google Mail]/Drafts'
-# named-mailboxes gmail/trash   '+gmail/[Google Mail]/Trash'
-# named-mailboxes gmail/spam    '+gmail/[Google Mail]/Spam'
+named-mailboxes "  Inbox "    '+uu/Inbox'          
+named-mailboxes "  Archive"    '+uu/Archive'
+named-mailboxes "  Sent"       '+uu/Sent'    
+named-mailboxes "  Drafts"     '+uu/Drafts' 
+named-mailboxes "  Junk"       '+uu/Junk'
+named-mailboxes "  Trash "    '+uu/Trash'
 
-named-mailboxes logica/inbox      '+logica/Inbox'
-named-mailboxes logica/archive    '+logica/Archive'
-named-mailboxes logica/sent       '+logica/Sent Items'
-named-mailboxes logica/drafts     '+logica/Drafts'
-named-mailboxes logica/trash      '+logica/Deleted Items'
-# named-mailboxes logica/junk       '+logica/Junk Email'
+named-mailboxes "────────────────────"   '+div1'
 
-named-mailboxes uu/inbox      '+uu/INBOX'          
-named-mailboxes uu/archive    '+uu/Archive'
-named-mailboxes uu/sent       '+uu/Sent'    
-named-mailboxes uu/drafts     '+uu/Drafts' 
-named-mailboxes uu/trash      '+uu/Trash'
-named-mailboxes uu/junk       '+uu/Junk'
-named-mailboxes recent-search '+recent-search'
+named-mailboxes "  Inbox "    '+lm/Inbox'
+named-mailboxes "  Archive"    '+lm/Archive'
+named-mailboxes "  Sent"       '+lm/Sent Items'
+named-mailboxes "  Drafts"     '+lm/Drafts'
+named-mailboxes "  junk"       '+lm/Junk Email'
+named-mailboxes "  Trash "    '+lm/Deleted Items'
+
+named-mailboxes "────────────────────"   '+div2'
+
+named-mailboxes "󰊫  Inbox " '+gmail/Inbox'
+named-mailboxes "󰊫  Archive" '+gmail/All Mail'
+named-mailboxes "󰊫  Drafts"  '+gmail/Drafts'
+named-mailboxes "󰊫  Sent"    '+gmail/Sent Mail'
+named-mailboxes "󰊫  Spam"    '+gmail/Spam'
+named-mailboxes "󰊫  Trash " '+gmail/Trash'
+
+named-mailboxes "════════════════════"   '+div3'
+
+named-mailboxes " Recent search" '+recent-search'
 
 # Backend settings
 # ----------------------------------------
 set   ispell              = "/usr/bin/hunspell"
-set   editor="nvim +':set textwidth=0' +':set wrapmargin=0' +':set wrap'"
+set   editor              = "nvim"
 
 
 # Viewing 
 # ----------------------------------------
 
 auto_view         text/html
-alternative_order text/plain text/html
+alternative_order text/html text/plain text 
 
 # Composing
 # ----------------------------------------
@@ -56,7 +63,20 @@ alternative_order text/plain text/html
 set   fcc_attach                               # save attachments with the body
 set   edit_headers                             # show headers when composing
 set   forward_format      = "Fwd: %s"          # format of subject when forwarding
-set   attribution         = "On %d, %n wrote:" # format of quoting header
+set   forward_attribution_intro = "---------- Forwarded message ---------"
+set   attribution         = "On %d, %n wrote:\n" # format of quoting header
+
+set forward_decode = no
+
+# set attribution  = "---\n\n" # format of quoting header
+# set attribution += "**From:** %f  \n"
+# set attribution += "**Date:** %[%A %d %B %Y %H:%M]  \n"
+# set attribution += "**To:** %r  \n"
+# set attribution += "**Subject:** %s  \n\n"
+
+# set attribution_trailer = ""
+# set attribution += \n
+
 
 set   reverse_name                             # reply as whomever it was to
 set   forward_decode                           # decode when forwarding
@@ -70,7 +90,7 @@ unset mime_forward                   # forward attachments as part of body
 
 # Main options
 # ----------------------------------------
-set   text_flowed
+# set   text_flowed
 set   sig_dashes                       
 set   autoedit=yes
 set   delete=yes
@@ -94,10 +114,14 @@ unset wait_key
 # ----------------------------------------
 
 set   date_format         = "%d.%m.%Y %H:%M"
-set   status_format       = "%f ──%r%m messages%?n? (%u unread)?%>─"
+
+set   status_format       = "󰩃  %D %<u?󰇮(%u)>\n"
+
 set   index_format        = "%<[y?%<[m?%<[d?%[%H:%M ]&%[%a %d]>&%[%b %d]>&%[%m/%y ]>  %-15.15F  %s"
 set   pager_format        = "%-15.15F (%D): %-25.25s... %* %P"
 set   compose_format      = "Size: %l, %a attachments%>─"
+
+set   indent_string       = "> "
 
 # Index
 set   arrow_cursor        = "no"                                              # Change `color indicator` depending 

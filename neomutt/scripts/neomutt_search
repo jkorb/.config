@@ -13,7 +13,7 @@ if [[ ! -f "$search_hist" ]]; then
   touch "$search_hist"
 fi
 
-query=$(sort $search_hist | uniq | fzf --height=100% --prompt ' ' --history="$search_hist" --history-size=10000 --bind=enter:replace-query+print-query --preview "mu find --fields \"f s\" {}")
+query=$(sort $search_hist | uniq | fzf --height=100% --prompt ' ' --history="$search_hist" --history-size=10000 --bind=enter:replace-query+print-query,ctrl-s:print-query --preview "mu find --fields \"f s\" {}")
 
 if [[ -z $query ]]; then
   : > $tmp_searchfile

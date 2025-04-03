@@ -16,7 +16,7 @@ if [[ ! -z $@ ]]; then
 	exit 1
 fi
 
-nnn -J -p $tmpfile
+nnn -J -p $tmpfile $HOME/Downloads/
 
 if [[ -f $tmpfile ]]; then
 	sed -i 's/ /\\ /g' $tmpfile

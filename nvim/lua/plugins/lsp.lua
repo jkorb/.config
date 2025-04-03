@@ -3,6 +3,7 @@ return {
     "neovim/nvim-lspconfig",
     opts = {
       servers = {
+        clangd = {},
         yamlls = {},
         lua_ls = {
           -- mason = false, -- set to false if you don't want this server to be installed with mason
@@ -19,7 +20,9 @@ return {
         },
         bashls = {},
         pyright = {},
-        marksman = {},
+        -- marksman = {
+        --   filetypes = { "markdown", "mail", "markdown.mdx", "pandoc" },
+        -- },
         texlab = {
           settings = {
             texlab = {
@@ -33,8 +36,8 @@ return {
               forwardSearch = {
                 executable = "zathura",
                 args = {
-                  "--synctex-editor-command",
-                  [[nvim --headless -c "TexlabInverseSearch '%{input}' %{line}"]],
+                  -- "--synctex-editor-command",
+                  -- [[nvim --headless -c "TexlabInverseSearch '%{input}' %{line}"]],
                   "--synctex-forward",
                   "%l:1:%f",
                   "%p",
@@ -44,26 +47,13 @@ return {
                 onOpenAndSave = true,
                 onEdit = false,
               },
-              formatterLineLength = 80,
+              latexFormatter = "latexindent",
+              latexindent = {
+                ["local"] = "./latexindent.yaml",
+                modifyLineBreaks = true,
+              },
+              -- formatterLineLength = 20,
             },
-          },
-        },
-      },
-    },
-  },
-  {
-    "jkorb/ltex_extra.nvim",
-    dependencies = { "neovim/nvim-lspconfig" },
-    ft = { "plaintex", "tex", "latex", "bib", "markdown", "mail", "text", "gitcommit" },
-    branch = "switchLanguage-feature",
-    opts = {
-      path = vim.fn.stdpath("config") .. "/spell",
-      server_opts = {
-        filetypes = { "plaintex", "tex", "latex", "bib", "markdown", "mail", "text", "gitcommit" },
-        settings = {
-          ltex = {
-            checkFrequency = "edit",
-            completionEnabled = true,
           },
         },
       },

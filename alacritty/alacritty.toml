@@ -1,0 +1,137 @@
+[colors]
+draw_bold_text_with_bright_colors = false
+transparent_background_colors = true
+
+# [colors.normal]
+# black   = "#0e1013"
+# red     = "#e55561"
+# green   = "#8ebd6b"
+# yellow  = "#e2b86b"
+# blue    = "#4fa6ed"
+# magenta = "#bf68d9"
+# cyan    = "#48b0bd"
+# white   = "#a0a8b7"
+#
+# [colors.bright]
+# black   = "#535965"
+# red     = "#8b3434"
+# green   = "#7a818e"
+# yellow  = "#835d1a"
+# blue    = "#61afef"
+# magenta = "#7e3992"
+# cyan    = "#266269"
+# white   = "#e8c88c"
+#
+[colors.primary]
+background = "#282c34"
+foreground = "#abb2bf"
+
+[colors.normal]
+# Normal Colors
+black="#3f4451"
+white="#d7dae0"
+red="#e05561"
+green="#8cc265"
+yellow="#d18f52"
+blue="#4aa5f0"
+magenta="#c162de"
+cyan="#42b3c2"
+
+[colors.bright]
+# Bright Colors
+
+black="#4f5666"
+white="#e6e6e6"
+red="#ff616e"
+green="#a5e075"
+yellow="#f0a45d"
+blue="#4dc4ff"
+magenta="#de73ff"
+cyan="#4cd1e0"
+
+[font]
+size = 12
+
+[font.bold]
+family = "NotoSansM Nerd Font Mono"
+# family = "Source Code Pro"
+style = "Bold"
+
+[font.bold_italic]
+family = "NotoSansM Nerd Font Mono"
+# family = "Source Code Pro"
+style = "Bold Italic"
+
+[font.italic]
+# family = "Source Code Pro"
+family = "Source Code Pro"
+# family = "NotoSansM Nerd Font Mono"
+style = "Italic"
+
+[font.normal]
+# family = "Source Code Pro"
+family = "NotoSansM Nerd Font Mono"
+style = "Regular"
+
+[[keyboard.bindings]]
+chars = "\u001F"
+key = "Slash"
+mods = "Control"
+
+[[keyboard.bindings]]
+chars = "\u001C"
+key = "Semicolon"
+mods = "Control"
+
+[[keyboard.bindings]]
+chars = "\u001E"
+key = "Comma"
+mods = "Control"
+
+[[keyboard.bindings]]
+chars = "\u001A"
+key = "Period"
+mods = "Control"
+
+[window]
+
+# Window dimensions
+dimensions = { columns = 0, lines = 0 }  # Default: columns = 0, lines = 0
+
+# Window startup position
+position = "None"  # Default: "None"
+
+# Padding
+padding = { x = 0, y = 0 }  # Default: x = 0, y = 0
+
+# Dynamic padding
+dynamic_padding = true  # Default: false
+
+# Window decorations
+# decorations = "None"  # Default: "Full"
+decorations = "Full"  # Default: "Full"
+
+# Opacity
+opacity = 1.0  # Default: 1.0
+
+# Blur (macOS/KDE Wayland only)
+blur = false  # Default: false
+
+# Startup mode
+startup_mode = "Windowed"  # Default: "Windowed"
+
+# Window title
+title = "Alacritty"  # Default: "Alacritty"
+
+# Dynamic title
+dynamic_title = true  # Default: true
+
+# Window class (Linux/BSD only)
+class = { instance = "Alacritty", general = "Alacritty" }  # Default: instance = "Alacritty", general = "Alacritty"
+
+# Decorations theme variant
+decorations_theme_variant = "Dark"  # Default: "None"
+
+# Resize increments
+resize_increments = false  # Default: false
+
