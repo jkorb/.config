@@ -6,4 +6,8 @@ source "$ZCOREDIR/core.zsh"
 # source "$ZTHEMEDIR/theme.zsh"
 source "$ZPLUGINDIR/plugins.zsh"
 
-# source "/usr/share/icons-in-terminal/icons_bash.sh"
+if uname | grep -q Darwin &> /dev/null; then
+  PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+  path+=("/Library/Tex/texbin")
+fi
+
