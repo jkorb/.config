@@ -8,10 +8,9 @@
 [credential]
   username = jkorb
 	credentialStore = gpg
+	helper = 
 	helper = /usr/bin/git-credential-manager
 [credential "https://dev.azure.com"]
 	useHttpPath = true
 [pull]
 	ff = only
-[credential "https://github.com/zhou-mian/StandardTranslation.git"]
-	username = jkorb
