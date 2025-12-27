@@ -11,6 +11,9 @@ icon_muted="audio-volume-muted"
 icon_error="dialog-error" # New icon for error message
 volume_step=5
 
+time_delta=30
+cache_file="/tmp/volume_id"
+
 # Check for dependencies
 if ! command -v wpctl >/dev/null || ! command -v notify-send >/dev/null; then
 	logger -t volume_control "Required commands (wpctl and/or notify-send) not found. Exiting."
@@ -74,7 +77,13 @@ else
 	icon=${icon_low}
 fi
 
-# Show a notification for volume change
-notify-send --app-name="System notification" --icon="$icon" -h string:x-dunst-stack-tag:$tag -h int:value:"${percentage}%" "Volume" "${percentage}%"
+if ! [ -e "$cache_file" ] || [ "$(find "$cache_file" -mmin +$time_delta)" ]; then
+	notify-send --app-name="System notification" --icon="$icon" -h int:value:"${percentage}%" "Volume" "${percentage}%" -p >$cache_file
+else
+	id=$(<"$cache_file")
+	notify-send --app-name="System notification" --icon="$icon" -h int:value:"${percentage}%" "Volume" "${percentage}%" -r $id
+fi
+
+# notify-send --app-name="System notification" --icon="$icon" -h string:x-dunst-stack-tag:$tag -h int:value:"${percentage}%" "Volume" "${percentage}%"
 
 exit 0

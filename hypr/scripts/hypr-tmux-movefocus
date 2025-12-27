@@ -10,7 +10,7 @@ is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
     | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
 
 cur_window_is_tmux() {
-  hyprctl activewindow | grep -q "class: tmux-client$"
+  hyprctl activewindow | grep -q "title: tmux -"
 }
 
 case $direction in
