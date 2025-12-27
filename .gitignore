@@ -22,9 +22,11 @@
 !nvim
 nvim/lazy-lock.nvim
 nvim/lazyvim.json
+!qmk
 !rofi
 !systemd
 !tmux
+tmux/sessions
 !vdirsyncer
 !waybar
 !wlogout
