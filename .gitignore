@@ -27,7 +27,7 @@ nvim/lazyvim.json
 !rofi
 !systemd
 systemd/user/default.target.wants
-systemd/user/socket.target.wants
+systemd/user/sockets.target.wants
 systemd/user/timers.target.wants
 !tmux
 tmux/sessions
