@@ -3,7 +3,7 @@ Host localhost
 Port 1143
 AuthMechs LOGIN
 PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
-SSLType None
+TLSType None
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 User j.korbmacher@uu.nl/logische.methoden@uu.nl
 Timeout 0
@@ -32,7 +32,7 @@ Host localhost
 Port 1143
 AuthMechs LOGIN
 PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
-SSLType None
+TLSType None
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 User j.korbmacher@uu.nl
 Timeout 0
@@ -59,7 +59,7 @@ IMAPAccount gmail
 Host imap.gmail.com
 User jkorbmacher@gmail.com
 PassCmd "pass accounts.google.com | sed -n 's/^app: //p'"
-SSLType IMAPS
+TLSType IMAPS
 CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore gmail-remote
