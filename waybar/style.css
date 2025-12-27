@@ -1,22 +1,38 @@
-@define-color  primary #BB86FC;
-@define-color  primary-variant #3700B3;
-@define-color  secondary #03DAC6;
+@define-color  primary #4fa6ed;           /* Replacing with 'blue' */
+@define-color  primary-variant #61afef;   /* Slightly lighter blue variant */
+@define-color  secondary #8ebd6b;         /* Using 'green' */
 
-@define-color  background #121212;
-@define-color  lifted #1D1D1D;
+@define-color  bg         #2f2329;        /* Using 'bg0' */
+@define-color  bg-trans   #2f2329;        /* Using 'bg0' */
+@define-color  bg-1 #282c34;            /* Using 'bg1' */
 
+@define-color  surface #30363f;           /* Using 'bg2' */
+@define-color  error #e55561;             /* Using 'red' */
 
-@define-color  surface #121212;
-@define-color  error #CF6679;
+@define-color  fg #ffffff;                /* Using 'fg' */
+@define-color  on-secondary #a0a8b7;      /* Same as 'fg' for consistency */
+@define-color  on-background #e2b86b;     /* Using 'yellow' */
+@define-color  on-surface #a0a8b7;        /* Using 'fg' */
+@define-color  on-error #0e1013;          /* Using 'black' */
 
-@define-color  on-primary #000000;
-@define-color  on-secondary #000000;
-@define-color  on-background #E1E1E1;
-@define-color  on-surface #E1E1E1;
-@define-color  on-error #000000;
+@define-color  off-colored #535965;       /* Using 'grey' */
+@define-color  disabled #7a818e;          /* Using 'light_grey' */
 
-@define-color  off-colored #A4A4A4;
-@define-color  disabled #797979;
+window#waybar {
+    background-color: transparent;
+}
+
+window#waybar > box {
+    border-radius: 0px;
+    margin: 0px 0px 4px 0px;
+    /* margin: 5px 20px 4px 20px; */
+    /* background-color: #1f23293f; */
+    background-color: @on-error;
+    /* background-color: #1F2329; */
+    /* background-color: rgba(32, 32, 32, 0.75); */
+    /* box-shadow: 4px 4px 2px 1px @off-colored; */
+}
+
 
 window#waybar {
   min-height  : 0;
@@ -25,8 +41,9 @@ window#waybar {
   font-size   : 18px;
   font-weight : 400;
 
-  background  : @background;
-  color       : @on-background;
+  /* background  : @bg; */
+  /* color       : @fg; */
+
 }
 
 .modules-left {
@@ -38,13 +55,13 @@ window#waybar {
 
 .modules-right {
   margin-left  : 10px;
-  background   : @background;
+  /* background   : @bg; */
   margin-right : 10px;
 }
 
 #custom-arch {
   font-size    : 18pt;
-  color        : @off-colored;
+  color        : @primary;
   padding      : 0px;
   margin-left  : 10px;
   margin-right : 20px;
@@ -53,21 +70,21 @@ window#waybar {
 #workspaces button {
   border-radius : 0;
   border-top    : 2px solid @on-background;
-  color         : @on-background;
+  color         : @fg;
   padding       : 4px;
   margin-right  : 6px;
 }
 
 #workspaces button.active {
   border-top  : 2px solid transparent;
-  color       : @background;
+  color       : @bg;
   background  : @primary;
   font-weight : bold;
 }
 
 #workspaces button.visible {
   border-top : 2px solid transparent;
-  color      : @background;
+  color      : @bg;
   background : @primary;
 }
 
@@ -78,26 +95,27 @@ window#waybar {
 #idle_inhibitor, #backlight, #battery, #bluetooth,
 #custom-calendar, #custom-mail, #custom-systemd, #custom-github, #network,
 #pulseaudio, #tray, #language {
-  color        : @on-surface;
+  color        : @fg;
   margin-right : 15px;
 }
 
 #tray {
-  margin-left: 0px;
+  margin-left  : 0px;
+  color        : @fg;
 }
 
 #language {
-  color        : @on-surface;
+  color        : @fg;
   margin-right : 5px;
 }
 
 #pulseaudio.bluetooth, #bluetooth.connected {
-  color: @secondary;
+  color: @fg;
 }
 
 #window {
   margin-left : 20px;
-  color       : @off-colored;
+  color       : @fg;
   font-weight : bold;
 }
 

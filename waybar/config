@@ -19,12 +19,10 @@
     "custom/systemd",
     "tray",
     "custom/mail",
-    "custom/github",
     "battery",
     "backlight",
     "pulseaudio",
     "network",
-    "bluetooth",
     "idle_inhibitor",
     "hyprland/language",
     "custom/calendar",
@@ -40,11 +38,11 @@
       "3" : ["eDP-1"],
       "4" : ["eDP-1"],
       "5" : ["eDP-1"],
-      "6" : ["DP-1", "DP-3", "DP-4"],
-      "7" : ["DP-1", "DP-3", "DP-4"],
-      "8" : ["DP-1", "DP-3", "DP-4"],
-      "9" : ["DP-1", "DP-3", "DP-4"],
-      "10": ["DP-1", "DP-3", "DP-4"],
+      "6" : ["DP-1", "DP-3", "DP-4", "DP-7"],
+      "7" : ["DP-1", "DP-3", "DP-4", "DP-7"],
+      "8" : ["DP-1", "DP-3", "DP-4", "DP-7"],
+      "9" : ["DP-1", "DP-3", "DP-4", "DP-7"],
+      "10": ["DP-1", "DP-3", "DP-4", "DP-7"],
     },
 
     "sort-by": "default",
@@ -52,8 +50,8 @@
 
   "hyprland/language": {
     "format"    : "{}",
-    "format-en" : "󰌌",
-    "format-de" : "<span color='#BB86FC'>󰌏</span>",
+    "format-en" : "🇺🇸",
+    "format-de" : "🇩🇪",
     "on-click"  : "$HOME/.config/waybar/scripts/waybar-toggle-kbdmap.zsh"
   },
 
@@ -176,21 +174,21 @@
     "device"         : "intel_backlight",
     "format"         : "{icon}",
     "format-icons"   : [
-      "󰃜",
-      "󰃛",
-      "󰃚"
+      "󰃞",
+      "󰃝",
+      "󰃠",
     ],
     "interval"       : 60,
-    "tooltip-format" : "Brightness                                                : {percent}%",
+    "tooltip-format" : "Brightness {percent}%",
     "on-click"       : "$HOME/.config/waybar/scripts/waybar-toggle-brightness.sh"
   },
 
   "pulseaudio": {
     "format"           : "{icon}",
     "format-icons"     : [
-      "󰕾",
+      "󰕿",
       "󰖀",
-      "󰕿"
+      "󰕾",
     ],
     "format-bluetooth" : "󰂰",
     "format-muted"     : "󰝟",
@@ -208,7 +206,7 @@
   },
 
   "hyprland/window": {
-    "format"           : "󱃺  {}",
+    "format"           : " {}",
     "separate-outputs" : true
   },
 

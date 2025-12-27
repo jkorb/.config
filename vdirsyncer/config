@@ -1,6 +1,24 @@
 [general]
 status_path = "~/.config/vdirsyncer/status/"
 
+[pair ki_cal]
+a = "ki_local"
+b = "ki_remote"
+collections = ["from a", "from b"]
+conflict_resolution = "b wins"
+
+[storage ki_local]
+type = "filesystem"
+path = "~/.local/share/khal/calendars/ki/"
+fileext = ".ics"
+
+[storage ki_remote]
+type = "caldav"
+url = "http://localhost:1080/users/bachelorcoordinatorKI@uu.nl/calendar/"
+username = "j.korbmacher@uu.nl"
+password.fetch = ["shell", "fetch-pw.zsh"]
+
+
 [pair uu_cal]
 a = "uu_cal_local"
 b = "uu_cal_remote"
