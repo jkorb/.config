@@ -86,22 +86,22 @@ mono body bold "^gpg: Good signature"
 #
 #
 color normal		  default default         # Text is "Text"
-color index		    blue    default ~N       # Unread messages are blue
-color index		    blue    default ~U       # New Messages are Green
-color index		    color1  default ~F       # Flagged messages are Red
-color index		    color1  default ~D       # Messages to delete are Red
-color index       color2  default ~Q        #replied
+color index		    blue    default ~N      # Unread messages are blue
+color index		    blue    default ~U      # New Messages are Green
+color index		    color1  default ~F      # Flagged messages are Red
+color index		    color1  default ~D      # Messages to delete are Red
+color index       color2  default ~Q      #replied
 color index		    color13 default ~T      # Tagged Messages are Red
-color index       color13 default ~T     #tagged
-# color attachment	color5 default          # Attachments are Pink
+color index       color13 default ~T      #tagged
+# color attachment	color5 default        # Attachments are Pink
 color signature	  color8 default          # Signatures are Surface 2
 color search		  color4 default          # Highlighted results are Blue
 
 color attachment    black           default
 
 color indicator		default color8          # currently highlighted message Surface 2=Background Text=Foreground
-color error		    color1  default          # error messages are Red
-color status		  black blue         # status line "Subtext 0"
+color error		    color1  default         # error messages are Red
+color status		  black blue              # status line "Subtext 0"
 color tree        color15 default         # thread tree arrows Subtext 0
 color tilde       color15 default         # blank line padding Subtext 0
 
@@ -125,3 +125,4 @@ color body		color4 default		(^|[[:space:]])/[^[:space:]]+/([[:space:]]|$)     # 
 
 color sidebar_flagged   color1 default    # Mailboxes with flagged mails are Red
 color sidebar_new       color10 default   # Mailboxes with new mail are Green
+color sidebar_highlight white black
