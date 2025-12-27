@@ -34,7 +34,7 @@ return {
     opts = function(_, opts)
       opts.keymap = {
         preset = "default",
-        ["<C-y>"] = { "select_and_accept" },
+        -- ["<C-y>"] = { "select_and_accept" },
         ["<C-space>"] = { "show_documentation", "hide_documentation" },
       }
       opts.sources.compat = {
@@ -59,7 +59,6 @@ return {
       --     opts = { strategy = 2 },
       --   }
       -- end
-
       table.insert(opts.sources.default, "dictionary")
       opts.sources.providers.dictionary = {
         module = "blink-cmp-dictionary",

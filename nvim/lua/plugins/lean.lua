@@ -16,7 +16,7 @@ return {
     -- see details below for full configuration options
     opts = {
       lsp = {},
-      mappings = true,
+      -- mappings = true,
     },
   },
 }

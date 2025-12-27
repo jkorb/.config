@@ -41,6 +41,7 @@ return {
   },
   {
     "zbirenbaum/copilot.lua",
+    enabled = true,
     opts = function(_, opts)
       opts.filetypes = {
         mail = false,

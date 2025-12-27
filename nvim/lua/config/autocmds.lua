@@ -24,10 +24,10 @@ vim.api.nvim_create_autocmd("FileType", {
     vim.opt.spell = true
     vim.opt.tw = 80
     vim.opt.conceallevel = 0
-    custom_map("n", "<leader>mc", "<cmd>TexlabBuild<cr>", { desc = "Texlab: build" })
-    custom_map("n", "<leader>mx", "<cmd>TexlabClean<cr>", { desc = "Texlab: clean" })
-    custom_map("n", "<leader>mX", "<cmd>TexlabPurge<cr>", { desc = "Texlab: purge" })
-    custom_map("n", "<leader>mv", "<cmd>TexlabForward<cr>", { desc = "Texlab: view" })
+    custom_map("n", "<leader>mc", "<cmd>LspTexlabBuild<cr>", { desc = "Texlab: build" })
+    custom_map("n", "<leader>mx", "<cmd>LspTexlabCleanAuxiliary<cr>", { desc = "Texlab: clean" })
+    custom_map("n", "<leader>mX", "<cmd>LspTexlabCleanArtifcats<cr>", { desc = "Texlab: purge" })
+    custom_map("n", "<leader>mv", "<cmd>LspTexlabForward<cr>", { desc = "Texlab: view" })
   end,
 })
 
