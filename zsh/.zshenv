@@ -20,7 +20,7 @@ export EDITOR="nvim"
 
 export ELECTRON_OZONE_PLATFORM_HINT="wayland"
 
-export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
+# export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
 
 for dir in $XDG_CONFIG_HOME/*/scripts/; do
   path+=("$dir")

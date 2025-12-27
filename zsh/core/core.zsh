@@ -56,6 +56,8 @@ alias tmux="tmux -2"
 
 alias mk=make
 
+alias music=cmus
+
 alias mail=neomutt
 
 bindkey -v
