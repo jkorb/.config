@@ -1,5 +1,11 @@
 [calendars]
 
+[[ki]]
+path                      = $XDG_DATA_HOME/khal/calendars/ki/calendar
+color                     = light magenta
+type                      = calendar
+
+
 [[uu]]
 path                      = $XDG_DATA_HOME/khal/calendars/uu/calendar
 color                     = dark blue
