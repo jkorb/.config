@@ -13,7 +13,7 @@
     scale                             = 0
     progress_bar                      = true
     progress_bar_horizontal_alignment = center
-    progress_bar_height               = 10
+    progress_bar_height               = 5
     progress_bar_min_width            = 150
     progress_bar_max_width            = 300
     progress_bar_frame_width          = 0
@@ -22,8 +22,8 @@
     indicate_hidden                   = no
     transparency                      = 1
     separator_height                  = 2
-    padding                           = 20
-    horizontal_padding                = 20
+    padding                           = 10
+    horizontal_padding                = 10
     text_icon_padding                 = 10
     frame_width                       = 2
     gap_size                          = 0
@@ -34,7 +34,7 @@
     force_xwayland                    = false
     font                              = "NotoSans Nerd Font 12"
     line_height                       = 0
-    format                            = "<span font                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 = '10'>%a</span>\n\n<b>%s</b>\n%b\n"
+    format                            = "<span font = '10'>%a</span>\n\n<b>%s</b>\n\n%b\n"
     vertical_alignment                = top
     show_age_threshold                = -1
     ignore_newline                    = false
@@ -66,19 +66,22 @@
     markup                            = full
 
 [urgency_low]
-    background                        = "#1F1F1FE6"
-    foreground                        = "#D8D8D8"
-    timeout                           = 15
-    frame_color                       = "#000000"
+    background = "#1f2329e6"  # Using 'bg0' with some transparency
+    foreground = "#a0a8b7"    # Using 'fg' for text color
+    highlight = "#4fa6ed"     # Using 'blue' for highlights
+    timeout = 15
+    frame_color = "#0e1013"   # Using 'black'
 
 [urgency_normal]
-    background                        = "#1F1F1FE6"
-    foreground                        = "#D8D8D8"
-    timeout                           = 15
-    frame_color                       = "#000000"
+    background = "#1f2329e6"  # Same as urgency_low
+    foreground = "#a0a8b7"    # Same as urgency_low
+    highlight = "#4fa6ed"     # Same as urgency_low
+    timeout = 15
+    frame_color = "#0e1013"   # Same as urgency_low
 
 [urgency_critical]
-    background                        = "#CF6679E6"
-    foreground                        = "#000000"
-    timeout                           = 0
-    frame_color                       = "#121212"
+    background = "#e55561e6"  # Using 'red' for critical background
+    foreground = "#a0a8b7"    # Using 'fg' for text color
+    timeout = 0
+    frame_color = "#1f2329"   # Using 'bg0'
+
