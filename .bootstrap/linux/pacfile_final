@@ -1,27 +1,30 @@
-# Core system
-base
-base-devel
-binutils
-bison
-linux
-linux-firmware
-linux-headers
+# System
 
-# Other
-
-zoom
-hugo
-dropbox
-
-man-db
-
+brightnessctl
+btop
+efibootmgr
+fwupd
+tlp
+upower
+pacman-contrib
 
 # Sound
 
-sof-firmware # Do I need both?
+# sof-firmware # Do I need both?
 alsa-firmware
 alsa-utils
-bluez-alsa
+pipewire
+pipewire-audio
+pipewire-alsa
+pipewire-pulse
+wireplumber
+#bluez-alsa-git
+
+# Bluetooth
+
+bluez
+bluez-utils
+bluetuith
 
 # File manager
 
@@ -29,23 +32,12 @@ nnn
 gvfs
 gvfs-smb
 
-# Wine
-
-wine
-wine-gecko
-wine-mono
-
-# ??
-
-acpi_call
-
 #Terminal
 
-alacritty #term emulator
+alacritty 
 tmux
 tmuxp
 urlscan
-zsh
 
 # Browser
 
@@ -57,15 +49,6 @@ browserpass-chromium
 
 dunst
 
-# System
-
-brightnessctl
-btop
-efibootmgr
-fwupd
-tlp
-upower
-
 # Utils
 
 pdfgrep
@@ -73,17 +56,12 @@ make
 rsync
 fd
 wget
-which
 ripgrep
 fzf
 bc
-autoconf
-automake
-
 
 # Git
 
-git
 git-credential-manager-core-bin
 
 # Pdf
@@ -103,11 +81,12 @@ hunspell-de
 hunspell-en_us
 hunspell-it
 hunspell-nl
-neovim
-neovim-remote
+# neovim-remote
 pandoc-cli
 shellcheck
 libreoffice-fresh
+npm
+ltex-ls-bin
 
 # Wayland, DM, etc.
 
@@ -118,6 +97,7 @@ slurp
 smartmontools
 rofi-lbonn-wayland-git
 swaybg
+swayidle
 waybar-git
 wayland-protocols
 wl-clipboard
@@ -134,30 +114,22 @@ pass
 
 # Networking
 
-networkmanager
+# networkmanager
 
 # Email & Office
 
-cyrus-sasl-xoauth2-git
+# cyrus-sasl-xoauth2-git
 davmail
 msmtp
 mu
 neomutt
 w3m
 vdirsyncer
-
+isync 
 # Fonts
 
 nerd-fonts-meta
 noto-fonts-emoji
-
-
-pacman-contrib
-papirus-icon-theme
-
-
-patch
-
 
 # Python
 
@@ -171,7 +143,6 @@ python-openpyxl
 python-pip
 python-pytest
 python-recurring-ical-events
-
 
 # Latex
 
@@ -196,3 +167,24 @@ texlive-publishers
 
 cups
 cups-pdf
+
+# Other
+
+zoom
+hugo
+dropbox
+cmus
+libmad
+ffmpeg
+papirus-icon-theme
+# ??
+# acpi_call
+
+# Wine
+
+# wine
+# wine-gecko
+# wine-mono
+# patch
+
+gtk-engine-murrine
