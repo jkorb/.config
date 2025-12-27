@@ -6,7 +6,9 @@ After=davmail.service
 [Service]
 Environment=GNUPGHOME=/home/jkorbmacher/.config/gnupg
 Type=oneshot
-ExecCondition=ping -c 1 -W 1 8.8.8.8 
+StandardOutput=null
+StandardError=null
+ExecCondition=ping -c 1 -W 1 8.8.8.8
 ExecStartPre=/usr/bin/vdirsyncer discover
 ExecStart=/usr/bin/vdirsyncer sync
 

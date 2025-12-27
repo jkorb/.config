@@ -1,7 +1,5 @@
 [Unit]
 Description=Mailbox synchronization timer
-Requires=davmail.service
-After=davmail.service
 
 [Timer]
 OnBootSec=2m
