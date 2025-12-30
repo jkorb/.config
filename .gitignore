@@ -13,8 +13,6 @@ davmail/davmail.properties
 !hypr
 !git
 !gnupg
-!gtk-3.0
-!gtk-4.0
 !khal
 !latexmk
 !msmtp
@@ -31,6 +29,7 @@ systemd/user/sockets.target.wants
 systemd/user/timers.target.wants
 !tmux
 tmux/sessions
+!user-dirs.dirs
 !vdirsyncer
 !waybar
 !wlogout
@@ -40,7 +39,6 @@ tmux/sessions
 
 !isyncrc
 !pam-gnupg
-!gtkrc-2.0
 
 !README.md
 !.gitignore
