@@ -1,0 +1,11 @@
+[Unit]
+Description=Index mail with mu
+
+[Service]
+Type=oneshot
+StandardOutput=null
+StandardError=null
+ExecStart=/usr/bin/mu index 
+
+[Install]
+WantedBy=default.target

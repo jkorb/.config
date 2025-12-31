@@ -3,15 +3,16 @@ Description=Mailbox synchronization service using isync/mbsync
 Requires=davmail.service
 After=davmail.service
 
+OnSuccess=mu-index.service
+OnFailure=mu-index.service
+
 [Service]
-Environment=GNUPGHOME=/home/jkorbmacher/.config/gnupg
 Type=oneshot
+Environment=GNUPGHOME=/home/jkorbmacher/.config/gnupg
 StandardOutput=null
 StandardError=null
 ExecCondition=ping -c 1 -W 1 8.8.8.8 
 ExecStart=/usr/bin/mbsync uu lm gmail
-ExecStartPost=/usr/bin/mu index -qq
-; ExecStartPost=/home/jkorbmacher/.config/neomutt/scripts/mail_notify
 
 [Install]
 WantedBy=default.target
