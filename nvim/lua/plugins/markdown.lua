@@ -137,8 +137,8 @@ return {
     keys = {
       {
         "<leader>mv",
+        "<cmd>MarkdownPreviewToggle<cr>",
         ft = "markdown",
-        nil,
         desc = "Toggle Preview",
       },
     },

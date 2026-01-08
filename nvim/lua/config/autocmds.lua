@@ -21,13 +21,23 @@ vim.api.nvim_create_autocmd("FileType", {
       vim.lsp.buf.execute_command({ command = "texlab.cleanArtifacts", arguments = { arguments } })
     end, { desc = "Texlab: purge" })
 
-    vim.opt.spell = true
-    vim.opt.tw = 80
-    vim.opt.conceallevel = 0
+    vim.opt_local.spell = true
+    vim.opt_local.tw = 80
+    vim.opt_local.conceallevel = 0
     custom_map("n", "<leader>mc", "<cmd>LspTexlabBuild<cr>", { desc = "Texlab: build" })
     custom_map("n", "<leader>mx", "<cmd>LspTexlabCleanAuxiliary<cr>", { desc = "Texlab: clean" })
     custom_map("n", "<leader>mX", "<cmd>LspTexlabCleanArtifcats<cr>", { desc = "Texlab: purge" })
     custom_map("n", "<leader>mv", "<cmd>LspTexlabForward<cr>", { desc = "Texlab: view" })
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  group = custom_augroup("markdown_like_spell"),
+  pattern = { "markdown", "pandoc", "mail" },
+  callback = function()
+    vim.opt_local.spell = true
+    vim.opt_local.tw = 80
+    vim.opt_local.formatoptions = "tcqj"
   end,
 })
 

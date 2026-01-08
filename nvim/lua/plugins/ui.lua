@@ -16,18 +16,15 @@ return {
           ["@text.math"] = { fg = "$purple" },
           ["@text.environment"] = { fg = "$cyan" },
           ["@text.environment.name"] = { fg = "$yellow" },
+          -- Spell: colored undercurl instead of plain underline
+          SpellBad = { fg = "$red", undercurl = true },
+          SpellCap = { sp = "$yellow", undercurl = true },
+          SpellLocal = { sp = "$blue", undercurl = true },
+          SpellRare = { sp = "$purple", undercurl = true },
         },
       })
       -- Enable theme
       require("onedark").load()
-    end,
-  },
-  {
-    "catppuccin/nvim",
-    enabled = false,
-    opts = function(_, opts)
-      opts.transparent_background = true
-      return opts
     end,
   },
   {
