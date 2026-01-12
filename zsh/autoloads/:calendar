@@ -1,9 +1,0 @@
-# autoload
-
-:calendar () {
-
-  tmux display-popup -E calendar -s bg="#000000"
-
-}
-
-:calendar

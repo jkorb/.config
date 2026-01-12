@@ -1,3 +1,7 @@
+if type brew &>/dev/null; then
+  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
+fi
+
 export ZCOREDIR=$ZDOTDIR/core
 export ZTHEMEDIR=$ZDOTDIR/theme
 export ZPLUGINDIR=$ZDOTDIR/plugins
