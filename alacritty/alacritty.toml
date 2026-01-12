@@ -50,27 +50,27 @@ magenta="#de73ff"
 cyan="#4cd1e0"
 
 [font]
-size = 12
+size = 18
 
 [font.bold]
-family = "NotoSansM Nerd Font Mono"
+family = "ComicShannsMono Nerd Font"
 # family = "Source Code Pro"
 style = "Bold"
 
 [font.bold_italic]
-family = "NotoSansM Nerd Font Mono"
+family = "ComicShannsMono Nerd Font"
 # family = "Source Code Pro"
 style = "Bold Italic"
 
 [font.italic]
 # family = "Source Code Pro"
-family = "Source Code Pro"
+family = "ComicShannsMono Nerd Font"
 # family = "NotoSansM Nerd Font Mono"
 style = "Italic"
 
 [font.normal]
 # family = "Source Code Pro"
-family = "NotoSansM Nerd Font Mono"
+family = "ComicShannsMono Nerd Font"
 style = "Regular"
 
 [[keyboard.bindings]]
@@ -93,6 +93,11 @@ chars = "\u001A"
 key = "Period"
 mods = "Control"
 
+[[keyboard.bindings]]
+key = "M"
+mods = "Command"
+action = "ToggleMaximized"
+
 [window]
 
 # Window dimensions
@@ -102,17 +107,17 @@ dimensions = { columns = 0, lines = 0 }  # Default: columns = 0, lines = 0
 position = "None"  # Default: "None"
 
 # Padding
-padding = { x = 0, y = 0 }  # Default: x = 0, y = 0
+padding = { x = 5, y = 30 }  # Default: x = 0, y = 0
 
 # Dynamic padding
 dynamic_padding = true  # Default: false
 
 # Window decorations
 # decorations = "None"  # Default: "Full"
-decorations = "Full"  # Default: "Full"
+decorations = "Transparent"  # Default: "Full"
 
 # Opacity
-opacity = 1.0  # Default: 1.0
+opacity = 0.9  # Default: 1.0
 
 # Blur (macOS/KDE Wayland only)
 blur = false  # Default: false
