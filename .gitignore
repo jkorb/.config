@@ -6,6 +6,7 @@
 !btop
 !cmus
 !davmail
+davmail/davmail.log
 davmail/davmail.properties
 !despell
 !dunst
@@ -19,7 +20,7 @@ davmail/davmail.properties
 !neomutt
 !nnn
 !nvim
-nvim/lazy-lock.nvim
+nvim/lazy-lock.json
 nvim/lazyvim.json
 !qmk
 !rofi
