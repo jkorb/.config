@@ -4,7 +4,8 @@ Port 1143
 AuthMechs LOGIN
 PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
 TLSType None
-CertificateFile /etc/ssl/certs/ca-certificates.crt
+SystemCertificates yes
+#CertificateFile /etc/ssl/certs/ca-certificates.crt
 User j.korbmacher@uu.nl/logische.methoden@uu.nl
 Timeout 0
 
@@ -20,7 +21,8 @@ Inbox ~/.mail/lm/Inbox
 Channel lm
 Far :lm-remote:
 Near :lm-local:
-Patterns "INBOX" "Archive" "Drafts" "Sent" "Trash" "Junk" "Unsent Messages"
+Patterns *
+#Patterns "INBOX" "Archive" "Drafts" "Sent Items" "Deleted Items" "Junk Email" "Unsent Messages"
 Sync All
 Create Both
 Remove Both
@@ -33,7 +35,8 @@ Port 1143
 AuthMechs LOGIN
 PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
 TLSType None
-CertificateFile /etc/ssl/certs/ca-certificates.crt
+SystemCertificates yes
+#CertificateFile /etc/ssl/certs/ca-certificates.crt
 User j.korbmacher@uu.nl
 Timeout 0
 
@@ -60,7 +63,9 @@ Host imap.gmail.com
 User jkorbmacher@gmail.com
 PassCmd "pass accounts.google.com | sed -n 's/^app: //p'"
 TLSType IMAPS
-CertificateFile /etc/ssl/certs/ca-certificates.crt
+AuthMechs PLAIN
+SystemCertificates yes
+#CertificateFile /etc/ssl/certs/ca-certificates.crt
 
 IMAPStore gmail-remote
 Account gmail
@@ -111,6 +116,7 @@ SyncState *
 Group gmail
 Channel gmail-inbox
 Channel gmail-all
+Channel gmail-drafts
 Channel gmail-sent
 Channel gmail-spam
 Channel gmail-trash
