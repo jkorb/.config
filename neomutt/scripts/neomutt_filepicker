@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-cache_dir="$XDG_CACHE_DIR/neomutt"
+cache_dir="$XDG_CACHE_DIR/neomutt_attach"
 tmpfile="$cache_dir/attach_tmp"
 
 if [[ ! -d "$cache_dir" ]]; then

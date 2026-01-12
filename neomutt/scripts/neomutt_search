@@ -1,6 +1,6 @@
-#! /usr/bin/zsh
+#! /usr/bin/env zsh
 
-cache_dir="$XDG_CACHE_DIR/neomutt"
+cache_dir="$XDG_CACHE_DIR/neomutt_search"
 search_dir="$MAILDIR/recent-search"
 search_hist="$cache_dir/search_hist"
 tmp_searchfile=$cache_dir/tmp_searchfile

@@ -74,7 +74,7 @@ macro index,pager        gi         "<change-folder>!<enter>"                   
 macro index,pager        gs         "<change-folder-readonly>~/.mail/recent-search\n"                                 "goto recent search"
 # macro index,pager        gs         "<shell-escape>mu find --clearlinks --format=links --linksdir=~/.mail/search "  "mu find"
 # macro index,pager        gS         "<change-folder-readonly>~/.mail/search\n"                                      "mu find results"
-macro index,pager        /          "<shell-escape>$XDG_CONFIG_HOME/neomutt/scripts/neomutt_search<enter><enter-command>source $XDG_CACHE_DIR/neomutt/tmp_searchfile <enter>"  "find mail"
+macro index,pager        /          "<shell-escape>$XDG_CONFIG_HOME/neomutt/scripts/neomutt_search<enter><enter-command>source $XDG_CACHE_DIR/neomutt_search/tmp_searchfile <enter>"  "find mail"
 macro index,pager        gr         "<shell-escape> systemctl --user start isync.service <enter><sync-mailbox>"                                 "sync all mailboxes"
 # macro index,pager        gr         "<shell-escape> ~/.config/neomutt/scripts/sync & <enter><sync-mailbox>"         "sync all mailboxes"
 
@@ -101,7 +101,7 @@ bind  index,pager        c@         compose-to-sender
 
 bind  compose            cc         send-message
 bind  compose            ce         edit-message
-macro compose            ca         "<shell-escape>$XDG_CONFIG_HOME/neomutt/scripts/neomutt_filepicker<enter><enter-command>source $XDG_CACHE_DIR/neomutt/attach_tmp<enter><shell-escape>bash $XDG_CONFIG_HOME/neomutt/scripts/neomutt_filepicker clean<enter>" "Attach ..."
+macro compose            ca         "<shell-escape>$XDG_CONFIG_HOME/neomutt/scripts/neomutt_filepicker<enter><enter-command>source $XDG_CACHE_DIR/neomutt_attach/attach_tmp<enter><shell-escape>bash $XDG_CONFIG_HOME/neomutt/scripts/neomutt_filepicker clean<enter>" "Attach ..."
 
 bind  compose            dd         detach-file
 
