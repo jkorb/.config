@@ -50,7 +50,7 @@ magenta="#de73ff"
 cyan="#4cd1e0"
 
 [font]
-size = 18
+size = 20
 
 [font.bold]
 family = "ComicShannsMono Nerd Font"
@@ -97,6 +97,16 @@ mods = "Control"
 key = "M"
 mods = "Command"
 action = "ToggleMaximized"
+
+[[keyboard.bindings]]
+key = "C"
+mods = "Control | Shift"
+action = "Copy"
+
+[[keyboard.bindings]]
+key = "V"
+mods = "Control | Shift"
+action = "Paste"
 
 [window]
 
