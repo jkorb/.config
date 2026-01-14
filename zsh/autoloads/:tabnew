@@ -6,6 +6,7 @@
 
   if [[ -d $dir ]]; then
     tmux new-window -c "$dir"
+    tmux refresh-client -S
     return 0
   fi
 
