@@ -14,9 +14,7 @@ export MAILDIR="$HOME/.mail"
 export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 
 export SUDO_EDITOR="nvim"
-# export EDITOR="tmux split-window nvim"
 export EDITOR="nvim"
-# export VISUAL="nvimwrap"
 
 export ELECTRON_OZONE_PLATFORM_HINT="wayland"
 

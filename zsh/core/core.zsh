@@ -32,13 +32,8 @@ alias cp='command cp -vi'
 alias mv='command mv -vi'
 alias rm='command rm -vi'
 
-if uname | grep -q Darwin &> /dev/null; then
-  alias ll='command gls -A --color=auto --group-directories-first'
-  alias ls='command gls -A --color=auto --group-directories-first --time-style="+"'
-else
-  alias ll='command ls -A --color=auto --group-directories-first'
-  alias ls='command ls -A --color=auto --group-directories-first --time-style="+"'
-fi
+alias ll='command gls -A --color=auto --group-directories-first'
+alias ls='command gls -A --color=auto --group-directories-first --time-style="+"'
 
 alias lsp='command stat -c "%A %a %N"'
 
