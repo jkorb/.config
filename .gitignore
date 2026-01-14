@@ -17,6 +17,7 @@ davmail/davmail.properties
 !gnupg
 !khal
 !latexmk
+!launchd
 !msmtp
 !neomutt
 !nnn
@@ -52,6 +53,10 @@ codex/auth.json
 codex/history.jsonl
 codex/log
 codex/sessions
+
+# launchd logs are local state.
+launchd/log
+launchd/log/**
 
 # Keep local agent log out of repo.
 AGENTS.md
