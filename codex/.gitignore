@@ -1,0 +1,7 @@
+*
+!.gitignore
+!config.toml
+!assets/
+!assets/logo.png
+!scripts/
+!scripts/notify

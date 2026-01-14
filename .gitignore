@@ -5,6 +5,7 @@
 !alacritty
 !btop
 !cmus
+!codex
 !davmail
 davmail/davmail.log
 davmail/davmail.properties
@@ -43,4 +44,14 @@ tmux/sessions
 
 !README.md
 !.gitignore
+!COMMIT_STYLE.md
 !english-words
+
+# Codex local state (not config).
+codex/auth.json
+codex/history.jsonl
+codex/log
+codex/sessions
+
+# Keep local agent log out of repo.
+AGENTS.md
