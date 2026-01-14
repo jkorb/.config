@@ -4,6 +4,10 @@ Dir="${1:-$PWD}"
 
 SessionsDir="$XDG_CONFIG_HOME/tmux/sessions/$HOST"
 
+if [[ ! -d $SessionsDir ]]; then
+  mkdir -p $SessionsDir
+fi
+
 SessionName="${${Dir/$HOME}:-home}"
 SessionName="${SessionName//[. ]/_}"
 SessionName="${SessionName/\//}"
