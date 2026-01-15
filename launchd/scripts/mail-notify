@@ -1,0 +1,136 @@
+#!/usr/bin/python3
+import json
+import os
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+MU = "/opt/homebrew/bin/mu"
+TERMINAL_NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
+GROUP = "mail-sync"
+
+
+def cache_dir():
+    xdg_cache = os.environ.get("XDG_CACHE_DIR")
+    if not xdg_cache:
+        raise RuntimeError("XDG_CACHE_DIR is not set")
+    path = Path(xdg_cache) / "mail-sync"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def muhome_arg():
+    xdg_cache = os.environ.get("XDG_CACHE_DIR")
+    if not xdg_cache:
+        raise RuntimeError("XDG_CACHE_DIR is not set")
+    muhome = str(Path(xdg_cache) / "mu")
+    return ["--muhome", muhome]
+
+
+def load_last_run():
+    last_run_path = cache_dir() / "last-run"
+    try:
+        raw = last_run_path.read_text().strip()
+    except FileNotFoundError:
+        return None
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw)
+    except ValueError:
+        return None
+
+
+def write_last_run(ts):
+    cache = cache_dir()
+    (cache / "last-run").write_text(ts.isoformat(timespec="seconds"))
+
+
+def fetch_messages(start, end):
+    start_str = start.isoformat(timespec="seconds")
+    end_str = end.isoformat(timespec="seconds")
+    query = f"date:{start_str}..{end_str}"
+    result = subprocess.run(
+        [MU, "find", "--format=json", "--sortfield=date", "--reverse"]
+        + muhome_arg()
+        + [query],
+        stdout=subprocess.PIPE,
+        stderr=sys.stderr,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return None
+    raw = result.stdout.strip()
+    if not raw:
+        return []
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(data, dict):
+        for key in ("results", "messages", "items"):
+            if key in data and isinstance(data[key], list):
+                return data[key]
+        return []
+    if isinstance(data, list):
+        return data
+    return []
+
+
+def trim(text, limit):
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 3)] + "..."
+
+
+def format_sender(msg):
+    sender = msg.get(":from") or msg.get("from") or msg.get("from_") or ""
+    if isinstance(sender, list) and sender:
+        sender = sender[0]
+    if isinstance(sender, dict):
+        name = sender.get(":name") or sender.get("name") or ""
+        email = sender.get(":email") or sender.get("email") or sender.get("address") or ""
+        if name and email:
+            return f"{name} <{email}>"
+        return name or email or ""
+    if isinstance(sender, str):
+        return sender
+    return ""
+
+
+def notify(messages):
+    if not messages:
+        return
+    for msg in messages:
+        sender = trim(format_sender(msg) or "Unknown sender", 80)
+        subject = trim(msg.get(":subject") or msg.get("subject") or "(no subject)", 120)
+        message = f"From: {sender}\nSubject: {subject}"
+        group = msg.get(":message-id") or msg.get("message-id") or GROUP
+        subprocess.run(
+            [TERMINAL_NOTIFIER, "-title", "✉️Mail", "-message", message, "-group", group],
+            stdout=subprocess.DEVNULL,
+            stderr=sys.stderr,
+            check=False,
+        )
+
+
+def main():
+    now = datetime.now().replace(microsecond=0)
+    last = load_last_run()
+    start_of_day = now.replace(hour=0, minute=0, second=0)
+    if last is None or last < start_of_day:
+        last = start_of_day
+    if last > now:
+        last = now
+    messages = fetch_messages(last, now)
+    write_last_run(now)
+    if messages is None:
+        return 0
+    notify(messages)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

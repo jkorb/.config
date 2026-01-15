@@ -1,0 +1,124 @@
+#!/bin/zsh
+set -euo pipefail
+
+SERVICES_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/launchd/services"
+LABEL_PREFIX="com.jkorbmacher."
+
+usage() {
+  echo "usage: ${0:t} <enable|disable|info> [service-name]" >&2
+  exit 2
+}
+
+cmd="${1:-}"
+name="${2:-}"
+
+if [[ -z "$cmd" ]]; then
+  usage
+fi
+
+case "$cmd" in
+  enable|disable|info) ;;
+  *) usage ;;
+esac
+
+resolve_plist() {
+  local input="$1"
+  if [[ "$input" == /* ]]; then
+    echo "$input"
+  elif [[ "$input" == *.plist ]]; then
+    echo "$SERVICES_DIR/$input"
+  else
+    if [[ "$input" == *.* ]]; then
+      echo "$SERVICES_DIR/${input}.plist"
+    else
+      echo "$SERVICES_DIR/${LABEL_PREFIX}${input}.plist"
+    fi
+  fi
+}
+
+plist_label() {
+  local plist="$1"
+  local base="${plist:t}"
+  echo "${base%.plist}"
+}
+
+domain="gui/${UID}"
+
+service_state() {
+  local label="$1"
+  local line
+  line="$(launchctl print "${domain}/${label}" 2>/dev/null | awk -F'= ' '/state =/ {print $2; exit}')"
+  if [[ -z "$line" ]]; then
+    echo "not loaded"
+  else
+    echo "$line"
+  fi
+}
+
+service_detail() {
+  local label="$1"
+  local info
+  info="$(launchctl print "${domain}/${label}" 2>/dev/null)"
+  if [[ -z "$info" ]]; then
+    echo "$label: status=not_loaded"
+    return
+  fi
+  local state
+  local pid
+  local exit_status
+  state="$(echo "$info" | awk -F'= ' '/state =/ {print $2; exit}')"
+  pid="$(echo "$info" | awk -F'= ' '/pid =/ {print $2; exit}')"
+  exit_status="$(echo "$info" | awk -F'= ' '/last exit status =/ {print $2; exit}')"
+  [[ -z "$state" ]] && state="unknown"
+  [[ -z "$pid" ]] && pid="-"
+  [[ -z "$exit_status" ]] && exit_status="-"
+  local status_label="scheduled"
+  if [[ "$state" == "running" ]]; then
+    status_label="running"
+  elif [[ "$exit_status" != "-" && "$exit_status" != "0" ]]; then
+    status_label="error"
+  fi
+  echo "$label: status=$status_label state=$state pid=$pid last_exit=$exit_status"
+}
+
+if [[ "$cmd" == "info" ]]; then
+  if [[ -n "$name" ]]; then
+    plist="$(resolve_plist "$name")"
+    if [[ ! -f "$plist" ]]; then
+      echo "error: missing plist: $plist" >&2
+      exit 1
+    fi
+    label="$(plist_label "$plist")"
+    service_detail "$label"
+  else
+    for plist in "$SERVICES_DIR"/*.plist; do
+      [[ -e "$plist" ]] || continue
+      label="$(plist_label "$plist")"
+      service_detail "$label"
+    done
+  fi
+  exit 0
+fi
+
+if [[ -z "$name" ]]; then
+  usage
+fi
+
+plist="$(resolve_plist "$name")"
+
+if [[ ! -f "$plist" ]]; then
+  echo "error: missing plist: $plist" >&2
+  exit 1
+fi
+
+label="$(plist_label "$plist")"
+
+if [[ "$cmd" == "enable" ]]; then
+  echo "bootstrapping $label from $plist"
+  launchctl bootstrap "$domain" "$plist"
+  echo "state: $(service_state "$label")"
+else
+  echo "booting out $label from $plist"
+  launchctl bootout "$domain" "$plist"
+  echo "state: $(service_state "$label")"
+fi

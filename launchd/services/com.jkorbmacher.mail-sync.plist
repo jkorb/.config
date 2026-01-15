@@ -3,13 +3,10 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>com.jkorbmacher.mu-index</string>
+    <string>com.jkorbmacher.mail-sync</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/usr/bin/env</string>
-      <string>mu</string>
-      <string>index</string>
-      <string>--quiet</string>
+      <string>/Users/jkorbmacher/.config/launchd/scripts/mail-sync</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -18,6 +15,6 @@
     <key>StandardOutPath</key>
     <string>/dev/null</string>
     <key>StandardErrorPath</key>
-    <string>$HOME/.config/launchd/log/mu-index.log</string>
+    <string>$HOME/Library/Logs/mail-sync.log</string>
   </dict>
 </plist>
