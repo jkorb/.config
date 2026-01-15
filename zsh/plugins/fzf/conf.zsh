@@ -14,20 +14,11 @@ FZF_DEFAULT_OPTS+="
   --height=40%
   --bind=tab:down,btab:up,alt-space:toggle,ctrl-n:down,ctrl-p:up"
 
-  # ",alt-space:clear-selection"
-
 [[ ! -d $XDG_CACHE_DIR/fzf ]] && mkdir $XDG_CACHE_DIR/fzf
 
 FZF_DEFAULT_OPTS+="
   --history=$XDG_CACHE_DIR/fzf/history
   --history-size=1000000000"
-
-# FZF_DEFAULT_OPTS+=" \
-# --color=bg+:-1,bg:-1,spinner:#f5e0dc,hl:#f38ba8 \
-# --color=fg:#cdd6f4,header:#f38ba8,info:#cba6f7,pointer:#f5e0dc \
-# --color=marker:#b4befe,fg+:#cdd6f4,prompt:#cba6f7,hl+:#f38ba8 \
-# --color=selected-bg:#45475a \
-# "
 
  FZF_DEFAULT_OPTS+="
    --color bg:-1,fg:7,hl:5
