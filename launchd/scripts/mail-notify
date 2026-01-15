@@ -87,6 +87,10 @@ def trim(text, limit):
     return text[: max(0, limit - 3)] + "..."
 
 
+def group_key(text):
+    return text.replace(" ", "_").replace(":", "-").replace("/", "-")
+
+
 def format_sender(msg):
     sender = msg.get(":from") or msg.get("from") or msg.get("from_") or ""
     if isinstance(sender, list) and sender:
@@ -110,6 +114,7 @@ def notify(messages):
         subject = trim(msg.get(":subject") or msg.get("subject") or "(no subject)", 120)
         message = f"From: {sender}\nSubject: {subject}"
         group = msg.get(":message-id") or msg.get("message-id") or GROUP
+        group = group_key(group)
         subprocess.run(
             [TERMINAL_NOTIFIER, "-title", "✉️ Mail", "-message", message, "-group", group],
             stdout=subprocess.DEVNULL,
