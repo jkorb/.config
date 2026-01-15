@@ -1,4 +1,5 @@
 notify = ["/Users/jkorbmacher/.config/codex/scripts/notify"]
+network_access = "enabled"
 
 [tui]
 notifications = true
