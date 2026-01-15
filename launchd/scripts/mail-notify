@@ -9,6 +9,7 @@ from pathlib import Path
 MU = "/opt/homebrew/bin/mu"
 TERMINAL_NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
 GROUP = "mail-sync"
+DEBUG = "--debug" in sys.argv
 
 
 def cache_dir():
@@ -51,12 +52,13 @@ def fetch_messages(start, end):
     start_str = start.isoformat(timespec="seconds")
     end_str = end.isoformat(timespec="seconds")
     query = f"date:{start_str}..{end_str}"
+    stderr = None if DEBUG else subprocess.DEVNULL
     result = subprocess.run(
-        [MU, "find", "--format=json", "--sortfield=date", "--reverse"]
+        [MU, "find", "--format=json", "--sortfield=date", "--reverse", "maildir:/uu/Inbox"]
         + muhome_arg()
         + [query],
         stdout=subprocess.PIPE,
-        stderr=sys.stderr,
+        stderr=stderr,
         text=True,
         check=False,
     )
@@ -109,9 +111,9 @@ def notify(messages):
         message = f"From: {sender}\nSubject: {subject}"
         group = msg.get(":message-id") or msg.get("message-id") or GROUP
         subprocess.run(
-            [TERMINAL_NOTIFIER, "-title", "✉️Mail", "-message", message, "-group", group],
+            [TERMINAL_NOTIFIER, "-title", "✉️ Mail", "-message", message, "-group", group],
             stdout=subprocess.DEVNULL,
-            stderr=sys.stderr,
+            stderr=None if DEBUG else subprocess.DEVNULL,
             check=False,
         )
 

@@ -3,10 +3,11 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>com.jkorbmacher.mail-sync</string>
+    <string>com.jkorbmacher.davmail</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/Users/jkorbmacher/.config/launchd/scripts/mail-sync</string>
+      <string>/opt/homebrew/bin/davmail</string>
+      <string>/Users/jkorbmacher/.config/davmail/davmail.properties</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
@@ -19,10 +20,10 @@
       <key>XDG_DATA_HOME</key>
       <string>/Users/jkorbmacher/.local/share</string>
     </dict>
+    <key>KeepAlive</key>
+    <true/>
     <key>RunAtLoad</key>
     <true/>
-    <key>StartInterval</key>
-    <integer>300</integer>
     <key>StandardOutPath</key>
     <string>/dev/null</string>
     <key>StandardErrorPath</key>

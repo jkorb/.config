@@ -1,0 +1,127 @@
+#!/usr/bin/python3
+import json
+import os
+import socket
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+KHAL = "/opt/homebrew/bin/khal"
+NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
+VDIRSYNCER = "/opt/homebrew/bin/vdirsyncer"
+PGRP = "/usr/bin/pgrep"
+DEBUG = "--debug" in sys.argv
+
+
+def has_internet():
+    try:
+        with socket.create_connection(("1.1.1.1", 53), timeout=2):
+            return True
+    except OSError:
+        return False
+
+
+def davmail_running():
+    result = subprocess.run(
+        [PGRP, "-f", "[dD]avmail"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def run_cmd(args):
+    stdout = None if DEBUG else subprocess.DEVNULL
+    stderr = None if DEBUG else subprocess.DEVNULL
+    return subprocess.run(args, stdout=stdout, stderr=stderr, check=False)
+
+
+def group_key(text):
+    return text.replace(" ", "_").replace(":", "-")
+
+
+def cache_path():
+    xdg_cache = os.environ.get("XDG_CACHE_DIR")
+    if not xdg_cache:
+        raise RuntimeError("XDG_CACHE_DIR is not set")
+    path = Path(xdg_cache) / "vdirsyncer"
+    path.mkdir(parents=True, exist_ok=True)
+    return path / "notify.json"
+
+
+def load_cache():
+    path = cache_path()
+    if not path.exists():
+        return {"date": datetime.now().date().isoformat(), "notified": []}
+    try:
+        data = json.loads(path.read_text().strip() or "{}")
+    except ValueError:
+        data = {}
+    today = datetime.now().date().isoformat()
+    if data.get("date") != today:
+        return {"date": today, "notified": []}
+    if not isinstance(data.get("notified"), list):
+        data["notified"] = []
+    return data
+
+
+def save_cache(data):
+    cache_path().write_text(json.dumps(data, separators=(",", ":")))
+
+
+def notify_upcoming():
+    stderr = None if DEBUG else subprocess.DEVNULL
+    result = subprocess.run(
+        [KHAL, "list", "now", "15m", "--json", "start-time", "--json", "title", "--json", "calendar", "--day-format", ""],
+        stdout=subprocess.PIPE,
+        stderr=stderr,
+        text=True,
+        check=False,
+    )
+    if result.returncode != 0:
+        return 0
+    try:
+        events = json.loads(result.stdout)
+    except ValueError:
+        return 0
+    if not isinstance(events, list):
+        return 0
+    cache = load_cache()
+    notified = set(cache.get("notified", []))
+    changed = False
+    for event in events:
+        title = event.get("title") or "(no title)"
+        calendar = event.get("calendar") or ""
+        start_time = event.get("start-time") or event.get("start") or ""
+        key = f"{start_time}|{title}|{calendar}"
+        if key in notified:
+            continue
+        if start_time:
+            message = f"{start_time} - {title}"
+        else:
+            message = title
+        title_text = "📆 Calendar"
+        if calendar:
+            title_text = f"{title_text} -- {calendar}"
+        group = group_key(f"khal-{key}")
+        run_cmd([NOTIFIER, "-title", title_text, "-message", message, "-group", group, "-ignoreDnD"])
+        notified.add(key)
+        changed = True
+    if changed:
+        cache["notified"] = sorted(notified)
+        save_cache(cache)
+    return 0
+
+
+def main():
+    if has_internet() and davmail_running():
+        run_cmd([VDIRSYNCER, "discover"])
+        run_cmd([VDIRSYNCER, "sync"])
+    notify_upcoming()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

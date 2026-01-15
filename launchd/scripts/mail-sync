@@ -9,6 +9,7 @@ MB_SYNC = "/opt/homebrew/bin/mbsync"
 MU = "/opt/homebrew/bin/mu"
 PGRP = "/usr/bin/pgrep"
 MAIL_NOTIFY = str(Path(__file__).resolve().parent / "mail-notify")
+DEBUG = "--debug" in sys.argv
 
 
 def has_internet():
@@ -30,10 +31,12 @@ def davmail_running():
 
 
 def run_cmd(args):
+    stderr = None if DEBUG else subprocess.DEVNULL
+    stdout = None if DEBUG else subprocess.DEVNULL
     result = subprocess.run(
         args,
-        stdout=subprocess.DEVNULL,
-        stderr=sys.stderr,
+        stdout=stdout,
+        stderr=stderr,
         check=False,
     )
     return result.returncode
@@ -55,7 +58,10 @@ def main():
 
     run_cmd([MB_SYNC, "-a"])
     run_cmd([MU, "-q", "index"] + muhome_arg())
-    run_cmd([MAIL_NOTIFY])
+    notify_cmd = [MAIL_NOTIFY]
+    if DEBUG:
+        notify_cmd.append("--debug")
+    run_cmd(notify_cmd)
     return 0
 
 

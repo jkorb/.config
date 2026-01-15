@@ -3,10 +3,10 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>com.jkorbmacher.mail-sync</string>
+    <string>com.jkorbmacher.vdirsyncer-sync</string>
     <key>ProgramArguments</key>
     <array>
-      <string>/Users/jkorbmacher/.config/launchd/scripts/mail-sync</string>
+      <string>/Users/jkorbmacher/.config/launchd/scripts/vdirsyncer-sync</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>
