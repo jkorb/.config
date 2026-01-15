@@ -10,6 +10,7 @@ cwd = data.get("cwd", "")
 project = os.path.basename(cwd) if cwd else ""
 message = f"Turn completed: {project}" if project else "Turn completed"
 xdc_config_home = os.environ.get("XDG_CONFIG_HOME", "")
+group_id = f"codex.turn-completed.{project}" if project else "codex.turn-completed"
 
 subprocess.run(
     [
@@ -18,6 +19,8 @@ subprocess.run(
         "✨ Codex",
         "-message",
         message,
+        "-group",
+        group_id,
         "-contentImage",
         os.path.join(xdc_config_home, "codex", "assets", "logo.png"),
     ],
