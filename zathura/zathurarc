@@ -21,95 +21,17 @@ set pages-per-row 1
 #stop at page boundries
 set scroll-page-aware "true"
 set scroll-full-overlap 0.01
-set scroll-step 100
+set scroll-step 60
 
 # zoom settings
 set zoom-min 10
 set guioptions ""
 
-set font "NotoSans Nerd Font"
+set font "ComicShannsMono Nerd Font"
 
 set database "sqlite"
 
-# set notification-error-bg       "#2E3440"
-# set notification-error-fg       "#BF616A"
-# set notification-warning-bg     "#2E3440"
-# set notification-warning-fg     "#D08770"
-# set notification-bg             "#2E3440"
-# set notification-fg             "#D8DEE9"
-#
-# set completion-bg               "#2E3440"
-# set completion-fg               "#D8DEE9"
-# set completion-group-bg         "#3B4252"
-# set completion-group-fg         "#D8DEE9"
-# set completion-highlight-bg     "#88C0D0"
-# set completion-highlight-fg     "#3B4252"
-#
-# set index-bg                    "#2E3440"
-# set index-fg                    "#8FBCBB"
-# set index-active-bg             "#8FBCBB"
-# set index-active-fg             "#2E3440"
-#
-# set inputbar-bg                 "#2E3440"
-# set inputbar-fg                 "#E5E9F0"
-#
-# set statusbar-bg                "#2E3440"
-# set statusbar-fg                "#E5E9F0"
-#
-# set highlight-color             "#D08770"
-# set highlight-active-color      "#BF616A"
-#
-# set default-bg                  "#2E3440"
-# set default-fg                  "#D8DEE9"
-# set render-loading              "true"
-# set render-loading-bg           "#2E3440"
-# set render-loading-fg           "#434C5E"
-#
-# set recolor-lightcolor          "#2E3440"
-# set recolor-darkcolor           "#ECEFF4"
-# set recolor                     "false"
-#
 set selection-clipboard clipboard
-
-# # Zathura doom-one
-# set notification-error-bg       "#ff6c6b"
-# set notification-error-fg       "#bbc2cf"
-# set notification-warning-bg     "#ECBE7D"
-# set notification-warning-fg     "#bbc2cf"
-# set notification-bg             "#282c34"
-# set notification-fg             "#bbc2cf"
-#
-# set completion-group-bg         "#21242b"
-# set completion-group-fg         "#bbc2cf"
-# set completion-bg               "#21252a"
-# set completion-fg               "#bbc2cf"
-# set completion-highlight-bg     "#2257A0"
-# set completion-highlight-fg     "#5B6268"
-#
-# # Define the color in index mode
-# set index-bg                    "#21252a"
-# set index-fg                    "#bbc2cf"
-# set index-active-bg             "#3E4556"
-# set index-active-fg             "#bbc2cf"
-#
-# set inputbar-bg                 "#000000"
-# set inputbar-fg                 "#bbc2cf"
-#
-# set statusbar-bg                "#21242b"
-# set statusbar-fg                "#bbc2cf"
-#
-# set highlight-color             rgba(34,87,160,0.5)
-# # set highlight-color             "#2257A0" # hightlight match when search keyword(vim's /)
-# # set highlight-color             "#000000" # hightlight match when search keyword(vim's /)
-# # set highlight-fg                "#FFFFFF"
-# # set highlight-active-color      "#51afef"
-# # set highlight-active-color      "#000000"
-#
-# set default-bg                  "#282c34"
-# set default-fg                  "#bbc2cf"
-# set render-loading              true
-# set render-loading-fg           "#bbc2cf"
-# set render-loading-bg           "#282c34"
 
 # Recolor book content's color
 set recolor                     false
@@ -122,94 +44,43 @@ set recolor-keephue             true      # keep original color
 set synctex                     true
 set synctex-editor-command      'nvr --servername "/tmp/nvimsocket" --remote-silent +%{line} %{input}'
 
-# set default-bg "#121212"
-# set default-fg "#ffffff"
-#
-# set notification-bg "#BB86FC"
-# set notification-fg "#000000"
-#
-# set notification-error-bg "#CF6678"
-# set notification-error-fg "#000000"
-#
-# set notification-warning-bg "#03DAC6"
-# set notification-warning-fg "#000000"
-#
-# set completion-bg "#121212"
-# set completion-fg "#FFFFFF"
-#
-# set completion-group-bg "#03DAC6"
-# set completion-group-fg "#000000"
-#
-# set completion-highlight-bg "#03DAC6"
-# set completion-highlight-fg "#000000"
-#
-# set index-bg "#BB86FC"
-# set index-fg "#000000"
-#
-# set index-active-bg "#414868"
-# set index-active-fg "#c0caf5"
-#
-# set inputbar-bg "#121212"
-# set inputbar-fg "#FFFFFF"
-#
-# set statusbar-bg "#121212"
-# set statusbar-fg "#FFFFFF"
-#
-# set highlight-color "#BB86FC"
-# set hightlight-fg "#FFFFFF"
-#
-# set highlight-active-color "#3700B3"
-#
-#
-# set render-loading true
-# set render-loading-fg "#1a1b26"
-# set render-loading-bg "#c0caf5"
-# #
-# # Recolor mode settings
-# # <C-r> to switch modes
-# #
-# set recolor-lightcolor "#121212"
-# set recolor-darkcolor "#FFFFFF"
+set default-fg                rgba(171,178,191,1)       # alacritty fg (abb2bf)
+set default-bg                rgba(28,28,29,1)          # closer, slightly less blue
+
+set completion-bg             rgba(63,68,81,1)          # alacritty black (3f4451)
+set completion-fg             rgba(171,178,191,1)       # alacritty fg
+
+set completion-highlight-bg   rgba(74,165,240,1)        # alacritty blue (4aa5f0)
+set completion-highlight-fg   rgba(28,28,29,1)          # inverse for readability
+
+set completion-group-bg       rgba(63,68,81,1)          # same as completion-bg
+set completion-group-fg       rgba(215,218,224,1)       # alacritty white (d7dae0)
+
+set statusbar-fg              rgba(171,178,191,1)
+set statusbar-bg              rgba(28,28,29,1)
+
+set notification-bg           rgba(63,68,81,1)
+set notification-fg           rgba(171,178,191,1)
+set notification-error-bg     rgba(63,68,81,1)
+set notification-error-fg     rgba(224,85,97,1)         # alacritty red (e05561)
+set notification-warning-bg   rgba(63,68,81,1)
+set notification-warning-fg   rgba(209,143,82,1)        # alacritty yellow (d18f52)
+
+set inputbar-fg               rgba(171,178,191,1)
+set inputbar-bg               rgba(28,28,29,1)
+
+set recolor-lightcolor        rgba(28,28,29,0)
+set recolor-darkcolor         rgba(171,178,191,1)
+
+set index-fg                  rgba(171,178,191,1)
+set index-bg                  rgba(28,28,29,1)
+set index-active-fg           rgba(28,28,29,1)
+set index-active-bg           rgba(74,165,240,1)
+
+set render-loading-bg         rgba(28,28,29,1)
+set render-loading-fg         rgba(171,178,191,1)
 
 
-set default-fg                rgba(182,183,185,1)       # foot foreground (b6b7b9)
-set default-bg                rgba(12,14,20,0.9)          # foot background (0C0E14)
-
-set completion-bg             rgba(46,52,54,1)          # foot regular0 (2e3436)
-set completion-fg             rgba(182,183,185,1)       # foot foreground
-
-set completion-highlight-bg   rgba(114,159,207,1)       # foot regular4 (729fcf)
-set completion-highlight-fg   rgba(12,14,20,1)          # inverse for readability
-
-set completion-group-bg       rgba(46,52,54,1)          # same as completion-bg
-set completion-group-fg       rgba(208,188,200,1)       # desaturated foot regular5 (d7bcc8)
-
-set statusbar-fg              rgba(182,183,185,1)
-set statusbar-bg              rgba(12,14,20,1)
-
-set notification-bg           rgba(46,52,54,1)
-set notification-fg           rgba(182,183,185,1)
-set notification-error-bg     rgba(46,52,54,1)
-set notification-error-fg     rgba(246,126,125,1)       # foot red
-set notification-warning-bg   rgba(46,52,54,1)
-set notification-warning-fg   rgba(225,221,143,1)       # foot yellow
-
-set inputbar-fg               rgba(182,183,185,1)
-set inputbar-bg               rgba(12,14,20,1)
-
-set recolor-lightcolor   rgba(12,14,20,0)   
-set recolor-darkcolor  rgba(182,183,185,1)
-
-set index-fg                  rgba(182,183,185,1)
-set index-bg                  rgba(12,14,20,1)
-set index-active-fg           rgba(12,14,20,1)
-set index-active-bg           rgba(114,159,207,1)
-
-set render-loading-bg         rgba(12,14,20,1)
-set render-loading-fg         rgba(182,183,185,1)
-
-
-set highlight-color           rgba(246,126,125,0.6)     # foot red
-set highlight-fg              rgba(246,126,125,0.8)     # more opaque red for text
-set highlight-active-color    rgba(246,126,125,0.9)     # even stronger for active highlight
-
+set highlight-color           rgba(224,85,97,0.6)       # alacritty red
+set highlight-fg              rgba(224,85,97,0.8)       # more opaque red for text
+set highlight-active-color    rgba(224,85,97,0.9)       # even stronger for active highlight
