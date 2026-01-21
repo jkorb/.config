@@ -1,12 +1,10 @@
-FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS
-
 FZF_DEFAULT_OPTS+="
   -i
   --no-info
   --no-bold
-  --prompt='▶ '
-  --pointer=' '
-  --marker='▶ '
+  --prompt=' '
+  --pointer=''
+  --marker=' '
   --no-height
   --layout=reverse
   --cycle
@@ -24,8 +22,6 @@ FZF_DEFAULT_OPTS+="
    --color bg:-1,fg:7,hl:5
    --color bg+:4,fg+:0,hl+:2
    --color preview-bg:-1,preview-fg:7
-   --color border:-1,gutter:-1,header:8
-   --color info:8,marker:5,pointer:-1
    --color prompt:2,spinner:-1"
 
 export FZF_DEFAULT_OPTS
@@ -35,21 +31,17 @@ export FZF_CTRL_T_COMMAND=$FZF_DEFAULT_COMMAND
 
 export FZF_ALT_C_OPTS="--preview 'tree -C {} | head -200'"
 
-if uname | grep -q Darwin &> /dev/null; then
-  source /opt/homebrew/Cellar/fzf/$(fzf --version | cut -d " " -f 1)/shell/key-bindings.zsh
-  source $HOME/.local/share/zinit/plugins/lincheney---fzf-tab-completion/zsh/fzf-zsh-completion.sh
-fi
+export FZF_TAB_COMPLETION_PROMPT="󰌒  "
 
-if uname | grep -q Linux &> /dev/null; then
-  source /usr/share/fzf/key-bindings.zsh
-  source $HOME/.local/share/zinit/plugins/lincheney---fzf-tab-completion/zsh/fzf-zsh-completion.sh
+if [[ -r /opt/homebrew/opt/fzf/shell/key-bindings.zsh ]]; then
+  source /opt/homebrew/opt/fzf/shell/key-bindings.zsh
 fi
+source $HOME/.local/share/zinit/plugins/lincheney---fzf-tab-completion/zsh/fzf-zsh-completion.sh
 
 zle     -N            fzf-goto-dir-widget
 
-bindkey -M vicmd '^_' fzf-goto-dir-widget
-bindkey -M viins '^_' fzf-goto-dir-widget
+bindkey -M vicmd '^g' fzf-goto-dir-widget
+bindkey -M viins '^g' fzf-goto-dir-widget
 
 bindkey -M viins '^I' fzf_completion
 bindkey -M vicmd '^I' fzf_completion
-

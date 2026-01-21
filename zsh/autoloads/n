@@ -7,7 +7,7 @@ n (){
         return
       fi
 
-    # Set the editor to open files in a tmux split only if we're in a tmux session
+      # Set the editor to open files in a tmux split only if we're in a tmux session
       # if [ -n "$TMUX" ]; then
       #   # export NVIM_SID="$TMUX$(tmux display-message -p '#{window_id}')"
       #   EDITOR="tmux split-window -h nvr"
@@ -25,7 +25,7 @@ n (){
       # stty lwrap undef
       # stty lnext undef
 
-      nnn "$@"
+      nnn -E "$@"
 
       if [ -f "$NNN_TMPFILE" ]; then
         . "$NNN_TMPFILE"

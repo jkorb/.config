@@ -1,0 +1,5 @@
+#compdef passcopy
+
+_passcopy() {
+  _pass "$@"
+}

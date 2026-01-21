@@ -1,17 +1,10 @@
-if type brew &>/dev/null; then
-  fpath=(/opt/homebrew/share/zsh/site-functions $fpath)
-fi
+fpath+=/opt/homebrew/share/zsh/site-functions
+fpath+=$ZDOTDIR/autoloads
+autoload -Uz $ZDOTDIR/autoloads/*
 
 export ZCOREDIR=$ZDOTDIR/core
 export ZTHEMEDIR=$ZDOTDIR/theme
 export ZPLUGINDIR=$ZDOTDIR/plugins
 
 source "$ZCOREDIR/core.zsh"
-# source "$ZTHEMEDIR/theme.zsh"
 source "$ZPLUGINDIR/plugins.zsh"
-
-if uname | grep -q Darwin &> /dev/null; then
-  PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
-  path+=("/Library/Tex/texbin")
-fi
-

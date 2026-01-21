@@ -15,26 +15,19 @@ export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 
 export SUDO_EDITOR="nvim"
 export EDITOR="nvim"
+#export VISUAL="/Users/jkorbmacher/.config/nvim/scripts/nvim_visual"
+#export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
 
-export ELECTRON_OZONE_PLATFORM_HINT="wayland"
+export BROWSER='firefox'
 
-# export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
+typeset -U path
 
 for dir in $XDG_CONFIG_HOME/*/scripts/; do
   path+=("$dir")
 done
 
 path+=$HOME/.cargo/bin
-
-export BROWSER='firefox'
-
-typeset -U path
 path+=$HOME/.local/bin
 
-if uname | grep -q Darwin &> /dev/null; then
-  PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
-  path+=("/Library/Tex/texbin")
-fi
-
-fpath+=$ZDOTDIR/autoloads
-autoload -Uz $ZDOTDIR/autoloads/*
+PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
+path+=("/Library/Tex/texbin")
