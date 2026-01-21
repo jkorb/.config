@@ -31,16 +31,19 @@ return {
       end
 
       -- Register custom mail parser from local tree-sitter repo.
-      local parsers = require("nvim-treesitter.parsers")
-      parsers.mail = parsers.mail
-        or {
-          install_info = {
-            path = vim.fn.expand("~/Dropbox/Projects/treesitter-mail/tree-sitter-mail/"),
-            files = { "src/parser.c", "src/scanner.c" },
-          },
-        }
-
-      vim.treesitter.language.register("mail", { "mail" })
+      vim.api.nvim_create_autocmd("User", {
+        pattern = "TSUpdate",
+        callback = function()
+          local parsers = require("nvim-treesitter.parsers")
+          parsers.mail = parsers.mail
+            or {
+              install_info = {
+                path = vim.fn.expand("~/Dropbox/Projects/treesitter-mail/tree-sitter-mail/"),
+                files = { "src/parser.c", "src/scanner.c" },
+              },
+            }
+        end,
+      })
     end,
   },
 }
