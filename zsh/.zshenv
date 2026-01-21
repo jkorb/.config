@@ -15,8 +15,7 @@ export ZDOTDIR="${XDG_CONFIG_HOME}/zsh"
 
 export SUDO_EDITOR="nvim"
 export EDITOR="nvim"
-#export VISUAL="/Users/jkorbmacher/.config/nvim/scripts/nvim_visual"
-#export NVIM_LISTEN_ADDRESS="/tmp/nvimsocket"
+export VISUAL="nvim"
 
 export BROWSER='firefox'
 
@@ -26,8 +25,8 @@ for dir in $XDG_CONFIG_HOME/*/scripts/; do
   path+=("$dir")
 done
 
-path+=$HOME/.cargo/bin
-path+=$HOME/.local/bin
-
-PATH="/opt/homebrew/bin:/opt/homebrew/sbin:$PATH"
-path+=("/Library/Tex/texbin")
+path+=("$HOME/.local/bin" "$HOME/.cargo/bin")
+if [[ $(uname) == "Darwin" ]]; then
+  path=("/opt/homebrew/bin" "/opt/homebrew/sbin" $path)
+  path+=("/Library/Tex/texbin")
+fi
