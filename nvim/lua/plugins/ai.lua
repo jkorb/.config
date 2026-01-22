@@ -20,26 +20,6 @@ return {
   --   end,
   -- },
   {
-    "jackMort/ChatGPT.nvim",
-    event = "VeryLazy",
-    opts = {
-      api_key_cmd = "/usr/bin/pass ChatGPT.nvim",
-      openai_edit_params = {
-        model = "gpt-4o",
-        frequency_penalty = 0,
-        presence_penalty = 0,
-        temperature = 0,
-        top_p = 1,
-        n = 1,
-      },
-    },
-    dependencies = {
-      "MunifTanjim/nui.nvim",
-      "nvim-lua/plenary.nvim",
-      "nvim-telescope/telescope.nvim",
-    },
-  },
-  {
     "zbirenbaum/copilot.lua",
     enabled = true,
     opts = function(_, opts)

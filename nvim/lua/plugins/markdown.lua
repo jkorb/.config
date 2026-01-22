@@ -132,17 +132,17 @@ return {
       },
     },
   },
-  {
-    "iamcco/markdown-preview.nvim",
-    keys = {
-      {
-        "<leader>mv",
-        "<cmd>MarkdownPreviewToggle<cr>",
-        ft = "markdown",
-        desc = "Toggle Preview",
-      },
-    },
-  },
+  -- {
+  --   "iamcco/markdown-preview.nvim",
+  --   keys = {
+  --     {
+  --       "<leader>mv",
+  --       "<cmd>MarkdownPreviewToggle<cr>",
+  --       ft = "markdown",
+  --       desc = "Toggle Preview",
+  --     },
+  --   },
+  -- },
   {
     "MeanderingProgrammer/render-markdown.nvim",
     enabled = false,

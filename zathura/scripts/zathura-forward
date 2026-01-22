@@ -1,0 +1,21 @@
+#!/bin/zsh
+set -euo pipefail
+
+if [[ $# -lt 2 ]]; then
+  echo "usage: ${0:t} <synctex-position> <pdf-path>" >&2
+  exit 2
+fi
+
+position="$1"
+pdf="$2"
+app_name="Zathura"
+zathura_bin="/opt/homebrew/bin/zathura"
+
+pid="$(pgrep -x zathura | head -n1 || true)"
+if [[ -z "$pid" ]]; then
+  /usr/bin/open -a "$app_name" --args --synctex-forward "$position" "$pdf"
+  exit 0
+fi
+
+/usr/bin/open -a "$app_name" >/dev/null 2>&1 || true
+"$zathura_bin" --synctex-forward "$position" "$pdf" --synctex-pid "$pid"

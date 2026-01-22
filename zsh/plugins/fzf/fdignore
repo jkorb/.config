@@ -13,7 +13,9 @@ Dropbox/Projects
 Dropbox/Research
 Dropbox/Shared
 Dropbox/Teaching
+Dropbox/.dropbox.cache
 
+.bundle
 .cache/
 .cargo/
 .cert/

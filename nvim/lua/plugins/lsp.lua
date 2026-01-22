@@ -34,11 +34,8 @@ return {
                 forwardSearchAfter = false,
               },
               forwardSearch = {
-                executable = "zathura",
+                executable = "zathura-forward",
                 args = {
-                  -- "--synctex-editor-command",
-                  -- [[nvim --headless -c "TexlabInverseSearch '%{input}' %{line}"]],
-                  "--synctex-forward",
                   "%l:1:%f",
                   "%p",
                 },

@@ -30,3 +30,7 @@ if [[ $(uname) == "Darwin" ]]; then
   path=("/opt/homebrew/bin" "/opt/homebrew/sbin" $path)
   path+=("/Library/Tex/texbin")
 fi
+
+if [[ -z "${DBUS_SESSION_BUS_ADDRESS:-}" && -n "${DBUS_LAUNCHD_SESSION_BUS_SOCKET:-}" ]]; then
+  export DBUS_SESSION_BUS_ADDRESS="unix:path=${DBUS_LAUNCHD_SESSION_BUS_SOCKET}"
+fi

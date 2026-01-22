@@ -1,6 +1,3 @@
-# Zathura configuration file
-# See man `man zathurarc'
-
 map b toggle_statusbar
 map r reload
 map p print
@@ -12,7 +9,6 @@ unmap f
 map f toggle_fullscreen
 map [fullscreen] f toggle_fullscreen
 
-# Open document in fit-width mode by default
 set adjust-open "best-fit"
 
 # One page per row by default
@@ -33,16 +29,11 @@ set database "sqlite"
 
 set selection-clipboard clipboard
 
-# Recolor book content's color
 set recolor                     false
-# set recolor-lightcolor          "#000000"
-# set recolor-darkcolor           "#FFFFFF"
-# set recolor-lightcolor          "#282c34"
-# set recolor-darkcolor           "#bbc2cf"
 set recolor-keephue             true      # keep original color
 
 set synctex                     true
-set synctex-editor-command      'nvr --servername "/tmp/nvimsocket" --remote-silent +%{line} %{input}'
+set synctex-editor-command      'zathura-inverse "%{input}" "%{line}"'
 
 set default-fg                rgba(171,178,191,1)       # alacritty fg (abb2bf)
 set default-bg                rgba(28,28,29,1)          # closer, slightly less blue

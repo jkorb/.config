@@ -10,6 +10,11 @@
 davmail/davmail.log
 davmail/davmail.properties
 !despell
+
+# Neovim generated spell files
+nvim/spell/*.spl
+nvim/spell/*.sug
+nvim/spell/*.add.spl
 !dunst
 !fd
 !hypr
