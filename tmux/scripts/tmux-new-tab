@@ -1,0 +1,15 @@
+#!/usr/bin/env zsh
+
+dir="${1:-$TMUXP_SESSION_HOME}"
+
+if [[ -d $dir ]]; then
+  tmux new-window -c "$dir"
+  tmux refresh-client -S
+  exit 0
+else 
+  tmux new-window -c "$HOME"
+  tmux refresh-client -S
+  exit 0
+fi
+
+exit 1
