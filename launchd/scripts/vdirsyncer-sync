@@ -12,6 +12,9 @@ NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
 VDIRSYNCER = "/opt/homebrew/bin/vdirsyncer"
 PGRP = "/usr/bin/pgrep"
 DEBUG = "--debug" in sys.argv
+XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+ICON_PATH = os.path.join(XDG_CONFIG_HOME, "launchd", "assets", "calendar_icon.png")
+ACTIVATE_APP = "com.jkorbmacher.tmux"
 
 
 def has_internet():
@@ -39,7 +42,13 @@ def run_cmd(args):
 
 
 def group_key(text):
-    return text.replace(" ", "_").replace(":", "-")
+    return text.replace(" ", "_").replace(":", "-").replace("/", "-")
+
+
+def trim(text, limit):
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 3)] + "..."
 
 
 def cache_path():
@@ -98,15 +107,27 @@ def notify_upcoming():
         key = f"{start_time}|{title}|{calendar}"
         if key in notified:
             continue
-        if start_time:
-            message = f"{start_time} - {title}"
-        else:
-            message = title
-        title_text = "📆 Calendar"
-        if calendar:
-            title_text = f"{title_text} -- {calendar}"
+        subtitle = trim(start_time, 24) if start_time else "Upcoming"
+        title_text = "❗Calendar alert"
+        message = trim(title, 140)
         group = group_key(f"khal-{key}")
-        run_cmd([NOTIFIER, "-title", title_text, "-message", message, "-group", group, "-ignoreDnD"])
+        cmd = [
+            NOTIFIER,
+            "-title",
+            title_text,
+            "-subtitle",
+            subtitle,
+            "-message",
+            message,
+            "-group",
+            group,
+            "-ignoreDnD",
+            "-activate",
+            ACTIVATE_APP,
+        ]
+        if os.path.exists(ICON_PATH):
+            cmd += ["-contentImage", ICON_PATH]
+        run_cmd(cmd)
         notified.add(key)
         changed = True
     if changed:

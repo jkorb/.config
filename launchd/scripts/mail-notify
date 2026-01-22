@@ -4,12 +4,16 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from email.utils import parseaddr
 from pathlib import Path
 
 MU = "/opt/homebrew/bin/mu"
 TERMINAL_NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
 GROUP = "mail-sync"
 DEBUG = "--debug" in sys.argv
+XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+ICON_PATH = os.path.join(XDG_CONFIG_HOME, "launchd", "assets", "neomutt_icon.png")
+ACTIVATE_APP = "com.jkorbmacher.tmux"
 
 
 def cache_dir():
@@ -98,11 +102,10 @@ def format_sender(msg):
     if isinstance(sender, dict):
         name = sender.get(":name") or sender.get("name") or ""
         email = sender.get(":email") or sender.get("email") or sender.get("address") or ""
-        if name and email:
-            return f"{name} <{email}>"
         return name or email or ""
     if isinstance(sender, str):
-        return sender
+        name, email = parseaddr(sender)
+        return name or email or ""
     return ""
 
 
@@ -110,13 +113,27 @@ def notify(messages):
     if not messages:
         return
     for msg in messages:
-        sender = trim(format_sender(msg) or "Unknown sender", 80)
-        subject = trim(msg.get(":subject") or msg.get("subject") or "(no subject)", 120)
-        message = f"From: {sender}\nSubject: {subject}"
+        sender = trim(format_sender(msg) or "Unknown sender", 48)
+        subject = trim(msg.get(":subject") or msg.get("subject") or "(no subject)", 140)
         group = msg.get(":message-id") or msg.get("message-id") or GROUP
         group = group_key(group)
+        cmd = [
+            TERMINAL_NOTIFIER,
+            "-title",
+            "✉️ Mail",
+            "-subtitle",
+            sender,
+            "-message",
+            subject,
+            "-group",
+            group,
+            "-activate",
+            ACTIVATE_APP,
+        ]
+        if os.path.exists(ICON_PATH):
+            cmd += ["-contentImage", ICON_PATH]
         subprocess.run(
-            [TERMINAL_NOTIFIER, "-title", "✉️ Mail", "-message", message, "-group", group],
+            cmd,
             stdout=subprocess.DEVNULL,
             stderr=None if DEBUG else subprocess.DEVNULL,
             check=False,
