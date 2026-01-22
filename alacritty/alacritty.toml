@@ -2,32 +2,11 @@
 draw_bold_text_with_bright_colors = false
 transparent_background_colors = true
 
-# [colors.normal]
-# black   = "#0e1013"
-# red     = "#e55561"
-# green   = "#8ebd6b"
-# yellow  = "#e2b86b"
-# blue    = "#4fa6ed"
-# magenta = "#bf68d9"
-# cyan    = "#48b0bd"
-# white   = "#a0a8b7"
-#
-# [colors.bright]
-# black   = "#535965"
-# red     = "#8b3434"
-# green   = "#7a818e"
-# yellow  = "#835d1a"
-# blue    = "#61afef"
-# magenta = "#7e3992"
-# cyan    = "#266269"
-# white   = "#e8c88c"
-#
 [colors.primary]
 background = "#282c34"
 foreground = "#abb2bf"
 
 [colors.normal]
-# Normal Colors
 black="#3f4451"
 white="#d7dae0"
 red="#e05561"
@@ -38,8 +17,6 @@ magenta="#c162de"
 cyan="#42b3c2"
 
 [colors.bright]
-# Bright Colors
-
 black="#4f5666"
 white="#e6e6e6"
 red="#ff616e"
@@ -50,26 +27,21 @@ magenta="#de73ff"
 cyan="#4cd1e0"
 
 [font]
-size = 20
+size = 18
 
 [font.bold]
 family = "ComicShannsMono Nerd Font"
-# family = "Source Code Pro"
 style = "Bold"
 
 [font.bold_italic]
 family = "ComicShannsMono Nerd Font"
-# family = "Source Code Pro"
 style = "Bold Italic"
 
 [font.italic]
-# family = "Source Code Pro"
 family = "ComicShannsMono Nerd Font"
-# family = "NotoSansM Nerd Font Mono"
 style = "Italic"
 
 [font.normal]
-# family = "Source Code Pro"
 family = "ComicShannsMono Nerd Font"
 style = "Regular"
 
@@ -108,6 +80,21 @@ key = "V"
 mods = "Control | Shift"
 action = "Paste"
 
+[[keyboard.bindings]]
+key = "Key0"
+mods = "Control"
+action = "ResetFontSize"
+
+[[keyboard.bindings]]
+key = "Equals"
+mods = "Control"
+action = "IncreaseFontSize"
+
+[[keyboard.bindings]]
+key = "Minus"
+mods = "Control"
+action = "DecreaseFontSize"
+
 [window]
 
 # Window dimensions
@@ -130,7 +117,7 @@ decorations = "Transparent"  # Default: "Full"
 opacity = 0.9  # Default: 1.0
 
 # Blur (macOS/KDE Wayland only)
-blur = false  # Default: false
+blur = true  # Default: false
 
 # Startup mode
 startup_mode = "Windowed"  # Default: "Windowed"
@@ -149,4 +136,3 @@ decorations_theme_variant = "Dark"  # Default: "None"
 
 # Resize increments
 resize_increments = false  # Default: false
-
