@@ -3,6 +3,7 @@ set -euo pipefail
 
 SERVICES_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/launchd/services"
 LABEL_PREFIX="com.jkorbmacher."
+LAUNCH_AGENTS_DIR="$HOME/Library/LaunchAgents"
 
 usage() {
   echo "usage: ${0:t} <enable|disable|info> [service-name]" >&2
@@ -114,11 +115,36 @@ fi
 label="$(plist_label "$plist")"
 
 if [[ "$cmd" == "enable" ]]; then
+  if [[ ! -d "$LAUNCH_AGENTS_DIR" ]]; then
+    mkdir -p "$LAUNCH_AGENTS_DIR"
+  fi
+  agent_plist="$LAUNCH_AGENTS_DIR/${label}.plist"
+  if [[ "$plist" != "$agent_plist" ]]; then
+    if [[ -e "$agent_plist" && ! -f "$agent_plist" ]]; then
+      echo "error: $agent_plist exists and is not a regular file; move it aside to continue" >&2
+      exit 1
+    fi
+    cp -f "$plist" "$agent_plist"
+    plist="$agent_plist"
+  fi
+  launchctl enable "${domain}/${label}" >/dev/null 2>&1 || true
+  if launchctl print "${domain}/${label}" >/dev/null 2>&1; then
+    launchctl bootout "$domain" "$plist" >/dev/null 2>&1 || true
+  fi
   echo "bootstrapping $label from $plist"
   launchctl bootstrap "$domain" "$plist"
+  launchctl enable "${domain}/${label}" >/dev/null 2>&1 || true
   echo "state: $(service_state "$label")"
 else
+  agent_plist="$LAUNCH_AGENTS_DIR/${label}.plist"
+  if [[ -e "$agent_plist" ]]; then
+    plist="$agent_plist"
+  fi
   echo "booting out $label from $plist"
-  launchctl bootout "$domain" "$plist"
+  launchctl bootout "$domain" "$plist" >/dev/null 2>&1 || true
+  launchctl disable "${domain}/${label}" >/dev/null 2>&1 || true
+  if [[ -f "$agent_plist" ]]; then
+    rm -f "$agent_plist"
+  fi
   echo "state: $(service_state "$label")"
 fi
