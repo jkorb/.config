@@ -23,6 +23,8 @@ subprocess.run(
         group_id,
         "-contentImage",
         os.path.join(xdc_config_home, "codex", "assets", "logo.png"),
+        "-activate",
+        "com.jkorbmacher.tmux",
     ],
     stdout=subprocess.DEVNULL,
     stderr=subprocess.DEVNULL,
