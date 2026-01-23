@@ -5,3 +5,4 @@
 !assets/logo.png
 !scripts/
 !scripts/notify
+config.local.toml

@@ -1,14 +1,7 @@
 notify = ["/Users/jkorbmacher/.config/codex/scripts/notify"]
 network_access = "enabled"
 
+include = "config.local.toml"
+
 [tui]
 notifications = true
-
-[projects."/opt/homebrew/Library/Taps/jkorb/homebrew-personal"]
-trust_level = "trusted"
-
-[projects."/Users/jkorbmacher/.config"]
-trust_level = "trusted"
-
-[projects."/Users/jkorbmacher/Dropbox/Projects/Bruijn"]
-trust_level = "trusted"
