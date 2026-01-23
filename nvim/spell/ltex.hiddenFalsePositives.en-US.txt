@@ -1,4 +1,0 @@
-{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QDAsjkldsa\\E$"}
-{"rule":"THE_SUPERLATIVE","sentence":"^\\QIt seems that some grasp of transfinite ordinals is needed to properly understand how an infinite set can have a biggest element, such as in the following example:\\E$"}
-{"rule":"THE_SUPERLATIVE","sentence":"^\\QSome grasp of transfinite ordinals is needed to properly understand how an infinite set can have a biggest element, such as in the following example:\\E$"}
-{"rule":"MORFOLOGIK_RULE_EN_US","sentence":"^\\QLaTeX2e uureport[2023/06/09 v1.1]\\E$"}
