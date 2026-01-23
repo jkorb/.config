@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>__APP_NAME__</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>__APP_NAME__</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>__APP_ID__</string>
+
+    <!-- Script-based app, executable is our zsh launcher -->
+    <key>CFBundleExecutable</key>
+    <string>nvim-launch</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+
+    <key>CFBundleIconFile</key>
+    <string>__APP_ICON__</string>
+
+    <key>LSRequiresNativeExecution</key>
+    <true/>
+
+    <key>LSArchitecturePriority</key>
+    <array>
+        <string>arm64</string>
+        <string>x86_64</string>
+    </array>
+
+    <!-- Visible normal app -->
+    <key>LSUIElement</key>
+    <false/>
+</dict>
+</plist>
+
