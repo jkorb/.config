@@ -1,0 +1,15 @@
+confirm-exit   no
+
+auto-reload    yes
+reload-time    60
+reload-threads 2
+
+browser "open %u"
+cache-file "~/.cache/newsboat/cache.db"
+
+show-read-feeds    yes
+show-read-articles yes
+confirm-exit       yes
+show-keymap-hint   no
+text-width         0
+

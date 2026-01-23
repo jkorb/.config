@@ -1,0 +1,4 @@
+include "~/.config/newsboat/configs/options"
+include "~/.config/newsboat/configs/colors"
+include "~/.config/newsboat/configs/bindings"
+include "~/.config/newsboat/configs/format"

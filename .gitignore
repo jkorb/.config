@@ -28,6 +28,7 @@ nvim/spell/*.add.spl
 !msmtp
 !neomutt
 !nnn
+!newsboat
 !nvim
 nvim/lazy-lock.json
 nvim/lazyvim.json

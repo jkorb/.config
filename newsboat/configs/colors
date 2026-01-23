@@ -1,0 +1,32 @@
+color background           default default
+color listnormal           default default
+color listnormal_unread    blue    default
+color listfocus            white   color8
+color listfocus_unread     white   color8 bold
+color title                blue    default bold
+color info                 blue    black
+color hint-key             black   cyan
+color hint-keys-delimiter  blue    default
+color hint-separator       blue    default
+color hint-description     cyan    default
+color article              default default
+color end-of-text-marker   white   default
+
+highlight all ""   red default
+
+highlight all "  "  white red
+highlight all " 𝔚𝔓 "  white black
+highlight all " 𝗦 " white red
+highlight all " 𝗚 " white blue
+highlight all " 󰋙 "  black white 
+
+highlight all " " color202 default
+
+highlight all "^Feed:"   magenta default
+highlight all "^Title:"  magenta default
+highlight all "^Author:" magenta default
+highlight all "^Date:"   magenta default
+highlight all "^Link:"   magenta default
+
+highlight all "(https?|ftp)://[\-\.,/%~_:?&=\#a-zA-Z0-9]+" blue default
+highlight all  "[\-\.+_a-zA-Z0-9]+@[\-\.a-zA-Z0-9]+" green default 

@@ -1,0 +1,20 @@
+# Vim-like navigation (feedlist/articlelist/article)
+bind j feedlist,articlelist,article down
+bind k feedlist,articlelist,article up
+bind g feedlist,articlelist home
+bind G feedlist,articlelist end
+bind l feedlist,articlelist open
+bind h feedlist,articlelist,article quit
+
+bind u feedlist toggle-show-read-feeds
+bind u articlelist set show-read-articles !
+bind J articlelist next-unread
+bind K articlelist prev-unread
+bind m articlelist toggle-article-read
+bind ^H articlelist,article,feedlist quit -- "Back"
+
+bind dd articlelist delete-article 
+
+bind ' everywhere macro-prefix
+
+macro d delete-article ; purge-deleted
