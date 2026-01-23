@@ -21,6 +21,9 @@ setopt HIST_SAVE_NO_DUPS         # Do not write a duplicate event to the history
 setopt HIST_REDUCE_BLANKS        # Minimize unnecessary whitespace
 setopt HIST_VERIFY               # Do not execute immediately upon history expansion.
 
+alias xs="sudo shutdown -s now"
+alias xr="sudo shutdown -r now"
+alias xh="sudo shutdown -h now"
 
 alias cp='command cp -vi'
 alias mv='command mv -vi'
