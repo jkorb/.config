@@ -36,19 +36,19 @@ set synctex                     true
 set synctex-editor-command      'zathura-inverse "%{input}" "%{line}"'
 
 set default-fg                rgba(171,178,191,1)       # alacritty fg (abb2bf)
-set default-bg                rgba(28,28,29,1)          # closer, slightly less blue
+set default-bg                rgba(30,30,30,1)          # closer, slightly less blue
 
 set completion-bg             rgba(63,68,81,1)          # alacritty black (3f4451)
 set completion-fg             rgba(171,178,191,1)       # alacritty fg
 
 set completion-highlight-bg   rgba(74,165,240,1)        # alacritty blue (4aa5f0)
-set completion-highlight-fg   rgba(28,28,29,1)          # inverse for readability
+set completion-highlight-fg   rgba(30,30,30,1)          # inverse for readability
 
 set completion-group-bg       rgba(63,68,81,1)          # same as completion-bg
 set completion-group-fg       rgba(215,218,224,1)       # alacritty white (d7dae0)
 
 set statusbar-fg              rgba(171,178,191,1)
-set statusbar-bg              rgba(28,28,29,1)
+set statusbar-bg              rgba(30,30,30,1)
 
 set notification-bg           rgba(63,68,81,1)
 set notification-fg           rgba(171,178,191,1)
@@ -58,17 +58,17 @@ set notification-warning-bg   rgba(63,68,81,1)
 set notification-warning-fg   rgba(209,143,82,1)        # alacritty yellow (d18f52)
 
 set inputbar-fg               rgba(171,178,191,1)
-set inputbar-bg               rgba(28,28,29,1)
+set inputbar-bg               rgba(30,30,30,1)
 
-set recolor-lightcolor        rgba(28,28,29,0)
+set recolor-lightcolor        rgba(30,30,30,0)
 set recolor-darkcolor         rgba(171,178,191,1)
 
 set index-fg                  rgba(171,178,191,1)
-set index-bg                  rgba(28,28,29,1)
-set index-active-fg           rgba(28,28,29,1)
+set index-bg                  rgba(30,30,30,1)
+set index-active-fg           rgba(30,30,30,1)
 set index-active-bg           rgba(74,165,240,1)
 
-set render-loading-bg         rgba(28,28,29,1)
+set render-loading-bg         rgba(30,30,30,1)
 set render-loading-fg         rgba(171,178,191,1)
 
 
