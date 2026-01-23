@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>__APP_NAME__</string>
+
+    <key>CFBundleDisplayName</key>
+    <string>__APP_NAME__</string>
+
+    <key>CFBundleIdentifier</key>
+    <string>__APP_ID__</string>
+
+    <!-- IMPORTANT: for AppleScript apps compiled via osacompile this is "applet" -->
+    <key>CFBundleExecutable</key>
+    <string>applet</string>
+
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+
+    <key>CFBundleSignature</key>
+    <string>????</string>
+
+    <key>CFBundleIconFile</key>
+    <string>__APP_ICON__</string>
+
+    <!-- Optional but harmless -->
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright (c) 2026, You</string>
+
+    <key>LSMinimumSystemVersion</key>
+    <string>11.0</string>
+
+    <!-- Tell macOS this is an AppleScript app -->
+    <key>NSAppleScriptEnabled</key>
+    <true/>
+
+    <!-- Register as a mailto: handler -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>NeoMutt Mailto Handler</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>mailto</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
+

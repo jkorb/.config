@@ -27,6 +27,10 @@ nvim/spell/*.add.spl
 !launchd
 !msmtp
 !neomutt
+neomutt/app/.DS_Store
+neomutt/app/*.app
+neomutt/app/*.icns
+neomutt/app/*.iconset
 !nnn
 !newsboat
 !nvim
