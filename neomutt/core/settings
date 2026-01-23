@@ -16,34 +16,38 @@ set   attach_save_dir     = "~/Downloads"
 # Mailboxes 
 # ----------------------------------------
 
-named-mailboxes "  Inbox "    '+uu/Inbox'          
-named-mailboxes "  Archive"    '+uu/Archive'
-named-mailboxes "  Sent"       '+uu/Sent'    
-named-mailboxes "  Drafts"     '+uu/Drafts' 
-named-mailboxes "  Junk"       '+uu/Junk'
-named-mailboxes "  Trash "    '+uu/Trash'
+# named-mailboxes "─"   '+div1'
 
-named-mailboxes "────────────────────"   '+div1'
+named-mailboxes "uu.inbox"      '+uu/Inbox'          
+named-mailboxes "uu.archive"    '+uu/Archive'
+named-mailboxes "uu.sent"       '+uu/Sent'    
+named-mailboxes "uu.drafts"     '+uu/Drafts' 
+named-mailboxes "uu.junk"       '+uu/Junk'
+named-mailboxes "uu.trash"      '+uu/Trash'
 
-named-mailboxes "  Inbox "    '+lm/Inbox'
-named-mailboxes "  Archive"    '+lm/Archive'
-named-mailboxes "  Sent"       '+lm/Sent Items'
-named-mailboxes "  Drafts"     '+lm/Drafts'
-named-mailboxes "  junk"       '+lm/Junk Email'
-named-mailboxes "  Trash "    '+lm/Deleted Items'
+# named-mailboxes "󰢐"   '+div2'
+named-mailboxes " "   '+div2'
 
-named-mailboxes "────────────────────"   '+div2'
+named-mailboxes "lm.inbox"      '+lm/Inbox'
+named-mailboxes "lm.archive"    '+lm/Archive'
+named-mailboxes "lm.sent"       '+lm/Sent Items'
+named-mailboxes "lm.drafts"     '+lm/Drafts'
+named-mailboxes "lm.junk"       '+lm/Junk Email'
+named-mailboxes "lm.trash"      '+lm/Deleted Items'
 
-named-mailboxes "󰊫  Inbox " '+gmail/Inbox'
-named-mailboxes "󰊫  Archive" '+gmail/All Mail'
-named-mailboxes "󰊫  Drafts"  '+gmail/Drafts'
-named-mailboxes "󰊫  Sent"    '+gmail/Sent Mail'
-named-mailboxes "󰊫  Spam"    '+gmail/Spam'
-named-mailboxes "󰊫  Trash " '+gmail/Trash'
+# named-mailboxes "󰊫"   '+div3'
+named-mailboxes " "   '+div3'
 
-named-mailboxes "════════════════════"   '+div3'
+named-mailboxes "gmail.inbox"   '+gmail/Inbox'
+named-mailboxes "gmail.archive" '+gmail/All Mail'
+named-mailboxes "gmail.drafts"  '+gmail/Drafts'
+named-mailboxes "gmail.sent"    '+gmail/Sent Mail'
+named-mailboxes "gmail.spam"    '+gmail/Spam'
+named-mailboxes "gmail.trash"   '+gmail/Trash'
 
-named-mailboxes " Recent search" '+recent-search'
+named-mailboxes " "   '+div4'
+
+named-mailboxes "recent.search" '+recent-search'
 
 # Backend settings
 # ----------------------------------------
@@ -76,7 +80,6 @@ set forward_decode = no
 
 # set attribution_trailer = ""
 # set attribution += \n
-
 
 set   reverse_name                             # reply as whomever it was to
 set   forward_decode                           # decode when forwarding
@@ -113,11 +116,39 @@ unset wait_key
 # Formatting 
 # ----------------------------------------
 
-set   date_format         = "%d.%m.%Y %H:%M"
+set date_format   = "%d.%m.%Y %H:%M"
 
-set   status_format       = "󰩃  %D %<u?󰇮(%u)>\n"
+set status_format = "  %D      %m%?n?(%n)?  "
 
-set   index_format        = "%<[y?%<[m?%<[d?%[%H:%M ]&%[%a %d]>&%[%b %d]>&%[%m/%y ]>  %-15.15F  %s"
+
+###
+
+set index_format=" %@flag@ | %-18.18F    %-40.40s  %@attachflag@ %@provinence@   %[%m/%d/%y — %H:%M]    "
+
+index-format-hook flag "~T" "  "
+index-format-hook flag "~D" " 󰛌 "
+index-format-hook flag "~U" "  "
+index-format-hook flag "~Q" " 󱞵 "
+index-format-hook flag "~A" "   "
+
+index-format-hook attachflag "~X 1-" " "
+index-format-hook attachflag "~A"    "  "
+
+index-format-hook provinence "~f '@uu\\.nl$'"            "uu    "
+index-format-hook provinence "~f '@students\\.uu\\.nl$'" "studi "
+index-format-hook provinence "~A"                        "      "
+
+
+# 1) Read / unread bullet
+
+# 2) Who icon (list / from you / other)
+index-format-hook who "~l" " "   # mailing list
+index-format-hook who "~P" " "   # from me
+index-format-hook who "."  "  "   # everyone else
+
+###
+
+#set   index_format        = "%<[y?%<[m?%<[d?%[%H:%M ]&%[%a %d]>&%[%b %d]>&%[%m/%y ]>  %-15.15F  %s"
 set   pager_format        = "%-15.15F (%D): %-25.25s... %* %P"
 set   compose_format      = "Size: %l, %a attachments%>─"
 
@@ -154,4 +185,5 @@ set mail_check_stats
 set sidebar_visible      = no
 set sidebar_width        = 20
 set sidebar_divider_char = ""
-set sidebar_format       = "%D %?N?(%N)?"
+set sidebar_indent_string= "  "
+set sidebar_format       = "  %D %?N?(%N)?"

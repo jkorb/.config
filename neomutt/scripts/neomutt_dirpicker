@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-cache_dir="$XDG_CACHE_DIR/neomutt"
+cache_dir="$XDG_CACHE_DIR/neomutt_dirpicker"
 tmpfile="$cache_dir/save_tmp"
 
 if [[ ! -d "$cache_dir" ]]; then

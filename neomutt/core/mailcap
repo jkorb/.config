@@ -19,9 +19,9 @@ text/markdown; nvim %s
 text/calendar; /opt/homebrew/bin/khal import %s
 
 #PDFs
-application/pdf; /opt/homebrew/bin/zathura %s &
+application/pdf; open %s &
 
 #Images
-image/png; /usr/bin/imv %s &
-image/jpeg; /usr/bin/imv %s &
+image/png; open %s &
+image/jpeg; open %s &
 # image/*; anytopnm %s | pnmscale -xsize 80 -ysize 50 | ppmtopgm | pgmtopbm | pbmtoascii ; copiousoutput

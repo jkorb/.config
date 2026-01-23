@@ -11,6 +11,7 @@ shutdown-hook 'exec sync-mailbox'
 source ~/.config/neomutt/core/settings
 source ~/.config/neomutt/core/mappings
 source ~/.config/neomutt/core/colors
+source ~/.config/neomutt/core/aliases
 
 # Accounts
 # ----------------------------------------

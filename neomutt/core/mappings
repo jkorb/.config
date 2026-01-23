@@ -87,7 +87,7 @@ bind index               ss         save-message
 # ----------------------------------------
 
 # bind attach             s          save-entry
-macro attach              s         "<shell-escape>neomutt_dirpicker<enter><enter-command>source $XDG_CACHE_DIR/neomutt/save_tmp<enter><enter-command>" "Save file to ..."
+macro attach              s         "<shell-escape>neomutt_dirpicker<enter><enter-command>source $XDG_CACHE_DIR/neomutt_dirpicker/save_tmp<enter><enter-command>" "Save file to ..."
 macro index,pager         H         "<view-attachments>/text\/html<enter><view-mailcap><exit>"
 
 # Composing
@@ -163,3 +163,6 @@ macro compose ch \
 # bind index,pager gr sync-mailbox
 
 macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_on'<enter>"
+
+macro index R "<tag-pattern>~U<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" \
+  "mark all unread as read"

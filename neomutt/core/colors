@@ -1,58 +1,6 @@
 # vim: filetype=muttrc
 
-# # Mono colors
-# # ----------------------------------------
-#
-# mono  bold           bold
-# mono  underline      underline
-# mono  indicator      reverse
-# mono  error          bold
-#
-# # Basic colors
-# # ----------------------------------------
-#
-# color error         red             default
-# color normal        default         default
-# color tilde         black           default
-# color message       red             default
-# color markers       red             white
-# color search        brightmagenta   default
-# color status        blue            black
-# color signature     brightyellow    default
-#
-# color bold          black           default
-# color underline     black           default
-#
-# color quoted    green       default
-# color quoted1   blue        default
-# color quoted2   cyan        default
-# color quoted3   yellow      default
-# color quoted4   red         default
-# color quoted5   brightred   default
-#
-# # Index
-# # ----------------------------------------
-#
-# color index     white       default '.*'
-#
-# color index     red         default ~D #deleted
-# color index     magenta     default ~F #forwarded
-# color index     brightblue  default ~U #unread
-# color index     green       default ~Q #replied
-# color index     yellow      default ~T #tagged
-#
-# color indicator black     blue      # Currently selected message
-#
-# # Sidebar
-# # ----------------------------------------
-#
-# color sidebar_highlight default     brightblack
-# color sidebar_indicator blue        default
-# color sidebar_spoolfile default     default
-# color sidebar_new       default     default
-# color sidebar_flagged   default     default
-# color sidebar_ordinary  default     default
-# color sidebar_divider   default     default
+# set color_directcolor = yes
 
 # Header
 # ----------------------------------------
@@ -85,14 +33,30 @@ color body brightyellow red "^gpg: BAD signature from.*"
 mono body bold "^gpg: Good signature"
 #
 #
-color normal		  default default         # Text is "Text"
-color index		    blue    default ~N      # Unread messages are blue
-color index		    blue    default ~U      # New Messages are Green
-color index		    color1  default ~F      # Flagged messages are Red
-color index		    color1  default ~D      # Messages to delete are Red
-color index       color2  default ~Q      #replied
-color index		    color13 default ~T      # Tagged Messages are Red
-color index       color13 default ~T      #tagged
+color normal		  default default         
+
+color index		    blue    default ~U      # Unread
+# color index		    ...  default ~F      # Flagged messages are ...
+color index		    red     default ~D      # Marked for deletion
+color index       green   default ~Q      # Replied
+color index		    yellow  default ~T      # Tagged
+
+
+color index_subject   magenta default 
+color index_author    blue default
+
+color index_subject   blue default ~U 
+color index_author    blue default ~U 
+
+color index_subject   red default ~D 
+color index_author    red default ~D 
+
+color index_subject   green default ~Q 
+color index_author    green default ~Q 
+
+color index_subject   yellow default ~T 
+color index_author    yellow default ~T
+
 # color attachment	color5 default        # Attachments are Pink
 color signature	  color8 default          # Signatures are Surface 2
 color search		  color4 default          # Highlighted results are Blue
@@ -100,8 +64,19 @@ color search		  color4 default          # Highlighted results are Blue
 color attachment    black           default
 
 color indicator		default color8          # currently highlighted message Surface 2=Background Text=Foreground
-color error		    color1  default         # error messages are Red
-color status		  black blue              # status line "Subtext 0"
+
+color error		    red     default         # error messages are Red
+
+# color status blue default '([a-zA-Z0-9\.,]|\[|\])(\s)'  # bubble content 1
+# color status blue default '(\s)([a-zA-Z0-9\.,]|\[|\])'  # bubble content 2
+# color status blue default '(\% )'                       # % symbol
+# color status blue default '(\S)'                        # empty spaces
+
+color status default default
+color status black   brightblue '( [a-zA-Z0-9\.()]+ )'         # account text
+color status brightblue default '(|)'                        # statusline "bubbles"
+color status black   brightblue '( )'
+
 color tree        color15 default         # thread tree arrows Subtext 0
 color tilde       color15 default         # blank line padding Subtext 0
 
@@ -123,6 +98,14 @@ color body		color4 default		(^|[[:space:]])\\*[^[:space:]]+\\*([[:space:]]|$) # 
 color body		color4 default		(^|[[:space:]])_[^[:space:]]+_([[:space:]]|$)     # _underlined_ text Blue
 color body		color4 default		(^|[[:space:]])/[^[:space:]]+/([[:space:]]|$)     # /italic/ text Blue
 
-color sidebar_flagged   color1 default    # Mailboxes with flagged mails are Red
-color sidebar_new       color10 default   # Mailboxes with new mail are Green
-color sidebar_highlight white black
+
+color sidebar_indicator blue black         # Dark blue background
+
+color sidebar_highlight default black         # Grey background
+
+color sidebar_spoolfile default default         # Yellow
+color sidebar_new       default default         # Green
+color sidebar_ordinary  default default         # Default colors
+color sidebar_flagged   default default         # Red
+
+color sidebar_divider   blue  default         # Dark grey
