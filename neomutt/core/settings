@@ -66,6 +66,7 @@ alternative_order text/html text/plain text
 
 set   fcc_attach                               # save attachments with the body
 set   edit_headers                             # show headers when composing
+set   compose_confirm_detach_first = yes
 set   forward_format      = "Fwd: %s"          # format of subject when forwarding
 set   forward_attribution_intro = "---------- Forwarded message ---------"
 set   attribution         = "On %d, %n wrote:\n" # format of quoting header
@@ -151,6 +152,8 @@ index-format-hook who "."  "  "   # everyone else
 #set   index_format        = "%<[y?%<[m?%<[d?%[%H:%M ]&%[%a %d]>&%[%b %d]>&%[%m/%y ]>  %-15.15F  %s"
 set   pager_format        = "%-15.15F (%D): %-25.25s... %* %P"
 set   compose_format      = "Size: %l, %a attachments%>─"
+set   attach_format       = "%u%D%I %t%4n %T%d %> [%.7m/%.10M, %.6e%<C?, %C>, %s] "
+set   ts_enabled          = no
 
 set   indent_string       = "> "
 

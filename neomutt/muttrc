@@ -29,3 +29,5 @@ reply-hook '~t j.korbmacher@uu.nl'      "set signature   = '~/.config/neomutt/ac
 
 source ~/.config/neomutt/accounts/uu.conf
 
+# Default to non-HTML compose mode.
+source ~/.config/neomutt/dynamic/html_off

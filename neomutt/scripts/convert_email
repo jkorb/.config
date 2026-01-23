@@ -4,26 +4,52 @@
 # https://github.com/neomutt/neomutt/issues/3229
 # https://unix.stackexchange.com/questions/612134/neomutt-run-command-to-attach-file-on-macro-key-press/612194#612194
 
-commandsFile="/tmp/neomutt-commands"
-markdownFile="/tmp/neomutt-markdown"
-htmlFile="/tmp/neomutt.html"
+cache_root="${XDG_CACHE_DIR:-$HOME/.cache}"
+cache_dir="${cache_root}/neomutt-html"
+if [ -e "$cache_dir" ] && [ ! -d "$cache_dir" ]; then
+	echo "error: $cache_dir exists and is not a directory" >&2
+	exit 1
+fi
+mkdir -p "$cache_dir"
+commandsFile="${cache_dir}/commands"
+tmpdir="$(mktemp -d "${cache_dir}/email.XXXXXX")"
+if [ -z "$tmpdir" ] || [ ! -d "$tmpdir" ]; then
+	echo "error: failed to create temp dir under $cache_dir" >&2
+	exit 1
+fi
+markdownFile="${tmpdir}/neomutt-markdown"
+textFile="${tmpdir}/neomutt.txt"
+htmlFile="${tmpdir}/neomutt.html"
 
 cat - >"${markdownFile}.orig"
 echo -n "push " >"$commandsFile"
 
 cp "${markdownFile}.orig" "$markdownFile"
 
+md5_file() {
+	if command -v md5sum >/dev/null 2>&1; then
+		md5sum "$1" | cut -d ' ' -f 1
+	else
+		md5 -q "$1"
+	fi
+}
+
 grep -Eo '!\[[^]]*\]\([^)]+' "$markdownFile" | cut -d '(' -f 2 |
 	grep -Ev '^(cid:|https?://)' | while read file; do
-	id="cid:$(md5sum "$file" | cut -d ' ' -f 1)"
-	sed -i "s#$file#$id#g" "$markdownFile"
+	id="cid:$(md5_file "$file")"
+	sed -i '' "s#$file#$id#g" "$markdownFile"
 done
 
 if [ "$(grep -Eo '!\[[^]]*\]\([^)]+' "$markdownFile" | cut -d '(' -f 2 | grep '^cid:' | wc -l)" -gt 0 ]; then
 	echo -n "<attach-file>\"$markdownFile\"<enter><toggle-disposition><toggle-unlink><first-entry><detach-file>" >>"$commandsFile"
 fi
 
-pandoc -f markdown -t html5 --standalone --template ~/.pandoc/templates/email.html "$markdownFile" >"$htmlFile"
+pandoc -f markdown -t html5 --standalone --template ~/.config/neomutt/shared/email.html "$markdownFile" >"$htmlFile"
+pandoc -f markdown -t plain -o "$textFile" "$markdownFile"
+
+# Attach the plaintext file
+echo -n "<attach-file>\"$textFile\"<enter>" >>"$commandsFile"
+echo -n "<toggle-disposition><toggle-unlink>" >>"$commandsFile"
 
 # Attach the html file
 echo -n "<attach-file>\"$htmlFile\"<enter>" >>"$commandsFile"
@@ -34,7 +60,7 @@ echo -n "<toggle-disposition>" >>"$commandsFile"
 # Tell neomutt to delete it after sending
 echo -n "<toggle-unlink>" >>"$commandsFile"
 
-# Select both the html and markdown files
+# Select both the html and plaintext files
 echo -n "<tag-entry><previous-entry><tag-entry>" >>"$commandsFile"
 
 # Group the selected messages as alternatives
@@ -42,7 +68,7 @@ echo -n "<group-alternatives>" >>"$commandsFile"
 
 grep -Eo '!\[[^]]*\]\([^)]+' "${markdownFile}.orig" | cut -d '(' -f 2 |
 	grep -Ev '^(cid:|https?://)' | while read file; do
-	id="$(md5sum "$file" | cut -d ' ' -f 1)"
+	id="$(md5_file "$file")"
 	echo -n "<attach-file>\"$file\"<enter>" >>"$commandsFile"
 	echo -n "<toggle-disposition>" >>"$commandsFile"
 	echo -n "<edit-content-id>^u\"$id\"<enter>" >>"$commandsFile"

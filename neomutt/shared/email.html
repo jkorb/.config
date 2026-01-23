@@ -1,14 +1,34 @@
+<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="Generator" content="pandoc" />
     <style>
+      body {
+          margin: 0;
+          padding: 0;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+          font-size: 15px;
+          line-height: 1.5;
+          color: #111111;
+      }
+      .email-body {
+          padding: 12px 16px;
+      }
+      a {
+          color: #1b5fd1;
+      }
       blockquote {
           margin:0px 0px 0px 0.8ex;
           border-left:1px solid rgb(204,204,204);
           padding-left:1ex
       }
-	  </style>
+      pre, code {
+          font-family: Menlo, Consolas, "Liberation Mono", monospace;
+          font-size: 0.95em;
+      }
+    </style>
     <!-- $if(math)$ -->
     <!-- $if(mathjax)$ -->
     <!-- <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script> -->
@@ -17,6 +37,8 @@
     <!-- $endif$ -->
   </head>
   <body>
-    $body$
+    <div class="email-body">
+      $body$
+    </div>
   </body>
 </html>

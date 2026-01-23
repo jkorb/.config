@@ -151,18 +151,13 @@ macro index,pager          <Tab>  "<enter-command>toggle sidebar_visible<enter><
 
 macro compose ch \
 "<enter-command>set pipe_decode<enter>\
-<pipe-message> pandoc -f markdown -t plain -o /tmp/msg.txt<enter>\
-<pipe-message> pandoc -s -f markdown --embed-resources -o /tmp/msg.html --resource-path ~/.config/neomutt/shared/ --template email<enter>\
+<pipe-message> $XDG_CONFIG_HOME/neomutt/scripts/convert_email<enter>\
 <enter-command>unset pipe_decode<enter>\
-<attach-file>/tmp/msg.txt<enter><toggle-disposition><toggle-unlink>\
-<attach-file>/tmp/msg.html<enter><toggle-disposition><toggle-unlink>\
-<tag-entry><previous-entry><tag-entry><group-alternatives>\
+  <enter-command>source $XDG_CACHE_DIR/neomutt-html/commands<enter>\
 " \
 "Convert markdown to HTML5 and plaintext alternative content types"
 
 # bind index,pager gr sync-mailbox
-
-macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_on'<enter>"
 
 macro index R "<tag-pattern>~U<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" \
   "mark all unread as read"
