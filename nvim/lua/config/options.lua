@@ -27,6 +27,11 @@ opt.expandtab = true
 opt.concealcursor = "nc"
 -- vim.g["pandoc#filetypes#handled"] = { "mail", "markdown", "pandoc" }
 vim.g.mkdp_filetypes = { "markdown", "markdown.mdx", "pandoc", "mail" }
+vim.g.mkdp_preview_options = {
+  mkit = {
+    breaks = true,
+  },
+}
 
 opt.listchars:append({
   eol = "󰌑",
