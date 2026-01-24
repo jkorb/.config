@@ -37,6 +37,20 @@
     <!-- Document types Neovim should handle via this opener -->
     <key>CFBundleDocumentTypes</key>
     <array>
+        <!-- Any file (fallback) -->
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Any File</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+        </dict>
+
         <!-- Generic text -->
         <dict>
             <key>CFBundleTypeName</key>
@@ -50,8 +64,10 @@
             <array>
                 <string>txt</string>
             </array>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
             <key>LSHandlerRank</key>
-            <string>Owner</string>
+            <string>Default</string>
         </dict>
 
         <!-- Source code / scripts -->
@@ -87,26 +103,40 @@
                 <string>zsh</string>
                 <string>fish</string>
             </array>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
             <key>LSHandlerRank</key>
-            <string>Owner</string>
+            <string>Default</string>
         </dict>
 
         <!-- Markdown -->
         <dict>
             <key>CFBundleTypeName</key>
             <string>Markdown</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.markdown</string>
+                <string>net.daringfireball.markdown</string>
+            </array>
             <key>CFBundleTypeExtensions</key>
             <array>
                 <string>md</string>
             </array>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
             <key>LSHandlerRank</key>
-            <string>Owner</string>
+            <string>Default</string>
         </dict>
 
         <!-- LaTeX -->
         <dict>
             <key>CFBundleTypeName</key>
             <string>LaTeX</string>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>public.tex</string>
+                <string>public.latex</string>
+            </array>
             <key>CFBundleTypeExtensions</key>
             <array>
                 <string>tex</string>
@@ -115,8 +145,10 @@
                 <string>sty</string>
                 <string>bst</string>
             </array>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
             <key>LSHandlerRank</key>
-            <string>Owner</string>
+            <string>Default</string>
         </dict>
 
         <!-- AppleScript -->
@@ -135,10 +167,11 @@
                 <string>scpt</string>
                 <string>scptd</string>
             </array>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
             <key>LSHandlerRank</key>
-            <string>Owner</string>
+            <string>Default</string>
         </dict>
     </array>
 </dict>
 </plist>
-

@@ -1,77 +1,81 @@
-APP_NAME          := Neovim
-APP_ID            := com.jkorbmacher.neovim
-OPENER_APP_NAME   := NeovimOpener
-OPENER_APP_ID     := com.jkorbmacher.neovim.opener
+APP_NAME        := Neovim
+APP_ID          := com.jkorbmacher.neovim
+OPENER_APP      := $(APP_NAME).app
+OPENER_ID       := com.jkorbmacher.neovim.opener
 
-NEOVIM_APP        := $(APP_NAME).app
-OPENER_APP        := $(OPENER_APP_NAME).app
+INNER_APP_NAME  := NeovimRunner.app
+INNER_APP       := $(INNER_APP_NAME)
 
-SCRIPT_LAUNCH     := NeovimLaunch.zsh
+SCRIPT_TEMPLATE := NeovimOpener.applescript.in
+SCRIPT_OUT      := NeovimOpener.applescript
 
-PLIST_NEOVIM_TEMPLATE  := Info.Neovim.template.plist
-PLIST_NEOVIM_OUT       := Info.Neovim.plist
+PLIST_INNER_TEMPLATE := Info.Neovim.template.plist
+PLIST_INNER_OUT      := Info.Neovim.plist
 
-PLIST_OPENER_TEMPLATE  := Info.NeovimOpener.template.plist
-PLIST_OPENER_OUT       := Info.NeovimOpener.plist
+PLIST_OPENER_TEMPLATE := Info.NeovimOpener.template.plist
+PLIST_OPENER_OUT      := Info.NeovimOpener.plist
 
-ICON_PNG   := icon.png
-ICONSET    := $(APP_NAME).iconset
-ICNS       := Neovim.icns
+ICON_PNG := icon.png
+ICONSET  := $(APP_NAME).iconset
+ICNS     := $(APP_NAME).icns
 
-.PHONY: all clean install
+INSTALL_DIR := $(HOME)/Applications
 
-all: $(NEOVIM_APP) $(OPENER_APP)
+.PHONY: all clear install
 
-# ---------- Neovim.app (exec script app) ----------
-$(NEOVIM_APP): $(SCRIPT_LAUNCH) $(ICNS) $(PLIST_NEOVIM_OUT)
+all: $(OPENER_APP)
+
+# ---------- inner app (terminal runner) ----------
+$(INNER_APP): nvim-launch $(ICNS) $(PLIST_INNER_OUT)
 	rm -rf "$@"
 	mkdir -p "$@/Contents/MacOS" "$@/Contents/Resources"
 
-	# executable script
-	cp "$(SCRIPT_LAUNCH)" "$@/Contents/MacOS/nvim-launch"
+	cp nvim-launch "$@/Contents/MacOS/nvim-launch"
 	chmod +x "$@/Contents/MacOS/nvim-launch"
 
-	# icon
 	cp "$(ICNS)" "$@/Contents/Resources/$(ICNS)"
+	cp "$(PLIST_INNER_OUT)" "$@/Contents/Info.plist"
 
-	# Info.plist
-	cp "$(PLIST_NEOVIM_OUT)" "$@/Contents/Info.plist"
+	@echo "Built $(INNER_APP)"
 
-	@echo "Built $(NEOVIM_APP)"
-
-# ---------- NeovimOpener.app (AppleScript droplet) ----------
-$(OPENER_APP): NeovimOpener.applescript $(ICNS) $(PLIST_OPENER_OUT)
+# ---------- outer app (AppleScript droplet) ----------
+$(OPENER_APP): $(INNER_APP) $(ICNS) $(PLIST_OPENER_OUT) $(SCRIPT_OUT)
 	rm -rf "$@"
-	osacompile -o "$@" NeovimOpener.applescript
+	osacompile -o "$@" "$(SCRIPT_OUT)"
 
 	mkdir -p "$@/Contents/Resources"
-
-	# icon
 	cp "$(ICNS)" "$@/Contents/Resources/$(ICNS)"
-
-	# Info.plist (overwrite osacompile's plist)
 	cp "$(PLIST_OPENER_OUT)" "$@/Contents/Info.plist"
+	rm -rf "$@/Contents/Resources/$(INNER_APP_NAME)"
+	cp -R "$(INNER_APP)" "$@/Contents/Resources/"
 
 	@echo "Built $(OPENER_APP)"
 
-# ---------- Generate Info.plists from templates ----------
-$(PLIST_NEOVIM_OUT): $(PLIST_NEOVIM_TEMPLATE)
+# ---------- generate AppleScript ----------
+$(SCRIPT_OUT): $(SCRIPT_TEMPLATE)
+	sed \
+	  -e 's/__INNER_APP_BUNDLE__/$(INNER_APP_NAME)/g' \
+	  $(SCRIPT_TEMPLATE) > $(SCRIPT_OUT)
+	@echo "Generated $(SCRIPT_OUT)"
+
+# ---------- generate Info.plists ----------
+$(PLIST_INNER_OUT): $(PLIST_INNER_TEMPLATE)
 	sed \
 	  -e 's/__APP_NAME__/$(APP_NAME)/g' \
 	  -e 's/__APP_ID__/$(APP_ID)/g' \
 	  -e 's/__APP_ICON__/$(ICNS)/g' \
-	  $(PLIST_NEOVIM_TEMPLATE) > $(PLIST_NEOVIM_OUT)
-	@echo "Generated $(PLIST_NEOVIM_OUT)"
+	  $(PLIST_INNER_TEMPLATE) > $(PLIST_INNER_OUT)
+	@echo "Generated $(PLIST_INNER_OUT)"
 
 $(PLIST_OPENER_OUT): $(PLIST_OPENER_TEMPLATE)
 	sed \
-	  -e 's/__APP_NAME__/$(OPENER_APP_NAME)/g' \
-	  -e 's/__APP_ID__/$(OPENER_APP_ID)/g' \
+	  -e 's/__APP_NAME__/$(APP_NAME)/g' \
+	  -e 's/__APP_ID__/$(OPENER_ID)/g' \
 	  -e 's/__APP_ICON__/$(ICNS)/g' \
 	  $(PLIST_OPENER_TEMPLATE) > $(PLIST_OPENER_OUT)
 	@echo "Generated $(PLIST_OPENER_OUT)"
 
-# ---------- Build .icns from icon.png ----------
+# ---------- build .icns from icon.png ----------
 $(ICNS): $(ICON_PNG)
 	rm -rf "$(ICONSET)"
 	mkdir "$(ICONSET)"
@@ -95,15 +99,11 @@ $(ICNS): $(ICON_PNG)
 	@echo "Built $(ICNS)"
 
 clean:
-	rm -rf "$(NEOVIM_APP)" "$(OPENER_APP)" "$(ICONSET)" "$(ICNS)" \
-	       "$(PLIST_NEOVIM_OUT)" "$(PLIST_OPENER_OUT)"
+	rm -rf "$(OPENER_APP)" "$(INNER_APP)" "$(ICONSET)" "$(ICNS)" \
+	       "$(PLIST_INNER_OUT)" "$(PLIST_OPENER_OUT)" "$(SCRIPT_OUT)"
 
-# Install both apps into ~/Applications/Neovim/
-install: $(NEOVIM_APP) $(OPENER_APP)
-	mkdir -p "$(HOME)/Applications/Neovim"
-	rm -rf "$(HOME)/Applications/Neovim/$(NEOVIM_APP)" \
-	       "$(HOME)/Applications/Neovim/$(OPENER_APP)"
-	cp -R "$(NEOVIM_APP)" "$(HOME)/Applications/Neovim/"
-	cp -R "$(OPENER_APP)" "$(HOME)/Applications/Neovim/"
-	@echo "Installed to ~/Applications/Neovim/"
-
+install: $(OPENER_APP)
+	mkdir -p "$(INSTALL_DIR)"
+	rm -rf "$(INSTALL_DIR)/$(OPENER_APP)"
+	cp -R "$(OPENER_APP)" "$(INSTALL_DIR)/"
+	@echo "Installed to $(INSTALL_DIR)/$(OPENER_APP)"
