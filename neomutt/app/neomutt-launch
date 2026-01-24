@@ -1,0 +1,3 @@
+#!/bin/zsh
+
+exec /opt/homebrew/bin/alacritty -e /opt/homebrew/bin/neomutt "$@"

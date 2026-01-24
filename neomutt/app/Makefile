@@ -1,24 +1,48 @@
 APP_NAME   := NeoMutt
-APP_ID     := com.jkorbmacher.neomutt    # change this to your own reverse-DNS id
+# change this to your own reverse-DNS id
+APP_ID     := com.jkorbmacher.neomutt
 APP_BUNDLE := $(APP_NAME).app
+
+RUNNER_APP_NAME := NeoMuttRunner.app
+RUNNER_APP      := $(RUNNER_APP_NAME)
+RUNNER_ID       := com.jkorbmacher.neomutt.runner
+RUNNER_SCRIPT   := neomutt-launch
 
 SCRIPT     := NeoMutt.applescript
 ICON_PNG   := icon.png                   # your 640x640 PNG
 ICONSET    := $(APP_NAME).iconset
 ICNS       := $(APP_NAME).icns
 
+RUNNER_PLIST_TEMPLATE := Info.NeomuttRunner.template.plist
+RUNNER_PLIST_OUT      := Info.NeomuttRunner.plist
+
 .PHONY: all clean install
 
 all: $(APP_BUNDLE)
 
-# 1) Compile AppleScript into an .app
-$(APP_BUNDLE): $(SCRIPT) $(ICNS) Info.plist.template
+# 1) Build runner app
+$(RUNNER_APP): $(RUNNER_SCRIPT) $(ICNS) $(RUNNER_PLIST_OUT)
+	rm -rf "$@"
+	mkdir -p "$@/Contents/MacOS" "$@/Contents/Resources"
+
+	cp "$(RUNNER_SCRIPT)" "$@/Contents/MacOS/neomutt-launch"
+	chmod +x "$@/Contents/MacOS/neomutt-launch"
+
+	cp "$(ICNS)" "$@/Contents/Resources/$(ICNS)"
+	cp "$(RUNNER_PLIST_OUT)" "$@/Contents/Info.plist"
+
+	@echo "Built $(RUNNER_APP)"
+
+# 2) Compile AppleScript into an .app
+$(APP_BUNDLE): $(SCRIPT) $(ICNS) Info.plist.template $(RUNNER_APP)
 	rm -rf "$@"
 	osacompile -o "$@" "$<"
 
 	# Ensure Resources dir exists and copy icon
 	mkdir -p "$@/Contents/Resources"
 	cp "$(ICNS)" "$@/Contents/Resources/$(ICNS)"
+	rm -rf "$@/Contents/Resources/$(RUNNER_APP_NAME)"
+	cp -R "$(RUNNER_APP)" "$@/Contents/Resources/"
 
 	# Overwrite Info.plist with a minimal, clean version
 	sed \
@@ -28,6 +52,14 @@ $(APP_BUNDLE): $(SCRIPT) $(ICNS) Info.plist.template
 	  Info.plist.template > "$@/Contents/Info.plist"
 
 	@echo "Built $(APP_BUNDLE)"
+
+$(RUNNER_PLIST_OUT): $(RUNNER_PLIST_TEMPLATE)
+	sed \
+	  -e 's/__APP_NAME__/$(APP_NAME)/g' \
+	  -e 's/__APP_ID__/$(RUNNER_ID)/g' \
+	  -e 's/__APP_ICON__/$(ICNS)/g' \
+	  $(RUNNER_PLIST_TEMPLATE) > $(RUNNER_PLIST_OUT)
+	@echo "Generated $(RUNNER_PLIST_OUT)"
 
 # 2) Build .icns from a single PNG using sips + iconutil
 $(ICNS): $(ICON_PNG)
@@ -58,7 +90,7 @@ $(ICNS): $(ICON_PNG)
 	@echo "Built $(ICNS)"
 
 clean:
-	rm -rf "$(APP_BUNDLE)" "$(ICONSET)" "$(ICNS)"
+	rm -rf "$(APP_BUNDLE)" "$(RUNNER_APP)" "$(ICONSET)" "$(ICNS)" "$(RUNNER_PLIST_OUT)"
 
 # Optional install target (to ~/Applications)
 install: $(APP_BUNDLE)
