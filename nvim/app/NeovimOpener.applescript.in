@@ -1,24 +1,23 @@
 on run
 
   set innerAppPath to POSIX path of (path to resource "__INNER_APP_BUNDLE__")
-  do shell script "open -a " & quoted form of innerAppPath
+  tell application innerAppPath to activate
 
 end run
 
 on reopen
 
   set innerAppPath to POSIX path of (path to resource "__INNER_APP_BUNDLE__")
-  do shell script "open -a " & quoted form of innerAppPath
+  tell application innerAppPath to activate
 
 end reopen
 
 on open theItems
 
   set innerAppPath to POSIX path of (path to resource "__INNER_APP_BUNDLE__")
-  do shell script "open -a " & quoted form of innerAppPath
+  tell application innerAppPath to activate
 
   set homePath to POSIX path of (path to home folder)
-
   set socketPath to homePath & ".cache/nvim/nvim-neovim-app.sock"
 
   repeat 20 times
