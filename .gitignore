@@ -25,6 +25,7 @@ nvim/spell/*.add.spl
 !launchd
 !msmtp
 !neomutt
+neomutt/core/aliases
 neomutt/app/.DS_Store
 neomutt/app/*.app
 neomutt/app/*.icns
