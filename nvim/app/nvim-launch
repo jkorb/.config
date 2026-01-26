@@ -1,3 +1,5 @@
 #!/bin/zsh
 
-exec /opt/homebrew/bin/alacritty -e /opt/homebrew/bin/nvim --listen "$HOME/.cache/nvim/nvim-neovim-app.sock"
+mkdir -p "$HOME/.cache/nvim/"
+
+exec /opt/homebrew/bin/wezterm start --always-new-process /opt/homebrew/bin/nvim --listen "$HOME/.cache/nvim/nvim-neovim-app.sock"
