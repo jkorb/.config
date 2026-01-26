@@ -18,7 +18,6 @@ nvim/spell/*.add.spl
 .DS_Store
 !dunst
 !fd
-!hypr
 !git
 !gnupg
 !khal
@@ -36,7 +35,6 @@ neomutt/app/*.iconset
 nvim/lazy-lock.json
 nvim/lazyvim.json
 !qmk
-!rofi
 !systemd
 systemd/user/default.target.wants
 systemd/user/sockets.target.wants
@@ -45,7 +43,6 @@ systemd/user/timers.target.wants
 tmux/sessions
 !user-dirs.dirs
 !vdirsyncer
-!waybar
 !wezterm
 !wlogout
 !yay

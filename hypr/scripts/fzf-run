@@ -1,9 +1,0 @@
-#!/bin/zsh
-
-selection=$(dmenu_path | fzf --prompt '󰑮 ' --height=100% --bind=enter:replace-query+print-query)
-
-if [[ -n $selection ]]; then
-  echo $selection | (nohup ${SHELL:-"/bin/sh"} &) >/dev/null 2>&1
-fi
-
-sleep 0.01
