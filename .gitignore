@@ -46,6 +46,7 @@ tmux/sessions
 !user-dirs.dirs
 !vdirsyncer
 !waybar
+!wezterm
 !wlogout
 !yay
 !zathura
