@@ -8,7 +8,7 @@ if [[ ! -d "$cache_dir" ]]; then
 fi
 
 if [[ $1 == "clean" ]]; then
-  [[ -f $tmpfile ]] && rm $tmpfile
+  # [[ -f $tmpfile ]] && rm $tmpfile
   exit 0
 fi
 
@@ -19,8 +19,8 @@ fi
 nnn -J -p $tmpfile
 
 if [[ -f $tmpfile ]]; then
-  sed -i 's/ /\\ /g' $tmpfile
-  echo "$(awk 'BEGIN {printf "%s", "push "} {printf "%s", "<attach-file>\""$0"\"<enter>"}'  $tmpfile)" > $tmpfile
+  sed -i '' -e 's/ /\\ /g' "$tmpfile"
+  echo "$(awk 'BEGIN {printf "%s", "push "} {printf "%s", "<attach-file>\""$0"\"<enter>"}' "$tmpfile")" > "$tmpfile"
 fi
 
 # Based on https://github.com/anufrievroman/Neomutt-File-Picker
