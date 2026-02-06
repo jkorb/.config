@@ -35,7 +35,7 @@ mono body bold "^gpg: Good signature"
 #
 color normal		  default default         
 
-color index		    blue    default ~U      # Unread
+color index		bold  blue    default ~U      # Unread
 # color index		    ...  default ~F      # Flagged messages are ...
 color index		    red     default ~D      # Marked for deletion
 color index       green   default ~Q      # Replied
