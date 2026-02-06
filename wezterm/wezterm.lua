@@ -5,7 +5,8 @@ local config = {}
 -- COLORS
 config.colors = {
 	foreground = "#abb2bf",
-	background = "#282c34",
+	background = "#1e1e1e",
+	-- background = "#282c34",
 
 	ansi = {
 		"#3f4451", -- black
@@ -30,9 +31,12 @@ config.colors = {
 	},
 }
 
--- Transparency similar to opacity = 0.9
+config.native_macos_fullscreen_mode = true
+config.adjust_window_size_when_changing_font_size = false
 config.window_background_opacity = 0.9
 config.macos_window_background_blur = 10
+config.send_composed_key_when_right_alt_is_pressed = true
+config.send_composed_key_when_left_alt_is_pressed = true
 
 -- FONT
 config.font = wezterm.font({
@@ -48,43 +52,35 @@ config.window_padding = {
 	bottom = 30,
 }
 
--- config.window_decorations = "TITLE | RESIZE"
-
 config.window_decorations = "INTEGRATED_BUTTONS | RESIZE"
 
 config.hide_tab_bar_if_only_one_tab = true
 
--- KEY BINDINGS
 config.keys = {
-	-- Ctrl + /
 	{
 		key = "/",
 		mods = "CTRL",
 		action = wezterm.action.SendString("\x1F"),
 	},
-	-- Ctrl + ;
 	{
 		key = ";",
 		mods = "CTRL",
 		action = wezterm.action.SendString("\x1C"),
 	},
-	-- Ctrl + ,
 	{
 		key = ",",
 		mods = "CTRL",
 		action = wezterm.action.SendString("\x1E"),
 	},
-	-- Ctrl + .
 	{
 		key = ".",
 		mods = "CTRL",
 		action = wezterm.action.SendString("\x1A"),
 	},
 
-	-- Cmd + M -> fullscreen-ish (closest to ToggleMaximized)
 	{
-		key = "m",
-		mods = "CMD",
+		key = "f",
+		mods = "CMD|CTRL",
 		action = wezterm.action.ToggleFullScreen,
 	},
 
