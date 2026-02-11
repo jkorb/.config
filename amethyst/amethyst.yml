@@ -1,0 +1,104 @@
+focus-follows-mouse: false
+follow-space-thrown-windows: true
+hide-menu-bar-icon: true
+enables-layout-hud-on-space-change: false
+disable-padding-on-builtin-display: true
+
+window-margins: true
+smart-window-margins: true
+window-margin-size: 25
+
+relaunch-amethyst: { mod: mod2, key: "r" }
+
+mod1:
+  - command
+mod2:
+  - command
+  - shift
+
+layouts:
+  - floating
+
+focus-ccw: { mod: mod1, key: j }
+focus-cw: { mod: mod1, key: k }
+
+swap-ccw: false
+swap-cw: false
+
+focus-main: false
+swap-main: false
+
+increase-main: false
+decrease-main: false
+
+focus-screen-cw: false
+focus-screen-ccw: false
+
+shrink-main: false
+expand-main: false
+
+swap-screen-cw: { mod: mod1, key: "," }
+swap-screen-ccw: { mod: mod2, key: "," }
+
+throw-space-left: { mod: mod2, key: left }
+throw-space-right: { mod: mod2, key: right }
+
+throw-space-1: { mod: mod2, key: "1" }
+throw-space-2: { mod: mod2, key: "2" }
+throw-space-3: { mod: mod2, key: "3" }
+throw-space-4: { mod: mod2, key: "4" }
+throw-space-5: { mod: mod2, key: "5" }
+
+throw-space-6: false
+throw-space-7: false
+throw-space-8: false
+throw-space-9: false
+
+toggle-float: false
+cycle-layout: false
+
+select-tall-layout: false
+select-floating-layout: false
+
+cycle-layout-backward: false
+
+select-wide-layout: false
+select-column-layout: false
+
+throw-space-prev: false
+throw-space-next: false
+
+display-current-layout: false
+toggle-tiling: false
+toggle-focus-follows-mouse: false
+reevaluate-windows: false
+
+command1: false
+command2: false
+command3: false
+command4: false
+
+command-1: false
+command-2: false
+command-3: false
+command-4: false
+
+toggle-maximize: false
+relayout: false
+
+focus-screen-1: false
+focus-screen-2: false
+focus-screen-3: false
+focus-screen-4: false
+focus-screen-5: false
+
+throw-screen-1: false
+throw-screen-2: false
+throw-screen-3: false
+throw-screen-4: false
+throw-screen-5: false
+
+select-two-pane-layout: false
+select-float-layout: false
+
+select-fullscreen-layout: false
