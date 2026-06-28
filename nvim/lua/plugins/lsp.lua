@@ -34,7 +34,7 @@ return {
                 forwardSearchAfter = false,
               },
               forwardSearch = {
-                executable = "zathura-forward",
+                executable = vim.fn.expand("$XDG_CONFIG_HOME/zathura/scripts/zathura-forward"),
                 args = {
                   "%l:1:%f",
                   "%p",
