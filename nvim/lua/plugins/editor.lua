@@ -34,11 +34,16 @@ return {
     opts = function(_, opts)
       opts.window = {
         backdrop = 1, -- shade the backdrop of the Zen window. Set to 1 to keep the same as Normal
-        width = 90, -- width of the Zen window
-        height = 10, -- height of the Zen window
+        width = 82, -- prose-width window; soft wrap happens at the window edge
+        height = 1, -- full editor height
         options = {
           number = false,
           relativenumber = false,
+          signcolumn = "no",
+          foldcolumn = "0",
+          wrap = true,
+          linebreak = true,
+          breakindent = true,
         },
       }
       opts.plugins = {

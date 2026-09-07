@@ -6,6 +6,7 @@
 
 local utils = require("config.utils")
 local custom_map = utils.custom_map
+require("config.openai_translate").setup()
 
 -- stylua: ignore start
 custom_map("n", "[<space>", function() utils.insert_blank_line(-1) end, { desc = "Insert blank line above", silent = true })
@@ -13,5 +14,7 @@ custom_map("n", "]<space>", function() utils.insert_blank_line(0) end, { desc = 
 custom_map({"n", "v"}, "<space>cf", "gw", { desc = "Format text" } )
 custom_map("n", "gt", "<cmd>BufferLineCyclePrev<cr>", { desc = "Previous buffer" } )
 custom_map("n", "gT", "<cmd>BufferLineCycleNext<cr>", { desc = "Next buffer" } )
+custom_map("n", "<leader>uW", "<cmd>ZenMode<cr>", { desc = "Toggle prose width" })
 
 custom_map('n', '<leader>u;', function() utils.toggle_list() end, { desc = "Toggle list"} )
+custom_map("x", "<leader>tr", "<cmd>Translate<cr>", { desc = "Translate selection to Dutch" })
