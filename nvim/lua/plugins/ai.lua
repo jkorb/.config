@@ -23,10 +23,18 @@ return {
     "zbirenbaum/copilot.lua",
     enabled = true,
     opts = function(_, opts)
+      opts = opts or {}
+
       opts.filetypes = {
         mail = false,
         csv = false,
       }
+
+      -- opts.suggestion = vim.tbl_deep_extend("force", opts.suggestion or {}, {
+      --   enabled = true,
+      --   auto_trigger = true,
+      --   hide_during_completion = false,
+      -- })
     end,
   },
 }

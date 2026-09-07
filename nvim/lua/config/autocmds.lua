@@ -91,6 +91,99 @@ local function spell_add_prompt()
   end)
 end
 
+local function latex_list_env(line)
+  local begin_env = line:match("\\begin%s*{%s*([%a*]+)%s*}")
+  if begin_env == "itemize" or begin_env == "enumerate" then
+    return "begin", begin_env
+  end
+
+  local end_env = line:match("\\end%s*{%s*([%a*]+)%s*}")
+  if end_env == "itemize" or end_env == "enumerate" then
+    return "end", end_env
+  end
+end
+
+local function latex_current_list()
+  local row = vim.api.nvim_win_get_cursor(0)[1]
+  local lines = vim.api.nvim_buf_get_lines(0, 0, row, false)
+  local stack = {}
+
+  for lnum, line in ipairs(lines) do
+    local kind, env = latex_list_env(line)
+    if kind == "begin" then
+      table.insert(stack, {
+        env = env,
+        indent = line:match("^%s*") or "",
+        lnum = lnum,
+      })
+    elseif kind == "end" then
+      for i = #stack, 1, -1 do
+        if stack[i].env == env then
+          table.remove(stack, i)
+          break
+        end
+      end
+    end
+  end
+
+  return stack[#stack]
+end
+
+local function latex_insert_item_below()
+  local list = latex_current_list()
+  local cursor_row = vim.api.nvim_win_get_cursor(0)[1]
+  local line_count = vim.api.nvim_buf_line_count(0)
+  local item_indent = nil
+  local search_start = list and list.lnum or 1
+
+  for lnum = cursor_row, search_start, -1 do
+    local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, false)[1] or ""
+    item_indent = line:match("^(%s*)\\item")
+    if item_indent then
+      break
+    end
+  end
+
+  if not item_indent then
+    if list then
+      local shiftwidth = vim.bo.shiftwidth > 0 and vim.bo.shiftwidth or vim.bo.tabstop
+      item_indent = list.indent .. (vim.bo.expandtab and string.rep(" ", shiftwidth) or "\t")
+    else
+      local line = vim.api.nvim_buf_get_lines(0, cursor_row - 1, cursor_row, false)[1] or ""
+      item_indent = line:match("^%s*") or ""
+    end
+  end
+
+  local insert_lnum = cursor_row + 1
+  if list then
+    local nested = 0
+    for lnum = cursor_row + 1, line_count do
+      local line = vim.api.nvim_buf_get_lines(0, lnum - 1, lnum, false)[1] or ""
+      local kind, env = latex_list_env(line)
+
+      if nested == 0 and line:match("^" .. vim.pesc(item_indent) .. "\\item") then
+        insert_lnum = lnum
+        break
+      end
+
+      if kind == "begin" then
+        nested = nested + 1
+      elseif kind == "end" then
+        if nested == 0 and env == list.env then
+          insert_lnum = lnum
+          break
+        end
+        nested = math.max(nested - 1, 0)
+      end
+    end
+  end
+
+  local new_line = item_indent .. "\\item "
+  vim.api.nvim_buf_set_lines(0, insert_lnum - 1, insert_lnum - 1, false, { new_line })
+  vim.api.nvim_win_set_cursor(0, { insert_lnum, #new_line })
+  vim.cmd("startinsert")
+end
+
 vim.api.nvim_create_autocmd("FileType", {
   group = custom_augroup("filetype_keybinds"),
   pattern = { "plaintex", "latex", "tex" },
@@ -106,15 +199,19 @@ vim.api.nvim_create_autocmd("FileType", {
     end, { desc = "Texlab: purge" })
 
     vim.opt_local.spell = true
+    vim.opt_local.spelllang = { "en_us", "de_de", "nl" }
     vim.opt_local.textwidth = 0
+    vim.opt_local.formatoptions = "cqj"
     vim.opt_local.conceallevel = 0
     vim.opt_local.wrap = true
     vim.opt_local.linebreak = true
     vim.opt_local.breakindent = true
     vim.keymap.set("n", "zg", spell_add_prompt, { buffer = true, desc = "Spell add (select language)" })
+    vim.keymap.set("n", "<leader>i", latex_insert_item_below, { buffer = true, desc = "LaTeX: new item", silent = true })
+    vim.keymap.set("i", "<C-t>", latex_insert_item_below, { buffer = true, desc = "LaTeX: new item", silent = true })
     custom_map("n", "<leader>mc", "<cmd>LspTexlabBuild<cr>", { desc = "Texlab: build" })
     custom_map("n", "<leader>mx", "<cmd>LspTexlabCleanAuxiliary<cr>", { desc = "Texlab: clean" })
-    custom_map("n", "<leader>mX", "<cmd>LspTexlabCleanArtifcats<cr>", { desc = "Texlab: purge" })
+    custom_map("n", "<leader>mX", "<cmd>LspTexlabCleanArtifacts<cr>", { desc = "Texlab: purge" })
     custom_map("n", "<leader>mv", "<cmd>LspTexlabForward<cr>", { desc = "Texlab: view" })
   end,
 })

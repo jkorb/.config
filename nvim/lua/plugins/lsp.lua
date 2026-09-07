@@ -2,6 +2,10 @@ return {
   {
     "neovim/nvim-lspconfig",
     opts = {
+      inlay_hints = {
+        enabled = true,
+        exclude = { "tex", "plaintex", "bib" },
+      },
       servers = {
         clangd = {},
         yamlls = {},
@@ -26,6 +30,10 @@ return {
         texlab = {
           settings = {
             texlab = {
+              inlayHints = {
+                labelDefinitions = false,
+                labelReferences = false,
+              },
               rootDirectory = nil,
               build = {
                 executable = "latexmk",
@@ -45,9 +53,10 @@ return {
                 onEdit = false,
               },
               latexFormatter = "latexindent",
+              formatterLineLength = 100000,
               latexindent = {
                 ["local"] = "./latexindent.yaml",
-                modifyLineBreaks = true,
+                modifyLineBreaks = false,
               },
               -- formatterLineLength = 20,
             },
