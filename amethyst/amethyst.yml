@@ -1,6 +1,6 @@
 focus-follows-mouse: false
 follow-space-thrown-windows: true
-hide-menu-bar-icon: true
+hide-menu-bar-icon: false
 enables-layout-hud-on-space-change: false
 disable-padding-on-builtin-display: true
 
@@ -8,7 +8,7 @@ window-margins: true
 smart-window-margins: true
 window-margin-size: 25
 
-relaunch-amethyst: { mod: mod2, key: "r" }
+relaunch-amethyst: { mod: mod2, key: "y" }
 
 mod1:
   - command

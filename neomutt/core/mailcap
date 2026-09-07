@@ -10,7 +10,6 @@ application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; open %s &
 
 # HTML
 text/html; firefox %s; nametemplate=%s.html
-# text/html; pandoc -s -f html -t markdown; copiousoutput;
 text/html; w3m -o display_link_number=1 -I %{charset} -T text/html; copiousoutput;
 text/plain; nvim %s
 text/markdown; nvim %s 
@@ -24,4 +23,8 @@ application/pdf; open %s &
 #Images
 image/png; open %s &
 image/jpeg; open %s &
+image/*; wezterm imgcat "%s"; copiousoutput
 # image/*; anytopnm %s | pnmscale -xsize 80 -ysize 50 | ppmtopgm | pgmtopbm | pbmtoascii ; copiousoutput
+
+# Rest
+application/octet-stream; open %s &
