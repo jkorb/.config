@@ -1,0 +1,154 @@
+#!/bin/zsh
+set -euo pipefail
+
+pdf="${1:-}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/nvim"
+server_map="$state_dir/servers"
+tmux_app="Tmux"
+
+tmux_bin="/opt/homebrew/bin/tmux"
+nvr_bin="/opt/homebrew/bin/nvr"
+
+if [[ -n "$pdf" && "$pdf" != '$FILE' ]]; then
+  pdf="${pdf:A}"
+else
+  pdf=""
+fi
+
+activate_tmux() {
+  /usr/bin/open -a "$tmux_app" >/dev/null 2>&1 || true
+}
+
+tmux_ready() {
+  "$tmux_bin" list-sessions >/dev/null 2>&1
+}
+
+select_tmux_pane_for_pid() {
+  local nvim_pid="$1"
+  local pane_id pane_pid pane_target client
+
+  [[ -n "$nvim_pid" ]] || return 1
+  tmux_ready || return 1
+
+  while IFS=$'\t' read -r pane_id pane_pid pane_target; do
+    [[ -n "$pane_id" && -n "$pane_pid" ]] || continue
+
+    local pid="$nvim_pid"
+    while [[ -n "$pid" && "$pid" != "0" && "$pid" != "1" ]]; do
+      if [[ "$pid" == "$pane_pid" ]]; then
+        client="$("$tmux_bin" list-clients -F "#{client_name}" 2>/dev/null | head -n1 || true)"
+        if [[ -n "$client" ]]; then
+          "$tmux_bin" switch-client -c "$client" -t "${pane_target%%:*}" 2>/dev/null || true
+        fi
+        "$tmux_bin" select-window -t "${pane_target%.*}" 2>/dev/null || true
+        "$tmux_bin" select-pane -t "$pane_id" 2>/dev/null || true
+        return 0
+      fi
+
+      pid="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d '[:space:]')"
+    done
+  done < <("$tmux_bin" list-panes -a -F '#{pane_id}	#{pane_pid}	#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null)
+
+  return 1
+}
+
+nvim_has_file() {
+  local sock="$1"
+  local file="$2"
+  local expr='join(map(filter(range(1, bufnr("$")), "buflisted(v:val) && bufname(v:val) !=# \"\""), "fnamemodify(bufname(v:val), \":p\")"), "\n")'
+  local buffers
+
+  buffers="$("$nvr_bin" --servername "$sock" --remote-expr "$expr" 2>/dev/null || true)"
+  [[ -n "$buffers" ]] || return 1
+
+  while IFS= read -r buffer; do
+    [[ "${buffer:A}" == "$file" ]] && return 0
+  done <<< "$buffers"
+
+  return 1
+}
+
+nvim_pid_for_socket() {
+  local sock="$1"
+
+  "$nvr_bin" --servername "$sock" --remote-expr 'getpid()' 2>/dev/null | tr -d '[:space:]' || true
+}
+
+path_under() {
+  local path="$1"
+  local dir="$2"
+
+  [[ -n "$path" && -n "$dir" ]] || return 1
+  case "$path" in
+    "$dir"|"$dir"/*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+source_candidates() {
+  local tex
+
+  [[ -n "$pdf" ]] || return 0
+
+  tex="${pdf:r}.tex"
+  [[ -e "$tex" ]] && print -r -- "${tex:A}"
+
+  tex="${pdf:h}/main.tex"
+  [[ -e "$tex" ]] && print -r -- "${tex:A}"
+}
+
+server_score() {
+  local sock="$1"
+  local cwd="$2"
+  local fallback_score="$3"
+  local candidate score
+
+  score="$fallback_score"
+
+  if [[ -n "$pdf" && -n "$cwd" ]] && path_under "$pdf" "$cwd"; then
+    score=$((1000000 + ${#cwd}))
+  fi
+
+  while IFS= read -r candidate; do
+    [[ -n "$candidate" ]] || continue
+    if nvim_has_file "$sock" "$candidate"; then
+      score=$((2000000 + ${#cwd}))
+      break
+    fi
+  done < <(source_candidates)
+
+  print -r -- "$score"
+}
+
+best_sock=""
+best_pid=""
+best_score=-1
+index=0
+
+if [[ -r "$server_map" ]]; then
+  while IFS=$'\t' read -r sock cwd nvim_pid _; do
+    [[ -n "$sock" ]] || continue
+    [[ -S "$sock" ]] || continue
+
+    score="$(server_score "$sock" "$cwd" "$index")"
+    if (( score > best_score )); then
+      best_score="$score"
+      best_sock="$sock"
+      best_pid="${nvim_pid:-}"
+    fi
+
+    index=$((index + 1))
+  done < "$server_map"
+fi
+
+activate_tmux
+
+if [[ -z "$best_pid" && -n "$best_sock" ]]; then
+  best_pid="$(nvim_pid_for_socket "$best_sock")"
+fi
+
+if [[ -n "$best_pid" ]]; then
+  select_tmux_pane_for_pid "$best_pid" || true
+fi
+
+activate_tmux

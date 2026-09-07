@@ -52,6 +52,7 @@ vim.env.NVIM_LISTEN_ADDRESS = vim.v.servername
 local state_dir = vim.fn.stdpath("state")
 vim.fn.mkdir(state_dir, "p")
 local server_map = state_dir .. "/servers"
+local nvim_pid = vim.fn.getpid()
 
 local function update_server_map()
   local server = vim.v.servername
@@ -64,13 +65,13 @@ local function update_server_map()
   if f then
     for line in f:lines() do
       local sock = line:match("^(%S+)%s+")
-      if sock and sock ~= server then
+      if sock and sock ~= server and vim.uv.fs_stat(sock) then
         table.insert(lines, line)
       end
     end
     f:close()
   end
-  table.insert(lines, server .. "\t" .. cwd)
+  table.insert(lines, table.concat({ server, cwd, tostring(nvim_pid) }, "\t"))
   local out = io.open(server_map, "w")
   if out then
     out:write(table.concat(lines, "\n"))

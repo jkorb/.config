@@ -6,32 +6,114 @@ if [[ $# -lt 2 ]]; then
   exit 2
 fi
 
-file="$1"
+file="${1:A}"
 line="$2"
 state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/nvim"
 server_map="$state_dir/servers"
+tmux_app="Tmux"
+home_session="home"
 
-sock=""
-best_len=0
-if [[ -r "$server_map" ]]; then
-  while IFS=$'\t' read -r map_sock map_cwd; do
-    [[ -z "$map_sock" || -z "$map_cwd" ]] && continue
-    case "$file" in
-      "$map_cwd"/*|"$map_cwd")
-        if (( ${#map_cwd} > best_len )); then
-          best_len=${#map_cwd}
-          sock="$map_sock"
+tmux_bin="/opt/homebrew/bin/tmux"
+nvr_bin="/opt/homebrew/bin/nvr"
+
+activate_tmux() {
+  /usr/bin/open -a "$tmux_app" >/dev/null 2>&1 || true
+}
+
+tmux_ready() {
+  "$tmux_bin" list-sessions >/dev/null 2>&1
+}
+
+ensure_home_session() {
+  if ! tmux_ready; then
+    "$tmux_bin" new-session -d -s "$home_session" -c "$HOME"
+    return
+  fi
+
+  if ! "$tmux_bin" has-session -t "$home_session" 2>/dev/null; then
+    "$tmux_bin" new-session -d -s "$home_session" -c "$HOME"
+  fi
+}
+
+nvim_has_file() {
+  local sock="$1"
+  local expr='join(map(filter(range(1, bufnr("$")), "buflisted(v:val) && bufname(v:val) !=# \"\""), "fnamemodify(bufname(v:val), \":p\")"), "\n")'
+  local buffers
+
+  buffers="$("$nvr_bin" --servername "$sock" --remote-expr "$expr" 2>/dev/null || true)"
+  [[ -n "$buffers" ]] || return 1
+
+  while IFS= read -r buffer; do
+    [[ "${buffer:A}" == "$file" ]] && return 0
+  done <<< "$buffers"
+
+  return 1
+}
+
+select_tmux_pane_for_pid() {
+  local nvim_pid="$1"
+  local pane_id pane_pid pane_target client
+
+  [[ -n "$nvim_pid" ]] || return 1
+  tmux_ready || return 1
+
+  while IFS=$'\t' read -r pane_id pane_pid pane_target; do
+    [[ -n "$pane_id" && -n "$pane_pid" ]] || continue
+
+    local pid="$nvim_pid"
+    while [[ -n "$pid" && "$pid" != "0" && "$pid" != "1" ]]; do
+      if [[ "$pid" == "$pane_pid" ]]; then
+        client="$("$tmux_bin" list-clients -F "#{client_name}" 2>/dev/null | head -n1 || true)"
+        if [[ -n "$client" ]]; then
+          "$tmux_bin" switch-client -c "$client" -t "${pane_target%%:*}" 2>/dev/null || true
         fi
-        ;;
-    esac
+        "$tmux_bin" select-window -t "${pane_target%.*}" 2>/dev/null || true
+        "$tmux_bin" select-pane -t "$pane_id" 2>/dev/null || true
+        return 0
+      fi
+
+      pid="$(ps -p "$pid" -o ppid= 2>/dev/null | tr -d '[:space:]')"
+    done
+  done < <("$tmux_bin" list-panes -a -F '#{pane_id}	#{pane_pid}	#{session_name}:#{window_index}.#{pane_index}' 2>/dev/null)
+
+  return 1
+}
+
+open_in_existing_nvim() {
+  local sock="$1"
+  "$nvr_bin" --servername "$sock" --remote-silent +"$line" "$file"
+}
+
+open_in_home_window() {
+  local dir="${file:h}"
+  local name="${file:t:r}"
+  local quoted_file="${(q)file}"
+  local pane_id client
+
+  ensure_home_session
+  pane_id="$("$tmux_bin" new-window -P -F "#{pane_id}" -t "$home_session:" -c "$dir" -n "$name" "nvim +$line -- $quoted_file")"
+  client="$("$tmux_bin" list-clients -F "#{client_name}" 2>/dev/null | head -n1 || true)"
+  if [[ -n "$client" ]]; then
+    "$tmux_bin" switch-client -c "$client" -t "$home_session" 2>/dev/null || true
+  fi
+  "$tmux_bin" select-pane -t "$pane_id" 2>/dev/null || true
+}
+
+activate_tmux
+
+if [[ -r "$server_map" ]]; then
+  while IFS=$'\t' read -r sock cwd nvim_pid _; do
+    [[ -n "$sock" ]] || continue
+    [[ -S "$sock" ]] || continue
+
+    if nvim_has_file "$sock"; then
+      open_in_existing_nvim "$sock"
+      select_tmux_pane_for_pid "${nvim_pid:-}" || true
+      activate_tmux
+      exit 0
+    fi
   done < "$server_map"
 fi
-if [[ -z "$sock" ]]; then
-  sock="$(ls -t "$state_dir"/nvim-*.sock 2>/dev/null | head -n1 || true)"
-fi
-if [[ -z "$sock" ]]; then
-  echo "error: no nvim server socket found (checked $server_file)" >&2
-  exit 1
-fi
 
-nvr --servername "$sock" --remote-silent +"${line}" "$file"
+open_in_home_window
+activate_tmux
