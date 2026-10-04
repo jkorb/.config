@@ -1,0 +1,167 @@
+#!/bin/zsh
+# Weekly maintenance. Full command output stays in the per-run logs.
+emulate -LR zsh
+setopt pipefail
+
+case ${1:-} in
+  '') ;;
+  --tex) ;;
+  -h|--help)
+    print 'Usage: config-update [--tex]'
+    print 'Update Homebrew, Zinit, tmux plugins, Lazy, Mason tools, and Treesitter.'
+    print -- '--tex also updates TeX Live packages (may request sudo).'
+    exit 0 ;;
+  *) print -u2 'Usage: config-update [--tex]'; exit 2 ;;
+esac
+(( $# <= 1 )) || { print -u2 'Too many arguments'; exit 2; }
+
+export XDG_CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+export XDG_DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
+export XDG_STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
+export GIT_TERMINAL_PROMPT=0
+export HOMEBREW_NO_AUTO_UPDATE=1
+export ZINIT_HOME=${ZINIT_HOME:-$XDG_CONFIG_HOME/zsh/zinit}
+
+state_dir="$XDG_STATE_HOME/config-update"
+mkdir -p "$state_dir" || exit 1
+if ! mkdir "$state_dir/running" 2>/dev/null; then
+  print -u2 "Another update may be running. Check $state_dir/running/pid."
+  print -u2 "If it is no longer running, remove the empty lock directory after its pid file."
+  exit 1
+fi
+print $$ > "$state_dir/running/pid"
+trap 'rm -f -- "$state_dir/running/pid"; rmdir -- "$state_dir/running"' EXIT
+trap 'print -u2 "Update interrupted; logs: $run_dir"; exit 130' INT
+trap 'exit 143' TERM
+run_dir=$(mktemp -d "$state_dir/$(date +%Y%m%d-%H%M%S).XXXXXX") || exit 1
+typeset -i failures=0 step=0 total=6
+[[ ${1:-} = --tex ]] && total=7
+
+# Print only changes, retaining the complete before/after lists in the log folder.
+changes() {
+  awk -F '\t' '
+    FILENAME==ARGV[1] {old[$1]=$2; next}
+    !($1 in old) {print "  " $1 ": installed " $2; next}
+    old[$1]!=$2 {print "  " $1 ": " old[$1] " → " $2}
+  ' "$1" "$2"
+}
+
+git_snapshot() {
+  local repo revision
+  for repo in "$@"; do
+    [[ -e $repo/.git ]] || continue
+    revision=$(git -C "$repo" rev-parse --short HEAD) || return
+    print -r -- "${repo:t}"$'\t'"$revision"
+  done
+}
+
+brew_snapshot() {
+  brew list --formula --versions | awk '{$1="formula/"$1; sub(/ /,"\t"); print}' || return
+  brew list --cask --versions | awk '{$1="cask/"$1; sub(/ /,"\t"); print}'
+}
+
+update_brew() {
+  brew_snapshot > "$run_dir/brew.before" || return
+  brew update && brew upgrade || return
+  brew_snapshot > "$run_dir/brew.after" || return
+  changes "$run_dir/brew.before" "$run_dir/brew.after" > "$summary"
+}
+
+update_zinit() {
+  [[ -r $ZINIT_HOME/zinit.zsh ]] || { print -u2 "Missing Zinit: $ZINIT_HOME"; return 1; }
+  source "$ZINIT_HOME/zinit.zsh" || return
+  local -a repos=("$ZINIT_HOME" "${ZINIT[PLUGINS_DIR]}"/*(/N))
+  git_snapshot "${repos[@]}" > "$run_dir/zinit.before" || return
+  zinit self-update --no-pager || return
+  zinit update --all --no-pager || return
+  # Zinit can swallow a failed Git command. Check fetches and upstream revisions.
+  local repo
+  for repo in "${repos[@]}"; do
+    [[ -e $repo/.git && ${repo:t} != _local---* ]] || continue
+    git -C "$repo" fetch || return
+    git -C "$repo" merge-base --is-ancestor '@{upstream}' HEAD || {
+      print -u2 "Update incomplete or upstream missing: $repo"
+      return 1
+    }
+  done
+  git_snapshot "${repos[@]}" > "$run_dir/zinit.after" || return
+  changes "$run_dir/zinit.before" "$run_dir/zinit.after" > "$summary"
+}
+
+update_tmux() {
+  local -a repos=("$XDG_CONFIG_HOME/tmux/plugins"/*(/N))
+  (( ${#repos} )) || { print -u2 'No installed tmux plugins found'; return 1; }
+  git_snapshot "${repos[@]}" > "$run_dir/tmux.before" || return
+  local repo
+  # TPM uses pull + submodule update too, but hides Git diagnostics and can lose
+  # background-job failures. Keep these sequential, with fast-forward pulls.
+  for repo in "${repos[@]}"; do
+    [[ -e $repo/.git ]] || continue
+    print -r -- "Updating $repo"
+    git -C "$repo" pull --ff-only || return
+    git -C "$repo" submodule update --init --recursive || return
+  done
+  git_snapshot "${repos[@]}" > "$run_dir/tmux.after" || return
+  changes "$run_dir/tmux.before" "$run_dir/tmux.after" > "$summary"
+}
+
+update_nvim() {
+  # Keep project-local plugin specs out of the weekly config update.
+  builtin cd -- "$XDG_CONFIG_HOME" || return
+  CONFIG_UPDATE_STEP=$1 CONFIG_UPDATE_SUMMARY="$summary" \
+    CONFIG_UPDATE_LUA="$XDG_CONFIG_HOME/nvim/update.lua" \
+    nvim --headless -i NONE -n \
+      -c 'lua dofile(vim.env.CONFIG_UPDATE_LUA)'
+}
+
+update_tex() {
+  local manager
+  manager=$(command -v tlmgr) || return
+  # sudo writes its password prompt to the terminal, outside the captured log.
+  sudo "$manager" --machine-readable update --self --all > "$run_dir/tex.packages" 2>&1
+  local result=$?
+  cat "$run_dir/tex.packages"
+  (( result == 0 )) || return $result
+  awk -F '\t' '
+    $2=="u" {print "  " $1 ": revision " $3 " → " $4}
+    $2=="a" || $2=="i" {print "  " $1 ": installed revision " $4}
+    $2=="d" {print "  " $1 ": removed by TeX Live"}
+  ' "$run_dir/tex.packages" > "$summary"
+}
+
+run_step() {
+  local name=$1 label=$2
+  shift 2
+  local summary="$run_dir/$name.summary" log="$run_dir/$name.log"
+  : > "$summary"
+  (( ++step ))
+  print "↻ [$step/$total] $label"
+  if ( "$@" ) > "$log" 2>&1; then
+    if [[ -s $summary ]]; then
+      cat "$summary"
+    else
+      print '  ✓ No version changes.'
+    fi
+  else
+    (( ++failures ))
+    [[ -s $summary ]] && cat "$summary"
+    print -u2 "  ✗ $label failed. Last 60 log lines:"
+    tail -n 60 "$log" >&2
+    print -u2 "  Full log: $log"
+  fi
+}
+
+run_step brew 'Homebrew packages and apps' update_brew
+run_step zinit 'Zinit and shell plugins' update_zinit
+run_step tmux 'tmux plugins' update_tmux
+run_step lazy 'Neovim plugins' update_nvim lazy
+run_step mason 'Mason language servers and formatters' update_nvim mason
+run_step treesitter 'Treesitter parsers' update_nvim treesitter
+[[ ${1:-} = --tex ]] && run_step tex 'TeX Live packages' update_tex
+
+if (( failures )); then
+  print -u2 "⚠ $failures update step(s) failed. Logs: $run_dir"
+  exit 1
+fi
+print '🎉 Updates finished. Restart Neovim and open a new shell to load changes.'
+print -r -- "Logs: $run_dir"

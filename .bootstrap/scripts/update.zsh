@@ -1,5 +1,3 @@
-#! /usr/env bash
-
-yay -Syu
-zinit self-update && zinit update
-$XDG_CONFIG_HOME/tmux/plugins/tpm/bin/update_plugins all
+#!/bin/zsh
+# Compatibility entry point; the maintained updater is on the shell PATH.
+exec "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/scripts/config-update" "$@"
