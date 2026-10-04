@@ -35,6 +35,37 @@ $$
 \infer[Ax]{A \vdash A}{}
 $$
 
+## Aligned equivalences
+
+$$
+\begin{aligned}
+\neg(A\land B) &\iff \neg A\lor\neg B\\
+\neg(A\lor B)  &\iff \neg A\land\neg B
+\end{aligned}
+$$
+
+## Truth table
+
+$$
+\begin{array}{cc|c}
+A & B & A\land B\\
+\hline
+0 & 0 & 0\\
+0 & 1 & 0\\
+1 & 0 & 0\\
+1 & 1 & 1
+\end{array}
+$$
+
+## Matrix
+
+$$
+\begin{bmatrix}
+1 & 0\\
+0 & 1
+\end{bmatrix}
+$$
+
 ## Unsupported notation stays visible
 
 An unknown macro stays literal: $\myConnective{A}{B}$.

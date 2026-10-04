@@ -53,7 +53,7 @@ WezTerm
                 │                       │                ├─ s → Neovim notes
                 │                       │                ├─ e → Neovim source
                 │                       │                └─ o → local file links
-                │                       ├─ text → bat
+                │                       ├─ text → bat-read → bat + less
                 │                       └─ other → macOS open
                 └─ e → Neovim source file
 ```
@@ -66,7 +66,8 @@ nnn, also changes the shell directory to the last directory visited on exit.
 Prose and TeX buffers use soft wrapping with `linebreak`, `breakindent`, and
 `textwidth=0`. The screen wraps a long paragraph without rewriting its source
 lines. ZenMode narrows the editing window to 82 columns. The Markdown reader
-has an independent maximum width of 80 columns.
+has an independent maximum width of 80 columns. The bat source reader uses
+100 columns, including line numbers; both readers recenter with `r` after resizing.
 
 TeX completion puts snippets and symbols ahead of general suggestions. Inside
 recognized citation and reference commands, the completion configuration

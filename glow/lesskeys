@@ -3,7 +3,8 @@
 a set-mark z!^P"$MD_READ_COMMAND"\ --annotate\nR'z
 s set-mark z!^P"$MD_READ_COMMAND"\ --notes\nR'z
 e set-mark z!^P"$MD_READ_COMMAND"\ --edit\nR'z
-o set-mark z!^P"$MD_READ_COMMAND"\ --links\nR'z
+o pipe .^Ppython3\ "$MD_READ_HINTS"\n
+O set-mark z!^P"$MD_READ_COMMAND"\ --links\nR'z
 r set-mark z!^P"$MD_READ_COMMAND"\ --refresh\nR'z
 # Never let less edit the generated output; e opens the source instead.
 v noaction

@@ -33,6 +33,14 @@ setup. In an older shell, use `~/.config/themes/scripts/theme-build`.
 The generated files are kept in Git, so apps work on a fresh checkout before
 Python or the generator has been run. bat also needs its local theme cache built.
 
+If bat 0.26.1 warns `Unknown theme 'shared-onedark'` when showing its own help,
+use `bat --theme=TwoDark --help`. Its
+[help renderer skips custom themes](https://github.com/sharkdp/bat/blob/v0.26.1/src/bin/bat/app.rs#L181)
+even though it reads the configured theme name. This does not affect ordinary
+file viewing, and rebuilding the cache does not fix the help warning. If the
+warning occurs while viewing a file instead, check `bat --list-themes` and rebuild
+with `bat cache --build` if the shared theme is missing.
+
 Edit [templates](../themes/templates) when changing which UI element uses which
 color. Edit the app's normal config for keybindings, fonts, spacing, or behavior.
 Direct edits to generated output are reported by `--check` and replaced by the

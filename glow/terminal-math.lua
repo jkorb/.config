@@ -1,4 +1,4 @@
--- Pandoc handles ordinary TeX math; this filter adds proof.sty's \infer trees.
+-- Pandoc handles ordinary TeX math; this adds inference trees and math grids.
 -- Rendering only: unknown constructs fall back to their complete TeX source.
 local limit = math.max(12, tonumber(os.getenv("MD_READ_WIDTH") or "80") - 8)
 local trim = function(s) return s:match("^%s*(.-)%s*$") end
@@ -75,22 +75,24 @@ local function group(s, pos, open, close)
   error("unclosed group")
 end
 
-local function premises(s)
+local function split(s, separator)
   local result, start, depth, pos = {}, 1, 0, 1
   while pos <= #s do
     local c = s:sub(pos, pos)
-    if c == "\\" then
+    if depth == 0 and s:sub(pos, pos + #separator - 1) == separator then
+      result[#result + 1] = s:sub(start, pos - 1)
+      pos = pos + #separator
+      start = pos
+    elseif c == "\\" then
       pos = pos + 2
     else
       if c == "{" then depth = depth + 1 end
       if c == "}" then depth = depth - 1 end
-      if c == "&" and depth == 0 then
-        result[#result + 1] = s:sub(start, pos - 1)
-        start = pos + 1
-      end
+      assert(depth >= 0, "unbalanced group")
       pos = pos + 1
     end
   end
+  assert(depth == 0, "unbalanced group")
   result[#result + 1] = s:sub(start)
   return result
 end
@@ -126,7 +128,7 @@ local function proof(tex, depth)
   conclusion = text_math(conclusion)
   local children, height, span = {}, 0, 0
   if trim(body) ~= "" then
-    for _, premise in ipairs(premises(body)) do
+    for _, premise in ipairs(split(body, "&")) do
       local box = proof(premise, depth + 1)
       children[#children + 1] = box
       height = math.max(height, #box.lines)
@@ -151,8 +153,125 @@ local function proof(tex, depth)
   return {lines = lines, width = total}
 end
 
+local environments = {
+  array="array", aligned="aligned", align="aligned", ["align*"]="aligned",
+  split="aligned", gathered="gathered", gather="gathered", ["gather*"]="gathered",
+  matrix="matrix", pmatrix="matrix", bmatrix="matrix", Bmatrix="matrix",
+  vmatrix="matrix", Vmatrix="matrix", cases="cases",
+}
+local delimiters = {
+  pmatrix={"(", ")"}, bmatrix={"[", "]"}, Bmatrix={"{", "}"},
+  vmatrix={"|", "|"}, Vmatrix={"‖", "‖"}, cases={"{", ""},
+}
+local tall = {
+  ["("]={"⎛", "⎜", "⎝"}, [")"]={"⎞", "⎟", "⎠"},
+  ["["]={"⎡", "⎢", "⎣"}, ["]"]={"⎤", "⎥", "⎦"},
+  ["{"]={"⎧", "⎪", "⎩", "⎨"}, ["}"]={"⎫", "⎪", "⎭", "⎬"},
+}
+
+local function grid(tex)
+  tex = trim(tex)
+  local left, right
+  -- A common array spelling is \left(\begin{array}...\end{array}\right).
+  local l, inner, r = tex:match("^\\left(.-)%s*(\\begin.*)%s*\\right(.-)$")
+  if l then
+    local symbols = { ["\\{"]="{", ["\\}"]="}", ["\\lbrace"]="{",
+      ["\\rbrace"]="}", ["\\lvert"]="|", ["\\rvert"]="|", ["."]="" }
+    left, right = symbols[trim(l)] or trim(l), symbols[trim(r)] or trim(r)
+    assert(left:match("^[%(%[%{|]$") or left == "", "unsupported delimiter")
+    assert(right:match("^[%)%]%}|]$") or right == "", "unsupported delimiter")
+    tex = trim(inner)
+  end
+  local env, body = tex:match("^\\begin{([%a*]+)}(.*)$")
+  local kind = environments[env]
+  assert(kind, "unsupported math environment")
+  local ending = "\\end{" .. env .. "}"
+  assert(body:sub(-#ending) == ending, "mismatched environment")
+  body = body:sub(1, -#ending - 1)
+  -- Nested environments need a more general box compositor; retain their TeX.
+  assert(not body:find("\\begin", 1, true), "nested environment")
+  local align, bars = {}, {}
+  if kind == "array" then
+    local spec, pos = group(body, 1, "{", "}")
+    for char in spec:gmatch("%S") do
+      if char == "|" then bars[#align + 1] = (bars[#align + 1] or "") .. "│"
+      else
+        assert(char:match("[lcr]"), "unsupported column specification")
+        align[#align + 1] = char
+      end
+    end
+    assert(#align > 0, "empty column specification")
+    body = body:sub(pos)
+  end
+  local rows, widths, count = {}, {}, 0
+  for _, raw in ipairs(split(body, "\\\\")) do
+    raw = trim(raw)
+    if raw:match("^\\hline%f[^%a]") then
+      assert(kind == "array", "rule outside array")
+      rows[#rows + 1] = false
+      raw = trim(raw:sub(7))
+    end
+    if raw ~= "" then
+      -- Row height tweaks and starred breaks are not silently reinterpreted.
+      assert(not raw:match("^%[.*%]") and raw:sub(1, 1) ~= "*", "row spacing")
+      local cells = split(raw, "&")
+      if kind == "array" then assert(#cells <= #align, "too many columns") end
+      if kind == "cases" then assert(#cells <= 2, "too many case columns") end
+      if kind == "gathered" then assert(#cells == 1, "alignment in gathered") end
+      for col, cell in ipairs(cells) do
+        cells[col] = text_math(trim(cell))
+        assert(not cells[col]:find("\n", 1, true), "multiline cell")
+        widths[col] = math.max(widths[col] or 0, width(cells[col]))
+      end
+      count = math.max(count, #cells)
+      rows[#rows + 1] = cells
+    end
+  end
+  assert(count > 0, "empty grid")
+  count = math.max(count, #align)
+  local lines, rule_rows, longest = {}, {}, 0
+  for row, cells in ipairs(rows) do
+    local parts = {}
+    if cells then
+      for col = 1, count do
+        local cell = cells[col] or ""
+        local padding = (widths[col] or 0) - width(cell)
+        local justification = align[col] or (kind == "aligned" and (col % 2 == 1 and "r" or "l"))
+          or (kind == "cases" and "l") or "c"
+        local before = justification == "r" and padding or (justification == "c" and math.floor(padding / 2)) or 0
+        if col > 1 then
+          parts[#parts + 1] = bars[col] and (" " .. bars[col] .. " ")
+            or (kind == "aligned" and (col % 2 == 0 and " " or "    ")) or "  "
+        elseif bars[col] then parts[#parts + 1] = bars[col] .. " " end
+        parts[#parts + 1] = string.rep(" ", before) .. cell .. string.rep(" ", padding - before)
+      end
+      if bars[count + 1] then parts[#parts + 1] = " " .. bars[count + 1] end
+    else rule_rows[row] = true end
+    lines[row] = table.concat(parts)
+    longest = math.max(longest, width(lines[row]))
+  end
+  local pair = delimiters[env] or {"", ""}
+  left, right = left or pair[1], right or pair[2]
+  local function edge(char, row)
+    local shape = tall[char]
+    if #lines == 1 or not shape then return char end
+    return row == 1 and shape[1] or row == #lines and shape[3]
+      or shape[4] and row == math.ceil(#lines / 2) and shape[4] or shape[2]
+  end
+  assert(longest + width(left) + width(right) <= limit, "grid too wide")
+  for row, line in ipairs(lines) do
+    line = rule_rows[row] and string.rep("─", longest) or line .. string.rep(" ", longest - width(line))
+    lines[row] = (edge(left, row) .. line .. edge(right, row)):gsub(" +$", "")
+  end
+  return table.concat(lines, "\n")
+end
+
 local function render(el)
   local ok, text = pcall(function()
+    if el.text:find("\\begin", 1, true) then
+      assert(el.mathtype == "DisplayMath", "inline grid")
+      return grid(el.text)
+    end
     if el.text:find("\\infer", 1, true) then
       assert(el.mathtype == "DisplayMath", "inline proof")
       return table.concat(proof(el.text, 0).lines, "\n")
@@ -171,7 +290,9 @@ local function display_blocks(el)
     if item.t == "Math" and item.mathtype == "DisplayMath" then
       flush()
       local text = render(item)
-      blocks[#blocks + 1] = pandoc.CodeBlock(text, pandoc.Attr("", {"text"}))
+      -- An unknown language such as "text" triggers Pandoc's expensive syntax
+      -- lookup. No language is needed for already-rendered terminal math.
+      blocks[#blocks + 1] = pandoc.CodeBlock(text)
     else
       pending[#pending + 1] = item
     end
@@ -181,6 +302,12 @@ local function display_blocks(el)
 end
 
 return {{
+  CodeBlock = function(el)
+    if el.classes[1] == "text" or el.classes[1] == "plaintext" then
+      el.classes:remove(1)
+      return el
+    end
+  end,
   Math = function(el)
     if el.mathtype ~= "InlineMath" then return end
     local text, ok = render(el)

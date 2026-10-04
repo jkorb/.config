@@ -20,19 +20,42 @@ and nnn plugin configuration. WezTerm reloads its config automatically.
 In nnn, `l`, Right, or Enter reads a file; `e` edits it in Neovim.
 Markdown uses `md-read` (Glow with a custom One Dark palette, paged through less).
 The reading column is centered, at most 80 columns wide, with no trailing tildes.
-Other text uses bat; other file types use the macOS default application.
+Other text uses `bat-read`: bat highlighting in a centered column of at most
+100 characters, including line numbers, with a filename header and soft wrapping.
+It has no trailing tildes. Other file types use the macOS default application.
 
 Press `e` inside the reader to edit the source in Neovim. Save and quit to return;
 the reader renders it again and restores your place as closely as the changed
 layout allows. Editing can make existing annotation line references stale.
 
-Press `o` to choose a local file link with fzf. Enter opens it through the same
-reader as nnn; Escape cancels. Quit the linked reader to return to the parent
-document. Links are resolved relative to the file containing them, including
-the companion notes file. Reference-style links, URL-encoded spaces, and local
-`file:` URLs work. Web links and links within the same document are omitted;
+In the Markdown reader, press `o` to show colored letter hints on local file
+links in the current screen. The rendered document stays visible. Type a hint
+to open its file; Escape cancels. Hints sit just before a link where there is
+space, otherwise over its opening letters. Repeated targets share one hint.
+Busy screens use two-letter hints; Backspace removes a typed letter.
+
+Press `O` (Shift-o) for the full list of links from the document and its notes,
+with fzf search; Enter opens the selection and Escape cancels. Both modes use
+the same reader as nnn. Quit a linked reader to return to your place in the parent.
+Links resolve relative to the document, including its companion notes in the
+same directory. Reference-style links, URL-encoded spaces, and local `file:` URLs
+work. Web links and links within the same document are omitted;
 `other.md#heading` opens the other file at its beginning. PDFs and other non-text
 files use their usual macOS application.
+
+Wiki links work in both modes: `[[paper.md]]`, `[[ paper ]]`, and
+`[[paper|Display label]]`. An extensionless target tries the exact path first,
+then a sibling `.md` file if one exists. Paths are relative to the document;
+there is no vault-wide filename search. `[[paper#Heading]]` opens the file at
+its beginning, like an ordinary link with a fragment. Links inside code remain
+literal. The [wiki-link filter](../glow/wikilinks.lua) normalizes these links
+during the existing Pandoc pass without modifying the source.
+
+Hints read Glow's existing terminal hyperlink targets from the visible lines
+supplied by less; they do not parse or render the Markdown again. Their color
+comes from the generated Glow theme. Resizing cancels hint mode; press `r` to
+recenter before reopening it. The helper is [md-hints](../glow/scripts/md-hints).
+Bare Escape is left to less because arrow keys also begin with Escape.
 
 In the Markdown reader, `a` opens the original in Plannotator TUI for comments
 attached to selected passages. Use `i` to position the cursor, then `v` and movement
@@ -61,6 +84,19 @@ Plain `glow FILE.md` uses the theme and its own pager settings; the centering,
 editing/link/annotation keys, math conversion, and included comments/notes belong
 to `md-read`.
 
+Run `bat-read FILE` for the source reader outside nnn. Its `e` key edits the
+original in Neovim; save and quit to resume reading. `r` reloads and recenters,
+`/` searches, and `q` exits. Plain `bat` keeps its usual command-line behavior.
+Start a new shell to put the new `bat-read` command on PATH; nnn can use it immediately.
+
+The bat config maps `.latex` to LaTeX and `.tmTheme` to XML. This gives Pandoc's
+LaTeX templates basic highlighting, though their `$if(...)$` directives are not
+a separate syntax. The reader checks `.theme` files for valid JSON before
+selecting JSON highlighting, since other programs use that extension too.
+For an unrecognized filename, choose explicitly: `bat-read -l JSON FILE`.
+See [bat's syntax mapping documentation](https://github.com/sharkdp/bat#syntax-highlighting)
+and the [reader script](../bat/scripts/bat-read).
+
 ### Logic and proofs in the reader
 
 `md-read` uses Pandoc to turn `$…$` and `$$…$$` math into Unicode before Glow
@@ -74,12 +110,28 @@ spacing block. The local filter adds `proof.sty` rules written as
 `\infer[label]{conclusion}{premise & premise}`, including nested rules and
 axioms with empty premises. Try [the logic example](examples/logic.md).
 
-Unknown commands, unsupported proof variants, and trees wider than the reading
+Display math also supports `array` with `l`, `c`, and `r` columns, vertical
+rules (`|`), and `\hline`; `aligned`, `align`, `align*`, and `split` align equation
+pairs; `gathered`, `gather`, and `gather*` center separate lines. Matrix forms
+include `matrix`, `pmatrix`, `bmatrix`, `Bmatrix`, `vmatrix`, and `Vmatrix`;
+`cases` adds a left brace. Use `&` between columns and `\\` between rows, inside
+`$$…$$`. Arrays may be enclosed by `\left(…\right)` or matching brackets/braces.
+Automatic equation numbering is omitted.
+
+Unknown commands, unsupported proof variants, and grids or trees wider than the reading
 column show their complete TeX source. This is a reading aid, not a TeX engine:
 it does not load packages or expand your own macros. `\infer*`, `\infer=`, and
 proofs mixed with surrounding math in one display are not supported. Fractions
 use Pandoc's linear representation; there is no general two-dimensional math
-renderer. Proof labels with wide characters also fall back to TeX.
+renderer. Nested grids, custom column types, row-height adjustments, and grids
+mixed with surrounding math in one display remain TeX. Proof labels and grid
+cells with wide characters also fall back to TeX.
+
+Math blocks carry no syntax-language label: Pandoc's lookup for the unrecognised
+language `text` added about 250 ms per render. Plain-text code fences are treated
+the same way, while actual programming-language labels are kept. Notes and their
+heading share a render pass. There is no persistent render cache; edits, comments,
+and theme changes are read again whenever the view refreshes.
 
 Pandoc 3.8 or newer is required. The filter and checks are in
 [glow/terminal-math.lua](../glow/terminal-math.lua) and

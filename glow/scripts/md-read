@@ -6,7 +6,8 @@ config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/glow"
 
 markdown() {
   MD_READ_WIDTH=$width pandoc --quiet \
-    --from=gfm+tex_math_dollars --to=gfm --wrap=none \
+    --from=gfm+tex_math_dollars+wikilinks_title_after_pipe --to=gfm --wrap=none \
+    --lua-filter="$config_dir/wikilinks.lua" \
     --lua-filter="$config_dir/terminal-math.lua" -- "$@" |
     GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -
 }
@@ -28,9 +29,10 @@ render() {
         markdown -
     fi
     if [[ -f $MD_READ_NOTES ]]; then
-      print -r -- $'\n---\n# Reading notes\n' |
-        markdown -
-      markdown "$MD_READ_NOTES"
+      {
+        print -r -- $'\n---\n# Reading notes\n'
+        cat -- "$MD_READ_NOTES"
+      } | markdown -
     fi
   } | awk -v padding="$padding" '{ printf "%*s%s\n", padding, "", $0 }'
 }
@@ -62,6 +64,7 @@ fi
 export MD_READ_SOURCE=${1:a}
 export MD_READ_NOTES="${MD_READ_SOURCE:r}.notes.md"
 export MD_READ_COMMAND=${0:a}
+export MD_READ_HINTS="$config_dir/scripts/md-hints"
 reader_tmp=$(mktemp -d "${TMPDIR:-/tmp}/md-read.XXXXXX")
 trap 'rm -rf -- "$reader_tmp"' EXIT
 trap 'exit 130' INT
@@ -70,5 +73,5 @@ export MD_READ_RENDERED="$reader_tmp/document.ansi"
 
 render > "$MD_READ_RENDERED"
 less -R -~ --lesskey-src="$config_dir/lesskeys" \
-  --prompt='e edit · a annotate · s notes · o links · r reload · / search · q quit' \
+  --prompt='e edit · a annotate · s notes · o hints · O all links · r reload · q quit' \
   -- "$MD_READ_RENDERED"

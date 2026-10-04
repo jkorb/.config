@@ -1,0 +1,5 @@
+# Only bat-read uses these bindings. Mark z restores the reading position.
+e set-mark z!^P"$BAT_READ_COMMAND"\ --edit\nR'z
+r set-mark z!^P"$BAT_READ_COMMAND"\ --refresh\nR'z
+# The pager contains rendered output; e edits the source, never this file.
+v noaction

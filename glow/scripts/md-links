@@ -11,7 +11,9 @@ from urllib.parse import unquote, urlsplit
 
 def local_links(source):
     result = subprocess.run(
-        ["pandoc", "--from=gfm+tex_math_dollars", "--to=json", "--", str(source)],
+        ["pandoc", "--from=gfm+tex_math_dollars+wikilinks_title_after_pipe", "--to=json",
+         "--lua-filter=" + str(Path(__file__).resolve().parents[1] / "wikilinks.lua"),
+         "--", str(source)],
         capture_output=True, text=True, check=True,
     )
     links = []

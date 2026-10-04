@@ -72,7 +72,7 @@ Sources: [keybinds](../tmux/conf/keybinds.conf), [options](../tmux/conf/options.
 [plugin keys](../tmux/tmux.conf). Inspect a running session with
 `tmux list-keys -T prefix` and `tmux list-keys -T root`.
 
-## nnn and the Markdown reader
+## nnn and the readers
 
 | Where | Key | Action |
 | --- | --- | --- |
@@ -85,23 +85,30 @@ Sources: [keybinds](../tmux/conf/keybinds.conf), [options](../tmux/conf/options.
 | `md-read` | a | Open Plannotator on the source file |
 | `md-read` | s | Edit the companion `.notes.md` file |
 | `md-read` | e | Edit the source in Neovim; save and quit to resume reading |
-| `md-read` | o | Choose a local file link with fzf; q returns from a linked reader |
+| `md-read` | o | Show letter hints on visible local file links; type a hint to open |
+| Link hints | Escape / Backspace | Cancel / remove a typed hint letter |
+| `md-read` | O (Shift-o) | Search all local links with fzf; Enter opens, Escape cancels |
 | `md-read` | r | Reload source/comments/notes and recenter |
 | `md-read` | /; n / N | Search; next / previous match |
 | `md-read` | g / G | Beginning / end |
 | `md-read` | m b; ' b | Set mark b / return to it |
 | `md-read` | q | Leave the reader |
+| `bat-read` | e | Edit the source in Neovim; save and quit to resume reading |
+| `bat-read` | r | Reload and recenter after resizing |
+| `bat-read` | /; n / N | Search; next / previous match |
+| `bat-read` | g / G; q | Beginning / end; leave the reader |
 | Plannotator | i, then v and movement keys | Position cursor, then select a passage |
 | Plannotator | c, then Enter | Write and save a comment on the selection |
 | Plannotator | q | Return to the reader |
 
 Plannotator also accepts mouse selection. Its `d` action records a deletion
-suggestion without changing source text. The reader disables less's `v` editor
-action because less is displaying a generated file. It reserves mark `z` for
+suggestion without changing source text. Both readers disable less's `v` editor
+action because less is displaying a generated file. They reserve mark `z` for
 restoring position after a reload.
 
 Sources: [nnn settings](../zsh/plugins/nnn/conf.zsh), [reader keys](../glow/lesskeys),
-[reader](../glow/scripts/md-read). nnn bookmarks are `h` for home, `d` for
+[Markdown reader](../glow/scripts/md-read), [source reader](../bat/scripts/bat-read),
+[source reader keys](../bat/lesskeys). nnn bookmarks are `h` for home, `d` for
 Downloads, `t` for Teaching, and `c` for `.config` in its bookmark menu.
 
 ## Neovim

@@ -1,0 +1,155 @@
+#!/usr/bin/env python3
+"""Overlay keyboard hints on the rendered screen piped here by less."""
+
+import itertools
+import json
+import os
+from pathlib import Path
+import re
+import select
+import signal
+import subprocess
+import sys
+import termios
+import tty
+import unicodedata
+from urllib.parse import unquote, urlsplit
+
+
+# Glow supplies OSC 8 targets, including for reference links and wrapped labels.
+TOKENS = re.compile(r"\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b\[[0-?]*[ -/]*[@-~]|[^\x1b]+|\x1b")
+SGR = re.compile(r"\x1b\[[0-9;:]*m\Z")
+ALPHABET = "asdfghjklqwertyuiopzxcvbnm"
+
+
+def local_path(target, source):
+    url = urlsplit(target)
+    if url.scheme not in ("", "file") or url.netloc not in ("", "localhost") or not url.path:
+        return None
+    path = Path(unquote(url.path))
+    return (path if path.is_absolute() else source.parent / path).resolve()
+
+
+def cell_width(char):
+    if unicodedata.combining(char) or unicodedata.category(char) in ("Mn", "Me", "Cf"):
+        return 0
+    return 2 if unicodedata.east_asian_width(char) in ("W", "F") else 1
+
+
+def viewport(text, source, columns, rows):
+    """Keep rendered colors and return the first visible position of each file."""
+    lines, targets = [], {}
+    target = None
+    for row, raw in enumerate(text.splitlines()[:rows]):
+        line, column, spaces = [], 0, 0
+        for token in TOKENS.findall(raw):
+            if token.startswith("\x1b]8;"):
+                url = token[4:].split(";", 1)[-1].removesuffix("\x07").removesuffix("\x1b\\")
+                try:
+                    target = local_path(url, source) if url else None
+                except ValueError:
+                    target = None
+            elif SGR.fullmatch(token):
+                line.append(token)
+            elif not token.startswith("\x1b"):
+                for char in token:
+                    if not char.isprintable():
+                        continue
+                    width = cell_width(char)
+                    if column + width > columns:
+                        break
+                    if target is not None and not char.isspace() and width:
+                        targets.setdefault(target, (row, column, spaces))
+                    line.append(char)
+                    column += width
+                    spaces = spaces + width if char.isspace() else 0
+        lines.append("".join(line) + "\x1b[0m")
+    length = 1
+    while len(ALPHABET) ** length < len(targets):
+        length += 1
+    codes = ("".join(parts) for parts in itertools.product(ALPHABET, repeat=length))
+    hints = {}
+    for (path, (row, column, spaces)), code in zip(targets.items(), codes):
+        # Prefer the space before a link; otherwise cover its opening letters.
+        column = column - len(code) if spaces >= len(code) else column
+        if column + len(code) <= columns:
+            hints[code] = (path, row, column)
+    return lines, hints
+
+
+def choose(text, source, terminal, config):
+    size = os.get_terminal_size(terminal.fileno())
+    lines, hints = viewport(text, source, size.columns, size.lines - 1)
+    style = json.loads((config / "glow/onedark.json").read_text())
+    color = style["code"]["color"].lstrip("#")
+    rgb = ";".join(str(int(color[i:i + 2], 16)) for i in (0, 2, 4))
+    badge = f"\x1b[0;1;7;38;2;{rgb}m"
+
+    def write(text):
+        terminal.write(text.encode())
+
+    def draw(prefix="", message=""):
+        write("\x1b[H\x1b[2J")
+        for row, line in enumerate(lines):
+            write(f"\x1b[{row + 1};1H" + line)
+        for code, (_, row, column) in hints.items():
+            if code.startswith(prefix):
+                write(f"\x1b[{row + 1};{column + 1}H{badge}{code}\x1b[0m")
+        prompt = message or (f"Open link: {prefix} · type a hint · Esc cancels" if hints
+                             else "No local file links on this screen · Esc returns")
+        write(f"\x1b[{size.lines};1H\x1b[0m" + prompt[:size.columns - 1])
+
+    saved = termios.tcgetattr(terminal.fileno())
+    try:
+        tty.setraw(terminal.fileno())
+        write("\x1b[?1049h\x1b[?25l")
+        prefix = ""
+        draw()
+        while True:
+            # Cancel on resize: less repaints; r then recomputes the reading width.
+            if os.get_terminal_size(terminal.fileno()) != size:
+                return None
+            if not select.select([terminal], [], [], 0.1)[0]:
+                continue
+            key = terminal.read(1)
+            if key in (b"\x1b", b"\x03", b"\x04", b""):
+                return None
+            if key in (b"\x7f", b"\x08"):
+                prefix = prefix[:-1]
+            elif key.decode("ascii", "ignore") in ALPHABET and key.isalpha():
+                prefix += key.decode("ascii")
+            else:
+                continue
+            if prefix in hints:
+                path = hints[prefix][0]
+                if path.is_file():
+                    return path
+                prefix = ""
+                draw(message="Linked file is missing · choose another hint or Esc")
+                continue
+            if not any(code.startswith(prefix) for code in hints):
+                prefix = ""
+            draw(prefix)
+    finally:
+        termios.tcsetattr(terminal.fileno(), termios.TCSADRAIN, saved)
+        write("\x1b[0m\x1b[?25h\x1b[?1049l")
+
+
+def main():
+    text = sys.stdin.read()
+    config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    source = Path(os.environ["MD_READ_SOURCE"])
+    with open("/dev/tty", "r+b", buffering=0) as terminal:
+        path = choose(text, source, terminal, config)
+        if path is not None:
+            subprocess.run([str(config / "nnn/scripts/nnn-open"), str(path)],
+                           stdin=terminal, stdout=terminal, stderr=terminal, check=True)
+
+
+if __name__ == "__main__":
+    def interrupted(signum, _frame):
+        raise SystemExit(128 + signum)
+
+    for signum in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(signum, interrupted)
+    main()

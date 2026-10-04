@@ -14,7 +14,7 @@
 | Glow, less | Render and page Markdown through `md-read` | [Glow](../glow), [reader](../glow/scripts/md-read) |
 | Plannotator TUI | Comments attached to selected passages | [UI settings](../plannotator-tui/config.toml) |
 | Pandoc | Math conversion and local-link parsing for the reader | [math filter](../glow/terminal-math.lua), [link picker](../glow/scripts/md-links) |
-| bat | Other text files and manual pages | [config](../bat/config), [generated theme](../bat/themes/shared-onedark.tmTheme) |
+| bat | Source reader via `bat-read`; highlighting for manual pages | [reader](../bat/scripts/bat-read), [config](../bat/config), [generated theme](../bat/themes/shared-onedark.tmTheme) |
 | GNU coreutils, trash | Colored `gls`; interactive copy/move; shell `rm` alias sends files to trash | [shell aliases](../zsh/core/core.zsh) |
 
 Zinit loads syntax highlighting, completions, fzf tab completion, autosuggestions,

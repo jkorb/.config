@@ -11,7 +11,7 @@ esac
 
 case $(file --brief --mime-type --dereference -- "$file") in
   text/*|application/json|application/xml|application/javascript|application/x-empty|inode/x-empty)
-    exec bat --paging=always --style=plain --wrap=auto -- "$file"
+    exec "$XDG_CONFIG_HOME/bat/scripts/bat-read" -- "$file"
     ;;
   *)
     exec /usr/bin/open "$file"
