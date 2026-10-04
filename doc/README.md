@@ -32,7 +32,7 @@ have terminal tools, with small scripts connecting them to macOS.
 - Change tmux keys in [keybinds.conf](../tmux/conf/keybinds.conf).
 - Change editor behavior in [Neovim's config](../nvim/lua/config) and [plugin settings](../nvim/lua/plugins).
 - Check background jobs with `lctl info`; their sources are in [launchd](../launchd).
-- Run `config-update` for [weekly maintenance](updates.md).
+- Run `update` for [weekly maintenance](updates.md).
 
 ## Scope of this guide
 

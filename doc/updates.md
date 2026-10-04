@@ -5,7 +5,7 @@
 Run this from a terminal:
 
 ```sh
-config-update
+update
 ```
 
 The command prints one progress line per step and lists changed package versions
@@ -42,7 +42,7 @@ command does not run Lazy's cleanup operation.
 To include packages inside the installed TeX Live distribution:
 
 ```sh
-config-update --tex
+update --tex
 ```
 
 This adds `tlmgr update --self --all` with machine-readable output for the change
@@ -66,17 +66,20 @@ After a successful run, restart Neovim and open a new shell to load updated code
 For tmux plugin changes, reload with Prefix then `r`; an already running plugin
 process may need a new tmux session. The updater does not restart your sessions.
 
-Only one copy of `config-update` can run at a time. If a process is killed before
+Only one copy of `update` can run at a time. If a process is killed before
 its cleanup runs, the next invocation reports the lock directory and PID file.
 Check that PID before removing the stale lock. Per-run logs are retained; old
 run directories can be deleted when no longer needed.
 
 ## Implementation and checks
 
-The command is [zsh/scripts/config-update](../zsh/scripts/config-update).
+The command is [zsh/scripts/update](../zsh/scripts/update).
 The Neovim helper is [nvim/update.lua](../nvim/update.lua). The old
 [bootstrap update script](../.bootstrap/scripts/update.zsh) forwards to this
 command. The scripts directory is already on the shell PATH.
+The command was renamed from `config-update`; its log and lock directory keeps
+the old name so existing history remains in one place. Run `rehash` if an existing
+shell does not find `update` yet.
 
 Tests used isolated fixtures for changed/unchanged packages, failures in each
 step, continued execution after failure, the optional TeX step, and duplicate-run

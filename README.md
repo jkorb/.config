@@ -13,6 +13,6 @@ Start with [the toolbox guide](doc/README.md).
 - [Colors and typography](doc/themes.md)
 - [Shared theme design](doc/theme-design.md)
 - [Mail and background jobs](doc/services.md)
-- [Weekly updates](doc/updates.md) with `config-update`
+- [Weekly updates](doc/updates.md) with `update`
 - [Audit starting points](doc/audits.md)
 - [Installed Homebrew packages](doc/packages.md)

@@ -7,11 +7,11 @@ case ${1:-} in
   '') ;;
   --tex) ;;
   -h|--help)
-    print 'Usage: config-update [--tex]'
+    print 'Usage: update [--tex]'
     print 'Update Homebrew, Zinit, tmux plugins, Lazy, Mason tools, and Treesitter.'
     print -- '--tex also updates TeX Live packages (may request sudo).'
     exit 0 ;;
-  *) print -u2 'Usage: config-update [--tex]'; exit 2 ;;
+  *) print -u2 'Usage: update [--tex]'; exit 2 ;;
 esac
 (( $# <= 1 )) || { print -u2 'Too many arguments'; exit 2; }
 

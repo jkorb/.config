@@ -1,4 +1,4 @@
--- Called by config-update in a fresh headless Neovim for each step.
+-- Called by update in a fresh headless Neovim for each step.
 local summary = {}
 local function changed(name, before, after)
   if before ~= after then
