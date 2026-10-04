@@ -39,10 +39,10 @@ editor or picker launched from nnn keeps its own Ctrl-G behavior.
 
 Reading follows the same approach. nnn delegates file opening to
 [nnn-open](../nnn/scripts/nnn-open), while its editor command remains Neovim.
-Markdown is rendered by Glow and paged by less. Plannotator supplies passage
-comments, and Neovim edits general notes in a companion file. Returning from
-either annotation tool rebuilds the reading view. The source document is not
-changed by adding comments.
+Pandoc converts supported math to text, then Glow renders the Markdown and less
+pages it. Plannotator supplies passage comments; Neovim edits the source or
+general notes in a companion file. Returning from editing or annotation rebuilds
+the reading view. Adding comments does not change the source document.
 
 ```text
 WezTerm
@@ -50,7 +50,9 @@ WezTerm
                 ├─ l / Right / Enter → nnn-open
                 │                       ├─ Markdown → md-read → Glow + less
                 │                       │                ├─ a → Plannotator
-                │                       │                └─ s → Neovim notes
+                │                       │                ├─ s → Neovim notes
+                │                       │                ├─ e → Neovim source
+                │                       │                └─ o → local file links
                 │                       ├─ text → bat
                 │                       └─ other → macOS open
                 └─ e → Neovim source file

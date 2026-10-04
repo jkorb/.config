@@ -84,6 +84,8 @@ Sources: [keybinds](../tmux/conf/keybinds.conf), [options](../tmux/conf/options.
 | nnn | ; x | Run the configured executable-bit action |
 | `md-read` | a | Open Plannotator on the source file |
 | `md-read` | s | Edit the companion `.notes.md` file |
+| `md-read` | e | Edit the source in Neovim; save and quit to resume reading |
+| `md-read` | o | Choose a local file link with fzf; q returns from a linked reader |
 | `md-read` | r | Reload source/comments/notes and recenter |
 | `md-read` | /; n / N | Search; next / previous match |
 | `md-read` | g / G | Beginning / end |

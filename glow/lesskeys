@@ -2,6 +2,8 @@
 # Mark z preserves the reading position. Ctrl-P skips the shell's RETURN prompt.
 a set-mark z!^P"$MD_READ_COMMAND"\ --annotate\nR'z
 s set-mark z!^P"$MD_READ_COMMAND"\ --notes\nR'z
+e set-mark z!^P"$MD_READ_COMMAND"\ --edit\nR'z
+o set-mark z!^P"$MD_READ_COMMAND"\ --links\nR'z
 r set-mark z!^P"$MD_READ_COMMAND"\ --refresh\nR'z
-# The pager holds generated output; source editing belongs to nnn's e key.
+# Never let less edit the generated output; e opens the source instead.
 v noaction

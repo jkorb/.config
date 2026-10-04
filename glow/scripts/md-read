@@ -4,6 +4,13 @@ set -eo pipefail
 
 config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/glow"
 
+markdown() {
+  MD_READ_WIDTH=$width pandoc --quiet \
+    --from=gfm+tex_math_dollars --to=gfm --wrap=none \
+    --lua-filter="$config_dir/terminal-math.lua" -- "$@" |
+    GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -
+}
+
 render() {
   local -a terminal_size=($(stty size < /dev/tty))
   local -i columns=${terminal_size[2]:-80}
@@ -15,29 +22,34 @@ render() {
   local feedback
   feedback=$(plannotator-tui --export "$MD_READ_SOURCE")
   {
-    GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -- "$MD_READ_SOURCE"
+    markdown "$MD_READ_SOURCE"
     if [[ -n $feedback && $feedback != 'No annotations.' ]]; then
       print -r -- $'\n---\n'"$feedback" |
-        GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -
+        markdown -
     fi
     if [[ -f $MD_READ_NOTES ]]; then
       print -r -- $'\n---\n# Reading notes\n' |
-        GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -
-      GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -- "$MD_READ_NOTES"
+        markdown -
+      markdown "$MD_READ_NOTES"
     fi
   } | awk -v padding="$padding" '{ printf "%*s%s\n", padding, "", $0 }'
 }
 
 case $1 in
-  --annotate|--notes|--refresh)
+  --annotate|--notes|--edit|--links|--refresh)
     [[ -n $MD_READ_SOURCE && -n $MD_READ_RENDERED ]] || exit 1
     if [[ $1 = --annotate ]]; then
       plannotator-tui "$MD_READ_SOURCE"
     elif [[ $1 = --notes ]]; then
       nvim -- "$MD_READ_NOTES"
+    elif [[ $1 = --edit ]]; then
+      nvim -- "$MD_READ_SOURCE"
+    elif [[ $1 = --links ]]; then
+      python3 "$config_dir/scripts/md-links" "$MD_READ_SOURCE" "$MD_READ_NOTES"
     fi
-    # Keep the inode: less rereads this file after the shell command returns.
-    render > "$MD_READ_RENDERED"
+    # Keep the old view if rendering fails, and the inode so less can reread it.
+    render > "$MD_READ_RENDERED.next"
+    cat -- "$MD_READ_RENDERED.next" > "$MD_READ_RENDERED"
     exit
     ;;
 esac
@@ -58,5 +70,5 @@ export MD_READ_RENDERED="$reader_tmp/document.ansi"
 
 render > "$MD_READ_RENDERED"
 less -R -~ --lesskey-src="$config_dir/lesskeys" \
-  --prompt='a annotate · s notes · / search · r reload · q quit' \
+  --prompt='e edit · a annotate · s notes · o links · r reload · / search · q quit' \
   -- "$MD_READ_RENDERED"

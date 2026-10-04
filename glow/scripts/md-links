@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Choose a local Markdown link and open it with the usual file reader."""
+
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+from urllib.parse import unquote, urlsplit
+
+
+def local_links(source):
+    result = subprocess.run(
+        ["pandoc", "--from=gfm+tex_math_dollars", "--to=json", "--", str(source)],
+        capture_output=True, text=True, check=True,
+    )
+    links = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            if node.get("t") == "Link":
+                _, content, (target, _) = node["c"]
+                url = urlsplit(target)
+                if url.scheme not in ("", "file") or url.netloc not in ("", "localhost"):
+                    return
+                if not url.path:  # A heading within this document, not another file.
+                    return
+                path = Path(unquote(url.path))
+                if not path.is_absolute():
+                    path = source.parent / path
+                label = "".join(part.get("c", " ") for part in content
+                                if part.get("t") in ("Str", "Space"))
+                links.append((label or target, path.resolve()))
+            else:
+                for value in node.values():
+                    walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                walk(value)
+
+    walk(json.loads(result.stdout))
+    return links
+
+
+def main():
+    links = []
+    for arg in sys.argv[1:]:
+        source = Path(arg)
+        if source.is_file():
+            for link in local_links(source):
+                if link not in links:
+                    links.append(link)
+    if not links:
+        input("No local file links in this document or its notes. Press Enter to return.")
+        return
+
+    def clean(text):
+        return "".join(c if c.isprintable() else " " for c in text)
+
+    rows = [f"{i}\t{clean(label)} → {clean(str(path))}" for i, (label, path) in enumerate(links)]
+    selected = subprocess.run(
+        ["fzf", "--read0", "--print0", "--delimiter=\t", "--with-nth=2..",
+         "--no-multi", "--no-preview", "--prompt=Open file › ",
+         "--header=Enter opens · Esc returns"],
+        input="\0".join(rows) + "\0", text=True, capture_output=True,
+    )
+    if selected.returncode in (1, 130):
+        return
+    selected.check_returncode()
+    path = links[int(selected.stdout.split("\t", 1)[0])][1]
+    if not path.is_file():
+        input(f"Not a file: {path}\nPress Enter to return.")
+        return
+    config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
+    env = dict(os.environ, XDG_CONFIG_HOME=str(config))
+    subprocess.run([str(config / "nnn/scripts/nnn-open"), str(path)], env=env, check=True)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        print(f"Could not open link: {error}", file=sys.stderr)
+        input("Press Enter to return.")

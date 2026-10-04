@@ -22,6 +22,18 @@ Markdown uses `md-read` (Glow with a custom One Dark palette, paged through less
 The reading column is centered, at most 80 columns wide, with no trailing tildes.
 Other text uses bat; other file types use the macOS default application.
 
+Press `e` inside the reader to edit the source in Neovim. Save and quit to return;
+the reader renders it again and restores your place as closely as the changed
+layout allows. Editing can make existing annotation line references stale.
+
+Press `o` to choose a local file link with fzf. Enter opens it through the same
+reader as nnn; Escape cancels. Quit the linked reader to return to the parent
+document. Links are resolved relative to the file containing them, including
+the companion notes file. Reference-style links, URL-encoded spaces, and local
+`file:` URLs work. Web links and links within the same document are omitted;
+`other.md#heading` opens the other file at its beginning. PDFs and other non-text
+files use their usual macOS application.
+
 In the Markdown reader, `a` opens the original in Plannotator TUI for comments
 attached to selected passages. Use `i` to position the cursor, then `v` and movement
 keys to select text, and `c` to comment; mouse selection works too. Comments save
@@ -46,7 +58,32 @@ Use `/` to search, `n`/`N` for matches, `g`/`G` for the beginning/end,
 To mark your place before jumping to the notes, press `mb`; return with `'b`.
 Run `md-read FILE.md` directly for the same reading and annotation workflow.
 Plain `glow FILE.md` uses the theme and its own pager settings; the centering,
-annotation keys, and included comments/notes belong to `md-read`.
+editing/link/annotation keys, math conversion, and included comments/notes belong
+to `md-read`.
+
+### Logic and proofs in the reader
+
+`md-read` uses Pandoc to turn `$…$` and `$$…$$` math into Unicode before Glow
+renders the document. This runs locally in WezTerm and tmux, without image
+rendering or network requests. The Markdown source is never rewritten by this
+step. Code spans and fenced code examples remain literal.
+
+Ordinary formulas use Pandoc's TeX math conversion: Greek letters, quantifiers,
+connectives, relations, arrows, and common scripts. Display math gets a fixed
+spacing block. The local filter adds `proof.sty` rules written as
+`\infer[label]{conclusion}{premise & premise}`, including nested rules and
+axioms with empty premises. Try [the logic example](examples/logic.md).
+
+Unknown commands, unsupported proof variants, and trees wider than the reading
+column show their complete TeX source. This is a reading aid, not a TeX engine:
+it does not load packages or expand your own macros. `\infer*`, `\infer=`, and
+proofs mixed with surrounding math in one display are not supported. Fractions
+use Pandoc's linear representation; there is no general two-dimensional math
+renderer. Proof labels with wide characters also fall back to TeX.
+
+Pandoc 3.8 or newer is required. The filter and checks are in
+[glow/terminal-math.lua](../glow/terminal-math.lua) and
+[glow/tests/test_reader.py](../glow/tests/test_reader.py).
 
 Install the annotation reader with `brew install plannotator/tap/plannotator-tui`
 (Homebrew may first require `brew trust --formula plannotator/tap/plannotator-tui`).
@@ -98,8 +135,9 @@ line breaks. It disables in-buffer render-markdown and headlines plugins.
 
 For Markdown with equations, run `:MarkdownPreview` in Neovim. The installed
 preview plugin renders math with KaTeX in the browser; `:MarkdownPreviewStop`
-closes the preview. Glow still shows the LaTeX source. The math-enabled Glow
-fork uses image placement that the current WezTerm release does not support.
+closes the preview. The terminal reader handles the subset described above;
+plain Glow still shows the LaTeX source. KaTeX has its own command limits and
+does not load `proof.sty`; use the TeX/PDF workflow for full proof typesetting.
 
 Sources: [editor view](../nvim/lua/plugins/editor.lua),
 [prose settings](../nvim/lua/config/autocmds.lua),
