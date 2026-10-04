@@ -3,19 +3,21 @@ network_access = "enabled"
 
 include = "config.local.toml"
 personality = "pragmatic"
-model = "gpt-5.6-sol"
-model_reasoning_effort = "xhigh"
+model = "gpt-6-astra"
+model_reasoning_effort = "high"
 
 notify = ["/Users/jkorbmacher/.config/codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 
 [tui]
-theme = "shared-onedark"
 notifications = true
+screen_reader_detection_done = true
+theme = "shared-onedark"
 
 [tui.model_availability_nux]
 "gpt-5.5" = 4
 "gpt-5.6-sol" = 4
-gpt-6-astra = 1
+gpt-6-astra = 4
+"gpt-6.1-sol" = 4
 
 [projects."/Users/jkorbmacher/.config"]
 trust_level = "trusted"
@@ -71,6 +73,33 @@ trust_level = "trusted"
 [projects."/Users/jkorbmacher/Dropbox/Projects/chiara_website"]
 trust_level = "trusted"
 
+[projects."/Users/jkorbmacher/Dropbox/Projects/logicalmethods.ai"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Projects/logicalmethods.ai/portfolio"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Teaching/Qualifications/SKOw/portfolio"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Teaching/Qualifications/SKOw/portfolio/00_final"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Teaching/Qualifications/SKOw/portfolio/00_final/.agents/skills/avoid-ai-writing"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Teaching/Admin/ki-ec/jaarverslag"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Projects/logicalmethods.ai/2026-2027/exams/midterm-study-guide"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Projects/latex"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Projects/Bruijn"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 "gpt-5.3-codex" = "gpt-5.4"
 "gpt-5.4" = "gpt-5.5"
@@ -81,7 +110,6 @@ source_type = "local"
 source = "/Users/jkorbmacher/.config/codex/.tmp/bundled-marketplaces/openai-bundled"
 
 [marketplaces.openai-primary-runtime]
-last_updated = "2026-08-20T09:36:48Z"
 source_type = "local"
 source = "/Users/jkorbmacher/.cache/codex-runtimes/codex-primary-runtime/plugins/openai-primary-runtime"
 
@@ -118,6 +146,7 @@ preventSleepWhileRunning = true
 followUpQueueMode = "queue"
 localeOverride = "en-US"
 dock-icon-preference = "codex-system"
+keepRemoteControlAwakeWhilePluggedIn = true
 
 [features]
 js_repl = false
@@ -133,20 +162,17 @@ NODE_REPL_NODE_MODULE_DIRS = "/Applications/ChatGPT.app/Contents/Resources/cua_n
 NODE_REPL_NODE_PATH = "/Applications/ChatGPT.app/Contents/Resources/cua_node/bin/node"
 NODE_REPL_TRUSTED_CODE_PATHS = "/Users/jkorbmacher/.codex:/Applications/ChatGPT.app/Contents/Resources/cua_node/lib/node_modules"
 CODEX_HOME = "/Users/jkorbmacher/.codex"
-BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab"
-BROWSER_USE_TINYSKY_ENABLED = "0"
+BROWSER_USE_AVAILABLE_BACKENDS = "chrome,iab,mcpapps"
+BROWSER_USE_TINYSKY_ENABLED = "1"
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
-NODE_REPL_INSTRUCTIONS_USE_CASE_COMPUTER_USE = "Control desktop apps on macOS through Computer Use."
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.818.21641"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/jkorbmacher/.codex/plugins/cache/openai-bundled/browser/26.818.21641/scripts/browser-service.mjs","sky":"@oai/sky/service"}'
-CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex"
+BROWSER_USE_CODEX_APP_VERSION = "26.930.21537"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/jkorbmacher/.codex/plugins/cache/openai-bundled/browser/26.930.21537/scripts/browser-service.mjs"}'
+CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 
-[mcp_servers.computer-use]
-command = "./Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient"
-args = ["mcp"]
-cwd = "."
+[mcp_servers.cua_repl]
+command = "/Applications/ChatGPT.app/Contents/MacOS/ChatGPT"
 enabled = false
 
 [shell_environment_policy.set]
