@@ -1,0 +1,5 @@
+#!/bin/zsh
+# Change the current nnn context using the same picker as zsh's Ctrl-G.
+target=$("$XDG_CONFIG_HOME/zsh/scripts/fzf-goto-dir") || exit 0
+[[ -d $target && -p $NNN_PIPE ]] || exit 0
+printf '0c%s' "$target" > "$NNN_PIPE"

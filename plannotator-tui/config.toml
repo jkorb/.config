@@ -1,0 +1,3 @@
+[ui]
+# The document inherits WezTerm's One Dark terminal colors.
+theme = "dark"

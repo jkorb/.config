@@ -1,0 +1,19 @@
+#!/bin/zsh
+# nnn's foreground opener: read here, edit with e.
+file=$1
+[[ $file = /* ]] || file="$PWD/$file"
+
+case ${file:e:l} in
+  md|markdown|mdown|mkd|mkdn)
+    exec "$XDG_CONFIG_HOME/glow/scripts/md-read" "$file"
+    ;;
+esac
+
+case $(file --brief --mime-type --dereference -- "$file") in
+  text/*|application/json|application/xml|application/javascript|application/x-empty|inode/x-empty)
+    exec bat --paging=always --style=plain --wrap=auto -- "$file"
+    ;;
+  *)
+    exec /usr/bin/open "$file"
+    ;;
+esac

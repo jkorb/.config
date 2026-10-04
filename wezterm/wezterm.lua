@@ -34,6 +34,19 @@ config.hide_tab_bar_if_only_one_tab = true
 
 config.keys = {
 	{
+		key = "g",
+		mods = "CTRL",
+		action = wezterm.action_callback(function(window, pane)
+			local process = pane:get_foreground_process_info()
+			-- Direct nnn sessions; tmux handles its own panes. Leave child apps alone.
+			if process and process.name == "nnn" and next(process.children) == nil then
+				window:perform_action(wezterm.action.SendString("\x1bg"), pane)
+			else
+				window:perform_action(wezterm.action.SendString("\x07"), pane)
+			end
+		end),
+	},
+	{
 		key = "/",
 		mods = "CTRL",
 		action = wezterm.action.SendString("\x1F"),

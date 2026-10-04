@@ -1,0 +1,7 @@
+# These bindings apply only to md-read, not to other less sessions.
+# Mark z preserves the reading position. Ctrl-P skips the shell's RETURN prompt.
+a set-mark z!^P"$MD_READ_COMMAND"\ --annotate\nR'z
+s set-mark z!^P"$MD_READ_COMMAND"\ --notes\nR'z
+r set-mark z!^P"$MD_READ_COMMAND"\ --refresh\nR'z
+# The pager holds generated output; source editing belongs to nnn's e key.
+v noaction

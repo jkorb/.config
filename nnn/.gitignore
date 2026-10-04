@@ -1,3 +1,6 @@
 /*
 
 !scripts
+!plugins/
+plugins/*
+!plugins/goto-dir

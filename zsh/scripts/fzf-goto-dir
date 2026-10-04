@@ -1,0 +1,15 @@
+#!/bin/zsh
+# Shared directory picker for the Ctrl-G shell widget and nnn.
+fdignore="$XDG_CONFIG_HOME/zsh/plugins/fzf/fdignore"
+cmd="command fd -uu --ignore-file ${(q)fdignore} -L --strip-cwd-prefix --one-file-system -t d -p --base-directory ${(q)HOME} ."
+mkdir -p "$XDG_CACHE_DIR/fzf"
+
+dir=$(
+  FZF_DEFAULT_COMMAND="$cmd" \
+    fzf -i --prompt=" 🚀 " --algo=v1 +m --cycle \
+      --height=100% --preview 'tree -C -- "$HOME"/{} | head -200' --reverse \
+      --history="$XDG_CACHE_DIR/fzf/dir_history" --history-size=1000000000 < /dev/tty
+) || exit $?
+
+[[ -n $dir ]] || exit 1
+print -r -- "$HOME/$dir"

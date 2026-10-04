@@ -1,0 +1,62 @@
+#!/bin/zsh
+# Glow renders; less pages; Plannotator attaches comments to selected text.
+set -eo pipefail
+
+config_dir="${XDG_CONFIG_HOME:-$HOME/.config}/glow"
+
+render() {
+  local -a terminal_size=($(stty size < /dev/tty))
+  local -i columns=${terminal_size[2]:-80}
+  (( columns > 0 )) || columns=80
+  local -i width=$(( columns < 80 ? columns : 80 ))
+  local -i padding=$(( (columns - width) / 2 ))
+  # Explicit style keeps colors when rendering to a file.
+  local -a renderer=(glow --width "$width" --style "$config_dir/onedark.json")
+  local feedback
+  feedback=$(plannotator-tui --export "$MD_READ_SOURCE")
+  {
+    GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -- "$MD_READ_SOURCE"
+    if [[ -n $feedback && $feedback != 'No annotations.' ]]; then
+      print -r -- $'\n---\n'"$feedback" |
+        GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -
+    fi
+    if [[ -f $MD_READ_NOTES ]]; then
+      print -r -- $'\n---\n# Reading notes\n' |
+        GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -
+      GLOW_PAGER=false GLOW_TUI=false "${renderer[@]}" -- "$MD_READ_NOTES"
+    fi
+  } | awk -v padding="$padding" '{ printf "%*s%s\n", padding, "", $0 }'
+}
+
+case $1 in
+  --annotate|--notes|--refresh)
+    [[ -n $MD_READ_SOURCE && -n $MD_READ_RENDERED ]] || exit 1
+    if [[ $1 = --annotate ]]; then
+      plannotator-tui "$MD_READ_SOURCE"
+    elif [[ $1 = --notes ]]; then
+      nvim -- "$MD_READ_NOTES"
+    fi
+    # Keep the inode: less rereads this file after the shell command returns.
+    render > "$MD_READ_RENDERED"
+    exit
+    ;;
+esac
+
+if [[ $# != 1 || ! -f $1 ]]; then
+  print -u2 'Usage: md-read FILE.md'
+  exit 1
+fi
+
+export MD_READ_SOURCE=${1:a}
+export MD_READ_NOTES="${MD_READ_SOURCE:r}.notes.md"
+export MD_READ_COMMAND=${0:a}
+reader_tmp=$(mktemp -d "${TMPDIR:-/tmp}/md-read.XXXXXX")
+trap 'rm -rf -- "$reader_tmp"' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+export MD_READ_RENDERED="$reader_tmp/document.ansi"
+
+render > "$MD_READ_RENDERED"
+less -R -~ --lesskey-src="$config_dir/lesskeys" \
+  --prompt='a annotate · s notes · / search · r reload · q quit' \
+  -- "$MD_READ_RENDERED"
