@@ -119,33 +119,40 @@ unset wait_key
 
 set date_format   = "%d.%m.%Y %H:%M"
 
-set status_format = "  %D      %m%?n?(%n)?  "
+# Use the native status bar as a column header without taking another row.
+set status_on_top = yes
+set status_format = "  From:                    Subject:%* Date:    "
 
 
 ###
 
-set index_format=" %@flag@ | %-18.18F    %-40.40s  %@attachflag@ %@provinence@   %[%m/%d/%y — %H:%M]    "
+# The subject uses available width; soft-fill reserves the right-hand metadata.
+# Keep one literal space after the %* padding character, even when the row is full.
+# Four trailing spaces inset the date and match the header's right margin.
+set index_format="%@flag@ %@who@ | %-18.18F   %s%*  %@attachflag@%@provinence@  %<[y?%<[d?%[%H:%M]&%[%m/%d]>&%[%m/%d/%y]>    "
 
-index-format-hook flag "~T" "  "
-index-format-hook flag "~D" " 󰛌 "
-index-format-hook flag "~U" "  "
-index-format-hook flag "~Q" " 󱞵 "
-index-format-hook flag "~A" "   "
+# Replace the complete set on reload, including older fallback hooks.
+unhook index-format-hook
+index-format-hook flag "~T" ""
+index-format-hook flag "~D" "󰛌"
+index-format-hook flag "~U" ""
+index-format-hook flag "~Q" "󱞵"
+index-format-hook flag "~A" " "
 
 index-format-hook attachflag "~X 1-" " "
-index-format-hook attachflag "~A"    "  "
+index-format-hook attachflag "~A"    ""
 
-index-format-hook provinence "~f '@uu\\.nl$'"            "uu    "
+index-format-hook provinence "~f '@uu\\.nl$'"            " "
 index-format-hook provinence "~f '@students\\.uu\\.nl$'" "studi "
-index-format-hook provinence "~A"                        "      "
+index-format-hook provinence "~A"                        ""
 
 
-# 1) Read / unread bullet
-
-# 2) Who icon (list / from you / other)
-index-format-hook who "~l" " "   # mailing list
-index-format-hook who "~P" " "   # from me
-index-format-hook who "."  "  "   # everyone else
+# Use the existing avatar column for additional information, without adding width.
+# The status column still shows unread/replied/tagged/deleted independently.
+index-format-hook who "~F" ""   # flagged/important
+index-format-hook who "~P" ""   # from me
+index-format-hook who "~l" ""   # known mailing list
+index-format-hook who "~A" ""   # other senders
 
 ###
 

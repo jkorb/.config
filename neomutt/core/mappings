@@ -108,6 +108,7 @@ bind  compose            dd         detach-file
 # Tagging
 # ----------------------------------------
 
+bind  index,pager        !              flag-message
 bind  generic            <space><space>  tag-entry
 bind  index              <space>t        tag-thread
 macro pager              <space>t        "<exit><mark-message>q<enter><tag-thread>'q<display-message>"    "tag-thread"
