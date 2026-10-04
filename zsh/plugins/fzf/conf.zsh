@@ -18,12 +18,6 @@ FZF_DEFAULT_OPTS+="
   --history=$XDG_CACHE_DIR/fzf/history
   --history-size=1000000000"
 
- FZF_DEFAULT_OPTS+="
-   --color bg:-1,fg:7,hl:5
-   --color bg+:4,fg+:0,hl+:2
-   --color preview-bg:-1,preview-fg:7
-   --color prompt:2,spinner:-1"
-
 export FZF_DEFAULT_OPTS
 
 export FZF_DEFAULT_COMMAND='fd --type file --follow --hidden --exclude .git'

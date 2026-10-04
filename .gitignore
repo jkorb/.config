@@ -3,6 +3,7 @@
 !.bootstrap
 
 !btop
+!bat
 !cmus
 !codex
 !amethyst
@@ -10,6 +11,7 @@
 davmail/davmail.log
 davmail/davmail.properties
 !despell
+!doc
 
 # Neovim generated spell files
 nvim/spell/*.spl
@@ -23,6 +25,7 @@ nvim/nvim.log
 !fd
 !git
 !gnupg
+!glow
 !khal
 !latexmk
 !launchd
@@ -36,6 +39,7 @@ neomutt/app/*.iconset
 !nnn
 !newsboat
 !nvim
+!plannotator-tui
 nvim/lazy-lock.json
 nvim/lazyvim.json
 !qmk
@@ -44,6 +48,9 @@ systemd/user/default.target.wants
 systemd/user/sockets.target.wants
 systemd/user/timers.target.wants
 !tmux
+!themes
+themes/__pycache__/
+themes/tests/__pycache__/
 tmux/sessions
 !user-dirs.dirs
 !vdirsyncer

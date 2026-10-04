@@ -1,0 +1,2 @@
+# Read after autosave so saved UI colors cannot replace the shared theme.
+colorscheme shared

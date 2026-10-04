@@ -2,34 +2,10 @@ local wezterm = require("wezterm")
 
 local config = {}
 
--- COLORS
-config.colors = {
-	foreground = "#abb2bf",
-	background = "#1e1e1e",
-	-- background = "#282c34",
-
-	ansi = {
-		"#3f4451", -- black
-		"#e05561", -- red
-		"#8cc265", -- green
-		"#d18f52", -- yellow
-		"#4aa5f0", -- blue
-		"#c162de", -- magenta
-		"#42b3c2", -- cyan
-		"#d7dae0", -- white
-	},
-
-	brights = {
-		"#4f5666", -- bright black
-		"#ff616e", -- bright red
-		"#a5e075", -- bright green
-		"#f0a45d", -- bright yellow
-		"#4dc4ff", -- bright blue
-		"#de73ff", -- bright magenta
-		"#4cd1e0", -- bright cyan
-		"#e6e6e6", -- bright white
-	},
-}
+-- Native colors generated from themes/palette.json.
+local theme_path = wezterm.config_dir .. "/theme.lua"
+wezterm.add_to_config_reload_watch_list(theme_path)
+config.colors = dofile(theme_path)
 
 config.native_macos_fullscreen_mode = true
 config.adjust_window_size_when_changing_font_size = false

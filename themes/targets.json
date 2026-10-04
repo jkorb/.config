@@ -1,0 +1,59 @@
+[
+  {
+    "template": "wezterm.lua",
+    "target": "wezterm/theme.lua"
+  },
+  {
+    "template": "tmux.conf",
+    "target": "tmux/conf/colors.conf"
+  },
+  {
+    "template": "nvim.lua",
+    "target": "nvim/lua/config/theme.lua"
+  },
+  {
+    "template": "glow.json",
+    "target": "glow/onedark.json"
+  },
+  {
+    "template": "zathura",
+    "target": "zathura/theme"
+  },
+  {
+    "template": "btop.theme",
+    "target": "btop/themes/shared.theme"
+  },
+  {
+    "template": "textmate.tmTheme",
+    "target": "bat/themes/shared-onedark.tmTheme"
+  },
+  {
+    "template": "textmate.tmTheme",
+    "target": "codex/themes/shared-onedark.tmTheme"
+  },
+  {
+    "template": "neomutt",
+    "target": "neomutt/core/colors"
+  },
+  {
+    "template": "neomutt-html",
+    "target": "neomutt/core/colors-html"
+  },
+  {
+    "template": "newsboat",
+    "target": "newsboat/configs/colors"
+  },
+  {
+    "template": "cmus.theme",
+    "target": "cmus/shared.theme"
+  },
+  {
+    "template": "khal-palette",
+    "target": "khal/config",
+    "block": "palette"
+  },
+  {
+    "template": "zsh.zsh",
+    "target": "zsh/theme.zsh"
+  }
+]

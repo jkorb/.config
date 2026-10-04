@@ -8,3 +8,4 @@ export ZPLUGINDIR=$ZDOTDIR/plugins
 
 source "$ZCOREDIR/core.zsh"
 source "$ZPLUGINDIR/plugins.zsh"
+source "$XDG_CONFIG_HOME/zsh/theme.zsh"

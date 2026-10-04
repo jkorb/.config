@@ -5,4 +5,6 @@
 !assets/logo.png
 !scripts/
 !scripts/notify
+!themes/
+!themes/*.tmTheme
 config.local.toml

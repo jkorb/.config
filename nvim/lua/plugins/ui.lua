@@ -11,18 +11,23 @@ return {
     config = function()
       require("onedark").setup({
         style = "darker",
+        colors = require("config.theme").onedark,
+        term_colors = false,
         transparent = true,
-        highlights = {
+        highlights = vim.tbl_extend("force", require("config.theme").highlights, {
           ["@text.math"] = { fg = "$purple" },
           ["@text.environment"] = { fg = "$cyan" },
           ["@text.environment.name"] = { fg = "$yellow" },
           -- Spell: colored undercurl instead of plain underline
-          SpellBad = { fg = "$red", undercurl = true },
+          SpellBad = { sp = "$red", undercurl = true },
           SpellCap = { sp = "$yellow", undercurl = true },
           SpellLocal = { sp = "$blue", undercurl = true },
           SpellRare = { sp = "$purple", undercurl = true },
-        },
+        }),
       })
+      for index, color in ipairs(require("config.theme").terminal) do
+        vim.g["terminal_color_" .. (index - 1)] = color
+      end
       -- Enable theme
       require("onedark").load()
     end,
@@ -35,21 +40,7 @@ return {
       -- require("config.evil_lualine")
       local lualine = require("lualine")
 
-      -- Color table for highlights
-      -- stylua: ignore
-      local colors = {
-        bg       = '#202328',
-        fg       = '#bbc2cf',
-        yellow   = '#ECBE7B',
-        cyan     = '#008080',
-        darkblue = '#081633',
-        green    = '#98be65',
-        orange   = '#FF8800',
-        violet   = '#a9a1e1',
-        magenta  = '#c678dd',
-        blue     = '#51afef',
-        red      = '#ec5f67',
-      }
+      local colors = require("config.theme").lualine
 
       local conditions = {
         buffer_not_empty = function()
@@ -205,7 +196,7 @@ return {
           return msg
         end,
         icon = " LSP:",
-        color = { fg = "#ffffff", gui = "bold" },
+        color = { fg = colors.fg, gui = "bold" },
       })
 
       -- Add components to right sections

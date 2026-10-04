@@ -9,6 +9,7 @@ model_reasoning_effort = "xhigh"
 notify = ["/Users/jkorbmacher/.config/codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
 
 [tui]
+theme = "shared-onedark"
 notifications = true
 
 [tui.model_availability_nux]

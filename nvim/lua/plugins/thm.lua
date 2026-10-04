@@ -9,7 +9,7 @@ return {
     },
     config = function(_, opts)
       require("prover9").setup(opts)
-      vim.api.nvim_set_hl(0, "@operator", { fg = "#4aa5f0", bold = true })
+      vim.api.nvim_set_hl(0, "@operator", { fg = require("config.theme").colors.blue, bold = true })
     end,
   },
 }

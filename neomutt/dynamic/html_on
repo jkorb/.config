@@ -3,9 +3,7 @@
 source ~/.config/neomutt/core/settings
 source ~/.config/neomutt/core/colors
 
-color index         red       default ~Q #replied
-color status        red       black 
-color indicator     black     red      # Currently selected message
+source ~/.config/neomutt/core/colors-html
 
 unset sig_dashes
 
