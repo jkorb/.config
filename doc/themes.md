@@ -57,6 +57,7 @@ next build.
 | nnn | `NNN_COLORS` and `NNN_FCOLORS` select terminal ANSI slots for contexts and file types | Restart from a new shell |
 | Glow | [onedark.json](../glow/onedark.json); the layout and transparent background are preserved | Reopen the reader, or press `r` in `md-read` |
 | bat | [shared-onedark.tmTheme](../bat/themes/shared-onedark.tmTheme), selected in tracked [config](../bat/config) | `bat cache --build`, then reopen the reader |
+| Reader bars | [reader-prompt](../glow/scripts/reader-prompt) uses the generated Glow heading, link and comment colors for the breadcrumb row and shortcut footer | Reopen `md-read` or `bat-read` |
 | Zathura | [theme](../zathura/theme), included by zathurarc | Reopen Zathura |
 | NeoMutt | [colors](../neomutt/core/colors), with an additional [HTML mode theme](../neomutt/core/colors-html); ANSI slots inherit WezTerm's palette | Restart; HTML mode still has its red status indicator |
 | Newsboat | [colors](../newsboat/configs/colors), using the terminal's 16 named color slots | Restart Newsboat |

@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Build the breadcrumb header and shortcut footer for both readers."""
+
+import json
+import os
+from pathlib import Path
+import sys
+import unicodedata
+
+
+SHORTCUTS = {
+    'md': [('e', '', 'edit'), ('a', '', 'annotate'), ('s', '', 'notes'),
+           ('o', '', 'hints'), ('O', '', 'links'), ('r', '', 'reload'), ('q', '', 'quit')],
+    'bat': [('e', '', 'edit'), ('r', '', 'reload'), ('/', '', 'search'), ('q', '', 'quit')],
+}
+
+
+def colors(theme, color):
+    def paint(hex_color, bold=False):
+        if not color:
+            return ''
+        rgb = ';'.join(str(int(hex_color[i:i + 2], 16)) for i in (1, 3, 5))
+        return '\x1b[{};38;2;{}m'.format(1 if bold else 0, rgb)
+    return (paint(theme['heading']['color'], True), paint(theme['link']['color']),
+            paint(theme['code_block']['chroma']['comment']['color']), '\x1b[0m' if color else '')
+
+
+def prompt(kind, columns, theme, color=True):
+    width = min(columns - 1, 80 if kind == 'md' else 100)
+    shortcuts = SHORTCUTS[kind]
+    # These labels and Nerd Font icons each use one cell per character.
+    for icons, labels, gap in ((True, True, '  '), (False, True, '  '),
+                               (True, False, '  '), (False, False, ' ')):
+        parts = [('{} '.format(icon) if icons else '') + key + (' ' + label if labels else '')
+                 for key, icon, label in shortcuts]
+        length = len(gap.join(parts))
+        if length <= width:
+            break
+    if length > width:
+        return 'q'  # Only relevant for panes too narrow to show the keys.
+
+    key_color, icon_color, label_color, reset = colors(theme, color)
+    parts = []
+    for key, icon, label in shortcuts:
+        parts.append((icon_color + icon + ' ' if icons else '') + key_color + key
+                     + (label_color + ' ' + label if labels else ''))
+    result = reset + ' ' * max(0, (columns - length) // 2) + gap.join(parts) + reset
+    # less interprets these characters in prompt strings, including the dots
+    # in labels if we ever add any. Escape them without touching ANSI colors.
+    return ''.join('\\' + char if char in '?.%:\\' else char for char in result)
+
+
+def cells(text):
+    return sum(0 if unicodedata.combining(c) else
+               2 if unicodedata.east_asian_width(c) in ('W', 'F') else 1 for c in text)
+
+
+def shorten(text, width):
+    if cells(text) <= width:
+        return text
+    while text and cells(text) > width - 1:
+        text = text[1:]
+    return '…' + text
+
+
+def header(trail, kind, columns, theme, color=True):
+    width = max(1, min(columns - 1, 80 if kind == 'md' else 100))
+    names = [''.join(c if c.isprintable() else ' ' for c in Path(p).name) for p in trail]
+    shown = names[:]
+    hidden = 0
+    def prefix():
+        return ('… +{}  ›  '.format(hidden) if hidden else '  ')
+    while len(shown) > 1 and cells(prefix() + '  ›  '.join(shown)) > width:
+        shown.pop(0)
+        hidden += 1
+    if width <= cells(prefix()):
+        lead = ''
+    else:
+        lead = prefix()
+    if len(shown) == 1:
+        shown[0] = shorten(shown[0], width - cells(lead))
+    active, accent, muted, reset = colors(theme, color)
+    plain = lead + '  ›  '.join(shown)
+    body = accent + lead + (accent + '  ›  ').join(
+        (active if i == len(shown) - 1 else muted) + name for i, name in enumerate(shown))
+    return reset + ' ' * max(0, (columns - cells(plain)) // 2) + body + reset
+
+
+def main():
+    trail = json.loads(os.environ.get('READER_TRAIL', '[]'))
+    if sys.argv[1] == '--push':
+        print(json.dumps(trail + [sys.argv[2]]))
+        return
+    config = Path(os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config'))
+    theme = json.loads((config / 'glow/onedark.json').read_text())
+    with open('/dev/tty') as terminal:
+        columns = os.get_terminal_size(terminal.fileno()).columns
+    color = not os.environ.get('NO_COLOR') and os.environ.get('TERM') != 'dumb'
+    if sys.argv[1] == '--header':
+        print(header(trail, sys.argv[2], columns, theme, color))
+    else:
+        print(prompt(sys.argv[1], columns, theme, color), end='')
+
+
+if __name__ == '__main__':
+    main()

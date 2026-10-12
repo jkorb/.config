@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""Open Plannotator at a nearby source block without modifying the app."""
+
+import errno
+import fcntl
+import os
+from pathlib import Path
+import pty
+import re
+import select
+import signal
+import struct
+import subprocess
+import sys
+import termios
+import tty
+
+
+def block_at_line(source, descriptions, line):
+    lines = source.splitlines()
+    cursor, selected = 0, 0
+    for description in descriptions.splitlines():
+        match = re.match(r"\s*(\d+)\s+\S+\s+row\s+\d+  (.*)", description)
+        if not match:
+            continue
+        index, head = int(match[1]), match[2].strip()
+        if not head:
+            continue
+        found = next((i for i in range(cursor, len(lines))
+                      if lines[i].strip().startswith(head)), None)
+        if found is None:
+            continue
+        if found + 1 > line:
+            break
+        selected, cursor = index, found + 1
+        # Do not mistake a closing fence or a heading inside code for the
+        # beginning of the next block with the same first line.
+        fence = re.match(r"^\s*(`{3,}|~{3,})", lines[found])
+        marker = fence[1] if fence else "$$" if lines[found].strip() == "$$" else None
+        if marker:
+            for end in range(cursor, len(lines)):
+                text = lines[end].strip()
+                if len(text) >= len(marker) and not text.strip(marker[0]):
+                    cursor = end + 1
+                    break
+    return selected
+
+
+def first_frame(data):
+    # Ratatui finishes drawing with HideCursor. Require a preceding cursor
+    # position so terminal setup alone cannot trigger navigation. Footer text
+    # is unreliable here: narrow panes and long filenames truncate it.
+    return bool(re.search(rb"\x1b\[\d+;\d+H[\s\S]*\x1b\[\?25l", data))
+
+
+def get_window_size(fd):
+    # Use ioctl so Apple's Python 3.9 works too; termios's convenience
+    # functions are only available in newer Python versions.
+    return struct.unpack('HHHH', fcntl.ioctl(fd, termios.TIOCGWINSZ, b'\0' * 8))[:2]
+
+
+def set_window_size(fd, size):
+    fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', *size, 0, 0))
+
+
+def run(source, block):
+    """Relay a private terminal; inject navigation only after the first frame."""
+    size = get_window_size(0)
+    pid, master = pty.fork()
+    if pid == 0:
+        set_window_size(0, size)
+        os.execvp("plannotator-tui", ["plannotator-tui", str(source)])
+
+    saved = termios.tcgetattr(0)
+    previous_resize = signal.getsignal(signal.SIGWINCH)
+    def interrupted(signum, _frame):
+        raise SystemExit(128 + signum)
+
+    previous_signals = {sig: signal.signal(sig, interrupted) for sig in (signal.SIGTERM, signal.SIGHUP)}
+    signal.signal(signal.SIGWINCH, lambda *_: set_window_size(master, get_window_size(0)))
+    os.set_blocking(master, False)
+    initial, pending, waiting = b"", b"", True
+    try:
+        tty.setraw(0)
+        while True:
+            readable, writable, _ = select.select([master, 0], [master] if pending else [], [])
+            if master in readable:
+                try:
+                    output = os.read(master, 65536)
+                except OSError as error:
+                    if error.errno == errno.EIO:
+                        break
+                    raise
+                if not output:
+                    break
+                os.write(1, output)
+                if waiting:
+                    initial = (initial + output)[-65536:]
+                    if first_frame(initial):
+                        pending += b"g" + b"j" * block
+                        waiting = False
+            if 0 in readable:
+                data = os.read(0, 65536)
+                if not data:
+                    break
+                # Terminal query replies begin with Escape. A user's ordinary
+                # key cancels pending startup navigation before they interact.
+                if waiting and not data.startswith(b"\x1b"):
+                    waiting = False
+                pending += data
+            if master in writable:
+                count = os.write(master, pending[:4096])
+                pending = pending[count:]
+    finally:
+        signal.signal(signal.SIGWINCH, previous_resize)
+        for sig, handler in previous_signals.items():
+            signal.signal(sig, handler)
+        termios.tcsetattr(0, termios.TCSADRAIN, saved)
+        os.close(master)
+        _, status = os.waitpid(pid, 0)
+    return os.waitstatus_to_exitcode(status)
+
+
+def main():
+    source = Path(sys.argv[1])
+    line = int(sys.argv[2])
+    if line <= 1:
+        os.execvp("plannotator-tui", ["plannotator-tui", str(source)])
+    descriptions = subprocess.run(["plannotator-tui", "--blocks", str(source)],
+                                  text=True, capture_output=True, check=True).stdout
+    block = block_at_line(source.read_text(), descriptions, line)
+    return run(source, block)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

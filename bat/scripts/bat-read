@@ -17,6 +17,7 @@ render() {
     # .theme also belongs to btop and cmus, so do not map it globally.
     syntax=(--language JSON)
   fi
+  python3 "$config_dir/../glow/scripts/reader-prompt" --header bat
   print
   bat --paging=never --color=always --decorations=always \
     --style=header,numbers --wrap=character --tabs=4 --terminal-width="$width" \
@@ -48,6 +49,7 @@ if [[ $# != 1 || ! -f $1 ]]; then
 fi
 
 export BAT_READ_SOURCE=${1:a}
+export READER_TRAIL=$(python3 "$config_dir/../glow/scripts/reader-prompt" --push "$BAT_READ_SOURCE")
 export BAT_READ_LANGUAGE=$language
 export BAT_READ_COMMAND=${0:a}
 reader_tmp=$(mktemp -d "${TMPDIR:-/tmp}/bat-read.XXXXXX")
@@ -56,5 +58,6 @@ trap 'exit 130' INT
 trap 'exit 143' TERM
 export BAT_READ_RENDERED="$reader_tmp/document.ansi"
 render > "$BAT_READ_RENDERED"
-less -R -~ -c --lesskey-src="$config_dir/lesskeys" \
-  --prompt='e edit · r reload · / search · q quit' -- "$BAT_READ_RENDERED"
+LESSUTFCHARDEF="${LESSUTFCHARDEF:+$LESSUTFCHARDEF,}E000-F8FF:p" \
+less -R -~ -c --header=1 --lesskey-src="$config_dir/lesskeys" \
+  --prompt="$(python3 "$config_dir/../glow/scripts/reader-prompt" bat)" -- "$BAT_READ_RENDERED"

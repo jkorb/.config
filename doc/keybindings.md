@@ -82,9 +82,9 @@ Sources: [keybinds](../tmux/conf/keybinds.conf), [options](../tmux/conf/options.
 | nnn | ; g, or Alt-G | Run the directory-picker plugin directly |
 | nnn | - | Return to the previous directory |
 | nnn | ; x | Run the configured executable-bit action |
-| `md-read` | a | Open Plannotator on the source file |
-| `md-read` | s | Edit the companion `.notes.md` file |
-| `md-read` | e | Edit the source in Neovim; save and quit to resume reading |
+| `md-read` | a | Open Plannotator at the block nearest the first visible passage |
+| `md-read` | s | Edit the companion `.notes.md` file, near the visible note when reading notes |
+| `md-read` | e | Edit near the first visible source passage; save and quit to resume reading |
 | `md-read` | o | Show letter hints on visible local file links; type a hint to open |
 | Link hints | Escape / Backspace | Cancel / remove a typed hint letter |
 | `md-read` | O (Shift-o) | Search all local links with fzf; Enter opens, Escape cancels |

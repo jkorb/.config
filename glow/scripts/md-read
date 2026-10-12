@@ -22,13 +22,18 @@ render() {
   local -a renderer=(glow --width "$width" --style "$config_dir/onedark.json")
   local feedback
   feedback=$(plannotator-tui --export "$MD_READ_SOURCE")
+  print -rn -- $'\e]8;;md-reader:header\a\e]8;;\a'
+  python3 "$config_dir/scripts/reader-prompt" --header md
   {
+    print -rn -- $'\e]8;;md-reader:source\a\e]8;;\a'
     markdown "$MD_READ_SOURCE"
     if [[ -n $feedback && $feedback != 'No annotations.' ]]; then
+      print -rn -- $'\e]8;;md-reader:comments\a\e]8;;\a'
       print -r -- $'\n---\n'"$feedback" |
         markdown -
     fi
     if [[ -f $MD_READ_NOTES ]]; then
+      print -rn -- $'\e]8;;md-reader:notes\a\e]8;;\a'
       {
         print -r -- $'\n---\n# Reading notes\n'
         cat -- "$MD_READ_NOTES"
@@ -40,12 +45,26 @@ render() {
 case $1 in
   --annotate|--notes|--edit|--links|--refresh)
     [[ -n $MD_READ_SOURCE && -n $MD_READ_RENDERED ]] || exit 1
+    source_line=1
+    if [[ $1 = --annotate || $1 = --edit || $1 = --notes ]]; then
+      target=$MD_READ_SOURCE
+      section=source
+      if [[ $1 = --notes ]]; then
+        target=$MD_READ_NOTES
+        section=notes
+      fi
+      # less's top position includes the body row replaced by the header.
+      top_line=${2:-1}
+      [[ $top_line != <-> ]] || (( top_line += 1 ))
+      source_line=$(python3 "$config_dir/scripts/md-position" \
+        "$target" "$MD_READ_RENDERED" "$top_line" "$section")
+    fi
     if [[ $1 = --annotate ]]; then
-      plannotator-tui "$MD_READ_SOURCE"
+      python3 "$config_dir/scripts/md-annotate" "$MD_READ_SOURCE" "$source_line"
     elif [[ $1 = --notes ]]; then
-      nvim -- "$MD_READ_NOTES"
+      nvim "+$source_line" -- "$MD_READ_NOTES"
     elif [[ $1 = --edit ]]; then
-      nvim -- "$MD_READ_SOURCE"
+      nvim "+$source_line" -- "$MD_READ_SOURCE"
     elif [[ $1 = --links ]]; then
       python3 "$config_dir/scripts/md-links" "$MD_READ_SOURCE" "$MD_READ_NOTES"
     fi
@@ -62,6 +81,7 @@ if [[ $# != 1 || ! -f $1 ]]; then
 fi
 
 export MD_READ_SOURCE=${1:a}
+export READER_TRAIL=$(python3 "$config_dir/scripts/reader-prompt" --push "$MD_READ_SOURCE")
 export MD_READ_NOTES="${MD_READ_SOURCE:r}.notes.md"
 export MD_READ_COMMAND=${0:a}
 export MD_READ_HINTS="$config_dir/scripts/md-hints"
@@ -72,6 +92,10 @@ trap 'exit 143' TERM
 export MD_READ_RENDERED="$reader_tmp/document.ansi"
 
 render > "$MD_READ_RENDERED"
-less -R -~ --lesskey-src="$config_dir/lesskeys" \
-  --prompt='e edit · a annotate · s notes · o hints · O all links · r reload · q quit' \
+# Apple's UNIX2003 compatibility table overrides the custom s binding.
+# Nerd Font icons live in Unicode's private-use area, which less otherwise
+# displays as <U+...>. Keep this setting local to the reader.
+LESSUTFCHARDEF="${LESSUTFCHARDEF:+$LESSUTFCHARDEF,}E000-F8FF:p" \
+COMMAND_MODE=legacy less -R -~ --header=1 --lesskey-src="$config_dir/lesskeys" \
+  --prompt="$(python3 "$config_dir/scripts/reader-prompt" md)" \
   -- "$MD_READ_RENDERED"

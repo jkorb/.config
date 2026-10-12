@@ -1,8 +1,8 @@
 # These bindings apply only to md-read, not to other less sessions.
 # Mark z preserves the reading position. Ctrl-P skips the shell's RETURN prompt.
-a set-mark z!^P"$MD_READ_COMMAND"\ --annotate\nR'z
-s set-mark z!^P"$MD_READ_COMMAND"\ --notes\nR'z
-e set-mark z!^P"$MD_READ_COMMAND"\ --edit\nR'z
+a set-mark z\#^P"$MD_READ_COMMAND"\ --annotate\ %lt\nR'z
+s set-mark z\#^P"$MD_READ_COMMAND"\ --notes\ %lt\nR'z
+e set-mark z\#^P"$MD_READ_COMMAND"\ --edit\ %lt\nR'z
 o pipe .^Ppython3\ "$MD_READ_HINTS"\n
 O set-mark z!^P"$MD_READ_COMMAND"\ --links\nR'z
 r set-mark z!^P"$MD_READ_COMMAND"\ --refresh\nR'z

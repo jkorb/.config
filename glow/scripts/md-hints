@@ -53,7 +53,7 @@ def viewport(text, source, columns, rows):
                 line.append(token)
             elif not token.startswith("\x1b"):
                 for char in token:
-                    if not char.isprintable():
+                    if not char.isprintable() and unicodedata.category(char) != 'Co':
                         continue
                     width = cell_width(char)
                     if column + width > columns:
@@ -135,8 +135,21 @@ def choose(text, source, terminal, config):
         write("\x1b[0m\x1b[?25h\x1b[?1049l")
 
 
+def with_header(text, first):
+    # less pipes the underlying first row that its pinned header replaces.
+    # Replace that row here too, so the overlay keeps the same screen positions.
+    marker = '\x1b]8;;md-reader:header\x07'
+    if first.startswith(marker) and not text.startswith(marker):
+        return first + text.partition('\n')[2]
+    return text
+
+
 def main():
     text = sys.stdin.read()
+    rendered = os.environ.get('MD_READ_RENDERED')
+    if rendered:
+        with open(rendered) as document:
+            text = with_header(text, document.readline())
     config = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
     source = Path(os.environ["MD_READ_SOURCE"])
     with open("/dev/tty", "r+b", buffering=0) as terminal:

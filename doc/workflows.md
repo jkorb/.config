@@ -24,7 +24,22 @@ Other text uses `bat-read`: bat highlighting in a centered column of at most
 100 characters, including line numbers, with a filename header and soft wrapping.
 It has no trailing tildes. Other file types use the macOS default application.
 
-Press `e` inside the reader to edit the source in Neovim. Save and quit to return;
+Both readers have centered shortcut footers: blue keys, cyan Nerd Font icons,
+and muted labels from the shared Glow theme. Narrow panes use shorter layouts.
+Footer spacing is calculated when the reader opens; after resizing, reopen it
+to center the footer again. `r` still recenters the document and its header.
+
+A pinned breadcrumb row shows the open file chain, for example
+`root.md › child.md › notes.txt`, with the current file highlighted. Following
+links adds to the chain; `q` returns to the previous file and reading position.
+Long chains hide the oldest names behind `… +N`; the number counts hidden
+ancestors. These are breadcrumbs, not switchable tabs. Each file still has its
+own reader instance. There is no persistent tab or session file; closing the
+reader discards its trail. [reader-prompt](../glow/scripts/reader-prompt) builds
+both bars.
+
+Press `e` inside the Markdown reader to edit near the first visible passage in
+Neovim. Save and quit to return;
 the reader renders it again and restores your place as closely as the changed
 layout allows. Editing can make existing annotation line references stale.
 
@@ -57,8 +72,8 @@ comes from the generated Glow theme. Resizing cancels hint mode; press `r` to
 recenter before reopening it. The helper is [md-hints](../glow/scripts/md-hints).
 Bare Escape is left to less because arrow keys also begin with Escape.
 
-In the Markdown reader, `a` opens the original in Plannotator TUI for comments
-attached to selected passages. Use `i` to position the cursor, then `v` and movement
+In the Markdown reader, `a` opens the original in Plannotator TUI with the block
+nearest the first visible passage selected. Use `i` to position the cursor, then `v` and movement
 keys to select text, and `c` to comment; mouse selection works too. Comments save
 automatically. Press `q` to return to reading at your previous position.
 Saved comments also render after the document, with source line references and
@@ -73,8 +88,31 @@ identity because storage is keyed by its path.
 For general notes, `s` opens the companion notes file in Neovim:
 `paper.md` has `paper.notes.md`. Save and quit to return to the reader;
 the notes are rendered after the document under **Reading notes**.
+If you are already reading those notes, the editor starts near the visible note;
+otherwise it starts at the beginning.
 No notes file is created until you save one. These general notes are independent
 of Plannotator's passage comments.
+
+Position matching runs only when opening an editor or Plannotator. It aligns
+words from the rendered text with the source, handling soft wrapping and repeated
+passages in document order. This is an approximate passage location: rendered
+math or substantial external edits can land at nearby source context. `e` and
+`a` always target the original document; from the appended comments or notes,
+they start near its end. `s` always targets the notes file.
+
+Plannotator 0.9.4 has no interactive start-at-line option. The local launcher
+reads its block list and sends navigation keys after its first screen appears,
+using a private terminal with resize forwarding. It does not patch the installed
+app or create comments automatically. See [source matching](../glow/scripts/md-position)
+and [annotation launcher](../glow/scripts/md-annotate). The launcher detects the
+terminal sequence that completes the first frame, so truncated footer text in
+narrow panes does not affect the jump. Changes to Plannotator's terminal output
+or block-list format may require adjusting the launcher.
+Terminal sizing uses Unix `ioctl` calls and works with Apple's Python 3.9 as
+well as Homebrew Python.
+The reader starts macOS's bundled less in `COMMAND_MODE=legacy` so Apple's
+[compatibility binding for `s`](https://github.com/apple-oss-distributions/less/blob/main/less/decode.c)
+does not override the notes key.
 
 Use `/` to search, `n`/`N` for matches, `g`/`G` for the beginning/end,
 `r` to reload after external edits or recenter after resizing, and `q` to return to nnn.
