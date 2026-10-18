@@ -1,0 +1,26 @@
+# Sixel works inside the existing tmux + WezTerm setup.
+[buffer]
+images = true
+scripting = false
+cookie = false
+
+[display]
+image-mode = "sixel"
+
+[status]
+# Use the terminal's One Dark colors, without the default inverted strip.
+format-mode = ["bold"]
+show-cursor-position = false
+show-hover-link = true
+
+[page]
+# Reader-style scrolling; arrow keys still move the cursor to links/text.
+h = "scrollLeft"
+j = "scrollDown"
+k = "scrollUp"
+l = "scrollRight"
+
+[network]
+# Ordinary local HTML stays offline. NeoMutt's mail viewer overrides
+# this for remote email images; its automatic w3m preview does not fetch them.
+allow-http-from-file = false

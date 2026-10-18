@@ -1,0 +1,117 @@
+#!/usr/bin/python3
+"""Open an HTML message in Chawan and hand mail actions back to NeoMutt."""
+import argparse
+from email import policy
+from email.parser import BytesParser
+import hashlib
+import html
+import json
+import mimetypes
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+from urllib.parse import unquote
+
+SELF = Path(__file__).resolve()
+
+
+def quote(value):
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$') + '"'
+
+
+def prepare():
+    cache = Path(os.environ.get('XDG_CACHE_DIR', str(Path.home() / '.cache'))) / 'neomutt-view'
+    cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    run = Path(tempfile.mkdtemp(dir=cache))
+    options = ('pipe_decode', 'pipe_headers', 'auto_tag', 'wait_key')
+    restore = '\n'.join(f'set {key} = "$my_view_{key}"' for key in options) + '\n'
+    (run / 'actions.rc').write_text(restore)
+    for key in options:
+        print(f'set my_view_{key} = "${key}"')
+    print('set pipe_decode=no pipe_headers=yes auto_tag=no wait_key=no')
+    keys = ('<pipe-message>' + shlex.join([str(SELF), 'message', str(run)])
+            + '<enter><enter-command>source ' + quote(str(run / 'actions.rc')) + '<enter>')
+    print('push ' + quote(keys))
+
+
+def message_html(message, run):
+    part = message.get_body(preferencelist=('html', 'plain'))
+    if part is None:
+        raise ValueError('This message has no displayable body')
+    content = part.get_content()
+    if part.get_content_type() != 'text/html':
+        return '<!doctype html><meta charset="utf-8"><pre>' + html.escape(content) + '</pre>'
+    # Resolve embedded images for viewing; the original message is untouched.
+    resources = {}
+    for item in message.walk():
+        cid = str(item.get('Content-ID', '')).strip('<>')
+        if cid and not item.is_multipart() and item.get_content_maintype() == 'image':
+            extension = mimetypes.guess_extension(item.get_content_type()) or ''
+            path = run / (hashlib.sha256(cid.encode()).hexdigest() + extension)
+            path.write_bytes(item.get_payload(decode=True) or b'')
+            resources[cid] = path.as_uri()
+    return re.sub(r'cid:([^\s"\'<>]+)',
+                  lambda m: resources.get(unquote(m[1]), m[0]), content, flags=re.I)
+
+
+def view(path, run=None, charset='utf-8'):
+    command = ['cha', '-o', 'network.allow-http-from-file=true',
+               '-o', 'buffer.history=false', '-I', charset or 'utf-8', '-T', 'text/html']
+    style = SELF.parents[2] / 'chawan/mail.css'
+    command += ['-o', 'buffer.user-style=' + json.dumps(style.read_text())]
+    env = os.environ.copy()
+    if run:
+        env['NEOMUTT_VIEW_ACTION'] = str(run / 'action')
+        actions = [('A', 'attachments'), ('H', 'text')]
+        actions += [(' '.join(key), key) for key in ('cr', 'ca', 'cc', 'cf', 'sa', 'si', 'sj', 'ss')]
+        if env.get('NEOMUTT_NOTIFICATION') == '1':
+            actions.append(('q', 'quit'))
+        for key, action in actions:
+            js = '() => { writeFile(getenv("NEOMUTT_VIEW_ACTION"), "' + action + '"); quit(); }'
+            command += ['-o', 'page.' + json.dumps(key) + '=' + json.dumps(js)]
+    else:
+        # A MIME part opened from the attachment list already returns there.
+        command += ['-o', 'page.A=quit']
+    command.append(str(path))
+    with open('/dev/tty', 'r+b', buffering=0) as terminal:
+        subprocess.run(command, stdin=terminal, stdout=terminal, stderr=terminal, env=env, check=True)
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=['prepare', 'message', 'part'])
+    parser.add_argument('path', nargs='?', type=Path)
+    parser.add_argument('charset', nargs='?', default='utf-8')
+    args = parser.parse_args()
+    if args.action == 'prepare':
+        prepare()
+    elif args.action == 'part':
+        view(args.path, charset=args.charset)
+    else:
+        run = args.path
+        message = BytesParser(policy=policy.default).parse(sys.stdin.buffer)
+        with tempfile.TemporaryDirectory(prefix='view-', dir=run) as temporary:
+            assets = Path(temporary)
+            path = assets / 'message.html'
+            path.write_text(message_html(message, assets), encoding='utf-8')
+            view(path, run)
+        action = (run / 'action').read_text() if (run / 'action').exists() else ''
+        keys = {'attachments': '<view-attachments>', 'text': '<display-message>', 'quit': 'q'}.get(action)
+        if action in ('cr', 'ca', 'cc', 'cf', 'sa', 'si', 'sj', 'ss'):
+            keys = action
+        if keys:
+            with (run / 'actions.rc').open('a') as output:
+                output.write('push ' + quote(keys) + '\n')
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        print('Mail viewer: ' + str(error), file=sys.stderr)
+        raise SystemExit(1)

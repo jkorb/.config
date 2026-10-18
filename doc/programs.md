@@ -22,6 +22,11 @@ history substring search, autopair, and Pure. fzf tab completion also needs
 `gawk`. TPM loads tmux-thumbs, easy-motion, fzf-url, nerd-font-window-name,
 tmux-yank, and tmux-open. Their bindings are separate from the base tmux table.
 
+Easy-motion launches `python` by name. On this Mac, `/opt/homebrew/bin/python`
+links to `/opt/homebrew/opt/python@3/libexec/bin/python`. A missing
+`/opt/homebrew/bin/python3` left the previous link dangling, even though Python
+remained available in the installed formula's `libexec/bin`.
+
 ## Writing, code, and logic
 
 Neovim uses LazyVim and lazy.nvim. The local `nvim/lazyvim.json` enables the
@@ -41,7 +46,8 @@ tracked configuration therefore does not fully specify the installed editor.
 | ZenMode | Centered, 82-column editing window | [editor.lua](../nvim/lua/plugins/editor.lua) |
 | Copilot | Editor completion; explicitly disabled for `mail` and `csv` | [ai.lua](../nvim/lua/plugins/ai.lua) |
 | OpenAI translation command | Replace selected text with a Dutch translation | [implementation](../nvim/lua/config/openai_translate.lua), [prompt](../nvim/prompts/openai_translate_dutch.txt) |
-| Pandoc | Markdown conversion, including HTML mail | [convert_email](../neomutt/scripts/convert_email) |
+| Pandoc | Markdown conversion, including HTML mail | [neomutt-html](../neomutt/scripts/neomutt-html) |
+| Chawan (`cha`) | Optional interactive HTML mail viewer and terminal browser, with Sixel images in tmux/WezTerm | [config](../chawan/config.toml), [mailcap](../neomutt/core/mailcap) |
 
 Neovim also uses spelling and dictionary completion for prose, Tabular for
 alignment, vim-gnupg for encrypted files, Cutlass for cut/delete behavior, and

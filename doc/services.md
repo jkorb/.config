@@ -35,7 +35,8 @@ The attachment marker, sender label, and date
 stay on the right using NeoMutt's
 [soft-fill format](https://neomutt.org/guide/reference#index-format), so a long
 subject does not push them off-screen. Empty attachment and label fields take
-no space. Internal `@uu.nl` senders show ``; student senders retain `studi`.
+no space. Internal `@uu.nl` senders show ``; student senders show `󰸐`.
+Both provenance markers have trailing padding; terminal spacing moves in whole cells.
 An extra two spaces separate these markers from the date.
 Four spaces after the date keep it away from the pane's right edge.
 
@@ -58,6 +59,72 @@ narrow panes and get more room on wide screens; the full subject remains in
 the message headers. The layout was checked at 60, 80, and 120 columns. Reload
 with `Space r`, or restart NeoMutt. The format and icon hooks live in
 [core/settings](../neomutt/core/settings), separately from the generated theme.
+
+### Reading messages
+
+Readers fill the current pane. In the default text mode, `l` or
+Enter opens NeoMutt's pager, with w3m rendering HTML as text and no mini-index
+above the message. `H` opens Chawan. Toggle HTML mode with `gh`: then `l` and
+Enter open Chawan, and `H` opens text instead.
+
+Inside Chawan's mail view, `A` opens NeoMutt's attachment list directly, `H`
+switches to text, and `q` returns to where the view was opened. The
+[viewer helper](../neomutt/scripts/neomutt-view) extracts embedded images into
+a private temporary directory, removing those viewing copies when Chawan exits.
+Remote images remain enabled in this view. Text viewing still provides all the
+usual NeoMutt actions, including replies and `A` for attachments.
+Chawan also passes `cr`, `ca`, `cc`, `cf`, `sa`, `si`, `sj`, and `ss` to the
+existing NeoMutt compose and account bindings. Notification mail has its own
+one-key exit, described below.
+
+The HTML reader uses a generated One Dark stylesheet: muted foreground, cyan
+links, subdued quotes, and a dark background. This changes the local view only;
+stored messages and outgoing HTML retain their own styles.
+
+### Saving attachments
+
+Open the attachment list with `A`, then press `s` to save the current attachment.
+For several attachments, tag each with `Space Space`, then press `s`. The
+[save helper](../neomutt/scripts/neomutt-save) exports them into `~/Downloads`
+and opens nnn with those new files selected. Existing names get numbered copies;
+existing files are never overwritten by the export or the managed move command.
+
+In this picker:
+
+- `Space` toggles a file's selection.
+- Navigate to a destination and press `v` to move the selected attachments there.
+  Collisions get numbered names. Reselect the moved files with `Space`.
+- `;r` renames the hovered attachment, numbering collisions. Reselect it afterward.
+  Native `Ctrl-R` still uses nnn's own overwrite prompt; use `;r` for numbered names.
+- `q` finishes. Selected attachments keep their current names and locations;
+  unselected copies created by this save are sent to macOS Trash.
+- `Ctrl-G` cancels cleanup and leaves all exported files where they are.
+
+nnn clears selection after moves, so **reselect before quitting**. The helper
+tracks the created files by their filesystem identity, including across renames,
+and never cleans up unrelated files merely because they are unselected. If the
+picker fails or a file cannot be identified safely, it is retained. Only regular
+attachment files created by the current run are eligible for automatic cleanup.
+The managed move currently stays on the same volume; moving to another volume
+fails without removing the source. Normal nnn commands remain available, so their
+own prompts still apply to manual operations on other files.
+
+Private export/recovery metadata lives under `$XDG_CACHE_DIR/neomutt-save/save-*`.
+If Trash fails, the diagnostic names the retained file in that run's `discarded`
+directory. Compose-mode `ca` continues to use the existing attachment picker.
+
+### Starting the mail editor
+
+The public [mail.nvim](https://github.com/jkorb/mail.nvim) plugin starts replies
+at the first body line when an `In-Reply-To` header is present. Fresh mail starts
+at `To:`. This runs once per buffer and also handles a plugin loaded after the
+buffer was opened; returning to a draft preserves the current cursor position.
+
+[mail.lua](../nvim/lua/plugins/mail.lua) installs the plugin through lazy.nvim
+and registers [tree-sitter-mail](https://github.com/jkorb/tree-sitter-mail) from
+GitHub. Neither needs a local development checkout. On a fresh setup, run
+`:TSInstall mail`; after a grammar change, `:TSInstall! mail` rebuilds it.
+The plugin supplies mail highlighting and spell-check captures.
 
 ## launchd jobs
 
@@ -101,8 +168,29 @@ accounts do not receive these alerts. The sync script uses
 [vdirsyncer-sync](../launchd/scripts/vdirsyncer-sync) asks khal for events in the
 next 15 minutes and stores a daily notification cache under
 `$XDG_CACHE_DIR/vdirsyncer`. Notifications include a start time and event title.
-Both notification paths use terminal-notifier and activate the Tmux app when
-clicked.
+Both notification paths use terminal-notifier. Calendar alerts activate the Tmux
+app. New mail notifications run
+[neomutt-notification](../neomutt/scripts/neomutt-notification): activate Tmux,
+then open NeoMutt in a temporary tmux window in the active client's session.
+The helper uses the notified Maildir and limits the index to the exact Message-ID
+before displaying the message. If the notified file has an HTML body, it then
+opens Chawan automatically, just like pressing `H`, including loading remote
+images. Press `q` once in either reader to close notification mail and return
+to your previous tmux window. `cr` replies, `ca` replies to all, and `sa` archives
+through the current account's normal binding. Plain-text messages use the normal
+pager. Use
+`?` with `~A` from its index to show the rest of the mailbox.
+
+The former centered popup could not display Sixel images: tmux's popup renderer
+discards them. A local test with identical image output confirmed that a normal
+pane renders the image while a popup drops it. Notification windows close when
+NeoMutt exits; existing windows and panes are not resized or replaced.
+
+If the message path has disappeared, the helper opens `uu/Inbox` and searches
+there by ID. A message moved elsewhere may therefore show an empty index. Alerts
+already posted with this helper also pick up script changes when clicked;
+older alerts that only activated the Tmux app retain that old action. No
+launchd reload is needed.
 
 Start diagnosis with `lctl info`. The sync scripts suppress command output
 unless passed `--debug`. A debug invocation still performs sync and may display
@@ -112,18 +200,52 @@ worked. [Audit A2](audits.md#a2-sync-failures-can-look-successful) records this.
 
 ## Writing HTML mail
 
-NeoMutt starts in ordinary compose mode. From its index or pager, `gh` loads the
-HTML settings. The editor then starts Neovim with the mail filetype and
-`MarkdownPreview`. After editing, `ch` runs Pandoc to create HTML and plain text
-alternatives using [the mail template](../neomutt/shared/email.html).
+From the index or text pager, `gh` enables HTML reading and composition. Use
+`cc` for a new message, `cr` to reply, or `ca` to reply to all. Write Markdown
+in Neovim, then save and quit. The editor wrapper automatically generates both
+HTML and plain text with Pandoc; ordinary line breaks are preserved.
+Simple LaTeX math uses Pandoc's Unicode output, avoiding the MathML source
+annotation that Chawan displayed beside the symbols. Expressions that Pandoc
+cannot represent this way remain as TeX.
 
-The conversion script writes NeoMutt commands under
-`$XDG_CACHE_DIR/neomutt-html/commands` and attachments in a temporary subdirectory.
-It also handles local Markdown images as related attachments. In HTML mode,
-`cc` removes the first Markdown body attachment before sending; `cC` removes it
-without sending. Check the attachment structure in the compose screen before
-sending. `gh` returns to ordinary mode from the index or pager.
+The sender's account selects its existing `*_html_signature.html` footer.
+It replaces the native plain signature and appears in the Markdown source between
+`<!-- neomutt-signature -->` markers, so live preview can show the formatted footer.
+Keep the marked block intact, or remove it completely to omit the signature.
+The outgoing HTML preserves that footer; its text alternative gets a readable
+conversion of the same content. Re-editing does not duplicate the signature.
+
+In the compose screen:
+
+- `ce` reopens the Markdown source and regenerates both versions when you finish.
+- `ch` previews the generated HTML in Chawan, including embedded images. It is
+  optional, repeatable, and does not add attachments. `q` returns to compose.
+- `ca` attaches documents as usual.
+- `cc` assembles the text/HTML alternatives and sends through the existing mail
+  transport. Attached documents stay separate; inline images become related
+  parts. Retrying a failed send does not add duplicate alternatives.
+
+For replies, the original HTML is kept separately. The editor shows its readable
+text between `<!-- neomutt-quote -->` and `<!-- /neomutt-quote -->`. Leave that
+block unchanged, or remove the entire block to omit the quote. Editing within
+it stops conversion and sending, rather than silently replacing the original
+HTML. New text before or after the block is converted from Markdown; the quoted
+body markup, inline styles, style blocks, and embedded images are retained.
+Rendering may still differ between mail clients.
+
+The existing live `MarkdownPreview` remains available in Firefox while editing.
+It shows the Markdown representation; `ch` shows the generated HTML with the
+original quote. Conversion errors block the normal `cc` send action. Fix the
+source with `ce`, then send again. The old manual conversion and `cC` body-removal
+steps are no longer used.
+
+Each composition has a private `$XDG_CACHE_DIR/neomutt-html/draft-*` directory
+containing `source.md`, the last edited `recovery.eml`, generated alternatives,
+and quote resources. These files
+remain available for recovery. Use this workflow for messages started through
+the HTML compose/reply bindings; restoring Markdown from a postponed message
+after restarting NeoMutt is not integrated yet. `gh` returns to ordinary text
+mode from the index or pager.
 
 Sources: [html_on](../neomutt/dynamic/html_on), [html_off](../neomutt/dynamic/html_off),
-[convert_email](../neomutt/scripts/convert_email). The fixed command-file path
-and repeated conversion behavior are candidates for a focused mail audit.
+[neomutt-html](../neomutt/scripts/neomutt-html).

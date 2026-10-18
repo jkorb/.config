@@ -1,7 +1,7 @@
 return {
   {
     "nvim-treesitter/nvim-treesitter",
-    -- Let LazyVim manage most settings; just add languages and custom parser.
+    -- Let LazyVim manage most settings; mail.lua registers the mail parser.
     opts = function(_, opts)
       opts.ensure_installed = opts.ensure_installed or {}
       for _, lang in ipairs({
@@ -34,21 +34,6 @@ return {
           table.insert(opts.ensure_installed, lang)
         end
       end
-
-      -- Register custom mail parser from local tree-sitter repo.
-      vim.api.nvim_create_autocmd("User", {
-        pattern = "TSUpdate",
-        callback = function()
-          local parsers = require("nvim-treesitter.parsers")
-          parsers.mail = parsers.mail
-            or {
-              install_info = {
-                path = vim.fn.expand("~/Dropbox/Projects/treesitter-mail/tree-sitter-mail/"),
-                files = { "src/parser.c", "src/scanner.c" },
-              },
-            }
-        end,
-      })
     end,
   },
 }

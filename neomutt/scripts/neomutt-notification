@@ -1,0 +1,100 @@
+#!/usr/bin/python3
+"""Open notification mail in a temporary tmux window with image support."""
+import argparse
+from email import policy
+from email.parser import BytesParser
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import time
+
+TMUX = "/opt/homebrew/bin/tmux"
+NEOMUTT = "/opt/homebrew/bin/neomutt"
+
+
+def mutt_quote(value):
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$') + '"'
+
+
+def has_html_body(path, message_id):
+    if path is None:
+        return False
+    try:
+        with path.open("rb") as source:
+            message = BytesParser(policy=policy.default).parse(source)
+        return (
+            str(message.get("Message-ID", "")).strip().strip("<>") == message_id
+            and message.get_body(preferencelist=("html",)) is not None
+        )
+    except (OSError, ValueError):
+        return False
+
+
+def mail_command(message_id="", message_path=""):
+    folder = Path.home() / ".mail/uu/Inbox"
+    path = Path(message_path) if message_path else None
+    if path and path.is_file() and path.parent.name in {"new", "cur"}:
+        folder = path.parent.parent
+    command = [NEOMUTT, "-f", str(folder)]
+    command += ['-e', 'macro index q "<quit>" "Close notification mail"',
+                '-e', 'macro pager q "<exit><quit>" "Close notification mail"']
+    message_id = message_id.strip().removeprefix("<").removesuffix(">")
+    # Message IDs are data, never NeoMutt key sequences or shell commands.
+    if message_id and not any(c in '<>' or ord(c) < 32 or ord(c) == 127 for c in message_id):
+        # Quote twice: the pattern parser and the outer `push` both unescape.
+        pattern = '~i ' + mutt_quote('^<?' + re.escape(message_id) + '>?$')
+        keys = "<limit>" + pattern + "<enter><first-entry>"
+        # Native display marks the message read; exit that pager before HTML.
+        keys += '<display-message><exit>H' if has_html_body(path, message_id) else '<display-message>'
+        command += ["-e", "push " + mutt_quote(keys)]
+    return command
+
+
+def clients():
+    result = subprocess.run(
+        [TMUX, "list-clients", "-F", "#{client_activity}\t#{client_tty}"],
+        text=True, capture_output=True,
+    )
+    found = []
+    for line in result.stdout.splitlines():
+        activity, _, tty = line.partition("\t")
+        if activity.isdigit() and tty.startswith("/dev/"):
+            found.append((int(activity), tty))
+    return sorted(found, reverse=True)
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--message-id", default="")
+    parser.add_argument("--path", default="")
+    args = parser.parse_args()
+    env = os.environ.copy()
+    env.setdefault("XDG_CONFIG_HOME", str(Path.home() / ".config"))
+    env.setdefault("XDG_CACHE_DIR", str(Path.home() / ".cache"))
+    env.setdefault("XDG_DATA_HOME", str(Path.home() / ".local/share"))
+    subprocess.run(["/usr/bin/open", "-b", "com.jkorbmacher.tmux"], check=True)
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        attached = clients()
+        if attached:
+            session = subprocess.check_output([
+                TMUX, 'display-message', '-p', '-c', attached[0][1], '#{session_id}'
+            ], text=True).strip()
+            window = subprocess.check_output([
+                TMUX, 'new-window', '-d', '-P', '-F', '#{window_id}', '-t', session + ':', '-n', 'mail',
+                "-e", "XDG_CONFIG_HOME=" + env["XDG_CONFIG_HOME"],
+                "-e", "XDG_CACHE_DIR=" + env["XDG_CACHE_DIR"],
+                "-e", "XDG_DATA_HOME=" + env["XDG_DATA_HOME"],
+                '-e', 'NEOMUTT_NOTIFICATION=1',
+                'exec ' + shlex.join(mail_command(args.message_id, args.path)),
+            ], env=env, text=True).strip()
+            subprocess.run([TMUX, 'set-option', '-w', '-t', window, 'remain-on-exit', 'off'], check=True)
+            return subprocess.run([TMUX, 'select-window', '-t', window]).returncode
+        time.sleep(0.1)
+    raise SystemExit("Tmux opened, but no attached client is available for notification mail.")
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

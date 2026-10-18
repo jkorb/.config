@@ -1,0 +1,399 @@
+#!/usr/bin/python3
+"""Save current/tagged NeoMutt attachments through a private nnn session."""
+import argparse
+import ctypes
+import errno
+import fcntl
+import json
+import os
+from pathlib import Path
+import pty
+import select
+import shlex
+import shutil
+import signal
+import stat
+import subprocess
+import sys
+import tempfile
+import termios
+import time
+import tty
+
+SELF = Path(__file__).resolve()
+TRASH = "/usr/bin/trash"
+
+
+def mutt_quote(text):
+    return '"' + text.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$') + '"'
+
+
+def load(run):
+    return json.loads((run / "files.json").read_text())
+
+
+def store(run, records):
+    temporary = run / "files.json.new"
+    temporary.write_text(json.dumps(records, ensure_ascii=True))
+    temporary.replace(run / "files.json")
+
+
+def identity(path):
+    info = path.lstat()
+    if not stat.S_ISREG(info.st_mode):
+        raise ValueError("Not a regular file: " + str(path))
+    return [info.st_dev, info.st_ino]
+
+
+def safe_name(name):
+    name = name.replace('\\', '/').rsplit('/', 1)[-1]
+    name = ''.join('_' if ord(c) < 32 or ord(c) == 127 else c for c in name)
+    return name.lstrip('.') or "attachment"
+
+
+def numbered(path, number):
+    return path if number == 0 else path.with_name(f"{path.stem} ({number}){path.suffix}")
+
+
+def copy_new(source, destination):
+    """O_EXCL also rejects symlinks and dangling symlinks at the destination."""
+    number = 0
+    while True:
+        target = numbered(destination, number)
+        try:
+            fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            break
+        except FileExistsError:
+            number += 1
+    with os.fdopen(fd, 'wb') as output, source.open('rb') as input_file:
+        shutil.copyfileobj(input_file, output)
+        output.flush()
+        os.fsync(output.fileno())
+    return target
+
+
+def rename_new(source, destination):
+    """macOS atomic rename with RENAME_EXCL: never replace a destination."""
+    libc = ctypes.CDLL(None, use_errno=True)
+    rename = libc.renamex_np
+    rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    rename.restype = ctypes.c_int
+    if rename(os.fsencode(source), os.fsencode(destination), 4) != 0:
+        code = ctypes.get_errno()
+        raise OSError(code, os.strerror(code), str(destination))
+
+
+def move_new(source, destination):
+    number = 0
+    while True:
+        target = numbered(destination, number)
+        try:
+            rename_new(source, target)
+            return target
+        except FileExistsError:
+            number += 1
+
+
+def prepare():
+    cache = Path(os.environ.get('XDG_CACHE_DIR', str(Path.home() / '.cache')))
+    base = cache / 'neomutt-save'
+    base.mkdir(mode=0o700, parents=True, exist_ok=True)
+    run = Path(tempfile.mkdtemp(prefix='save-', dir=base))
+    for name in ('raw', 'files', 'bin', 'discarded'):
+        (run / name).mkdir(mode=0o700)
+    store(run, [])
+    (run / 'bin/mv').symlink_to(SELF)
+    # NeoMutt's mailcap export sanitizes MIME names and supplies decoded files.
+    # Use a private print handler; neither the normal print command nor mailcap
+    # viewers are involved. NeoMutt removes its own raw temporary files.
+    collect = shlex.join([str(SELF), 'collect', str(run)]) + ' %s'
+    (run / 'mailcap').write_text(''.join(
+        major + '/*; false; print=' + collect + '; nametemplate=%s\n'
+        for major in ('application', 'audio', 'example', 'font', 'haptics', 'image',
+                      'message', 'model', 'multipart', 'text', 'video')
+    ))
+    options = ('mailcap_path', 'tmpdir', 'attach_split', 'print', 'print_command', 'auto_tag', 'wait_key')
+    (run / 'restore.rc').write_text('\n'.join(
+        f'set {option} = "$my_save_{option}"' for option in options
+    ) + '\n')
+    for option in options:
+        print(f'set my_save_{option} = "${option}"')
+    print('set mailcap_path = ' + mutt_quote(str(run / 'mailcap')))
+    print('set tmpdir = ' + mutt_quote(str(run / 'raw')))
+    print('set attach_split=yes print=yes print_command=false auto_tag=yes wait_key=no')
+    keys = ('<print-entry><enter-command>source ' + mutt_quote(str(run / 'restore.rc'))
+            + '<enter><shell-escape>' + shlex.join([str(SELF), 'manage', str(run)]) + '<enter>')
+    print('push ' + mutt_quote(keys))
+
+
+def collect(run, source):
+    # A stale or unrelated path cannot be imported by the private mailcap.
+    if source.parent.resolve() != (run / 'raw').resolve():
+        raise ValueError('Export was outside the private temporary directory')
+    identity(source)
+    target = copy_new(source, run / 'files' / safe_name(source.name))
+    records = load(run)
+    records.append({'path': str(target), 'name': safe_name(source.name), 'identity': identity(target)})
+    store(run, records)
+
+
+def current_path(fd):
+    value = fcntl.fcntl(fd, 50, bytes(1024))  # macOS F_GETPATH follows renames.
+    return Path(os.fsdecode(value.split(b'\0', 1)[0]))
+
+
+def read_selection(path):
+    return {os.fsdecode(p) for p in path.read_bytes().split(b'\0') if p}
+
+
+def organize(run, paths):
+    """Forward the terminal; use nnn's hover FIFO to select only our new files."""
+    selection = run / 'selection'
+    fifo = run / 'hover'
+    os.mkfifo(fifo, 0o600)
+    # Keep a writer open too, so an absent nnn writer doesn't cause EOF polling.
+    fifo_fd = os.open(fifo, os.O_RDWR | os.O_NONBLOCK)
+    terminal = os.open('/dev/tty', os.O_RDWR)
+    previous = termios.tcgetattr(terminal)
+    env = os.environ.copy()
+    env.update(NNN_FIFO=str(fifo), NNN_SEL=str(selection), NNN_OPTS='AcQ',
+               NNN_TRASH=TRASH, NEOMUTT_SAVE_RUN=str(run),
+               PATH=str(run / 'bin') + ':' + env.get('PATH', '/usr/bin:/bin'),
+               ESCDELAY='25')
+    # ;r renames without overwriting; the private mv wrapper protects moves.
+    plugins = [p for p in env.get('NNN_PLUG', '').split(';') if p and not p.startswith('r:')]
+    plugins.append('r:!' + shlex.quote(str(SELF)) + ' rename "$nnn"')
+    env['NNN_PLUG'] = ';'.join(plugins)
+    env.pop('NNN_TMPFILE', None)
+    env.pop('NNNLVL', None)
+    child, master = pty.fork()
+    if child == 0:
+        os.execvpe('nnn', ['nnn', '-A', '-H', '-J', '-0', '-p', str(selection), str(paths[0].parent)], env)
+    def resize(*_):
+        size = fcntl.ioctl(terminal, termios.TIOCGWINSZ, bytes(8))
+        fcntl.ioctl(master, termios.TIOCSWINSZ, size)
+    old_resize = signal.signal(signal.SIGWINCH, resize)
+    def interrupted(*_):
+        raise InterruptedError('Picker interrupted; all exported files were kept')
+    old_term = signal.signal(signal.SIGTERM, interrupted)
+    old_hup = signal.signal(signal.SIGHUP, interrupted)
+    pending = {str(p) for p in paths}
+    initial_selection = set(pending)
+    seen = set()
+    hover = b''
+    initializing = True
+    cancelled = False
+    deadline = time.monotonic() + 30
+    status = None
+    try:
+        resize()
+        tty.setraw(terminal)
+        # Initial cursor is at the top; never select by screen text or a glob.
+        while True:
+            readers = [master, fifo_fd] + ([] if initializing else [terminal])
+            ready, _, _ = select.select(readers, [], [], .1)
+            if master in ready:
+                try:
+                    data = os.read(master, 65536)
+                except OSError as error:
+                    if error.errno != errno.EIO:
+                        raise
+                    data = b''
+                if not data:
+                    break
+                os.write(terminal, data)
+            if fifo_fd in ready:
+                hover += os.read(fifo_fd, 65536)
+                while b'\n' in hover:
+                    value, hover = hover.split(b'\n', 1)
+                    path = os.fsdecode(value)
+                    if not initializing:
+                        continue
+                    if path in pending:
+                        os.write(master, b' ')
+                        pending.remove(path)
+                    if not pending:
+                        continue
+                    if path in seen:
+                        continue
+                    seen.add(path)
+                    os.write(master, b'j')
+            if initializing and not pending and selection.exists():
+                initializing = initial_selection != read_selection(selection)
+            if terminal in ready:
+                data = os.read(terminal, 65536)
+                if not data:
+                    cancelled = True
+                    break
+                if b'\x07' in data:  # nnn Ctrl-G cancels a picker.
+                    cancelled = True
+                os.write(master, data)
+            if initializing and time.monotonic() > deadline:
+                raise RuntimeError('nnn did not finish preselection; all files were kept')
+        _, status = os.waitpid(child, 0)
+        child = None
+    finally:
+        try:
+            termios.tcsetattr(terminal, termios.TCSADRAIN, previous)
+        except termios.error:
+            pass  # The terminal may already have closed (SIGHUP).
+        signal.signal(signal.SIGWINCH, old_resize)
+        signal.signal(signal.SIGTERM, old_term)
+        signal.signal(signal.SIGHUP, old_hup)
+        if child is not None:
+            try:
+                os.killpg(child, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            # nnn may stall during terminal teardown; bound the shutdown wait.
+            deadline = time.monotonic() + .5
+            while True:
+                done, _ = os.waitpid(child, os.WNOHANG)
+                if done:
+                    break
+                if time.monotonic() >= deadline:
+                    os.killpg(child, signal.SIGKILL)
+                    os.waitpid(child, 0)
+                    break
+                time.sleep(.02)
+            try:
+                os.write(terminal, b'\x1b[?1049l\x1b[?25h')
+            except OSError:
+                pass
+        for fd in (terminal, master, fifo_fd):
+            os.close(fd)
+    if cancelled or initializing or status != 0 or not selection.exists():
+        raise RuntimeError('Save picker cancelled or failed; all exported files were kept')
+    return read_selection(selection)
+
+
+def discard(run, path, expected):
+    """Quarantine, check identity again, then Trash only the owned regular file."""
+    if identity(path) != expected:
+        raise ValueError('File was replaced; left untouched: ' + str(path))
+    quarantine = move_new(path, run / 'discarded' / path.name)
+    if identity(quarantine) != expected:
+        # A concurrent replacement raced the move. Restore without overwriting.
+        try:
+            rename_new(quarantine, path)
+        except OSError:
+            pass
+        raise ValueError('File changed during cleanup; retained in place or at ' + str(quarantine))
+    subprocess.run([TRASH, str(quarantine)], check=True)
+
+
+def manage(run):
+    records = load(run)
+    if not records:
+        raise ValueError('No attachments were exported')
+    downloads = Path.home() / 'Downloads'
+    downloads.mkdir(exist_ok=True)
+    descriptors = []
+    try:
+        for record in records:
+            source = Path(record['path'])
+            if identity(source) != record['identity']:
+                raise ValueError('Staged attachment changed; refusing to move it')
+            target = move_new(source, downloads / record.get('name', source.name))
+            record['path'] = str(target)
+            descriptors.append(os.open(target, os.O_RDONLY | os.O_NOFOLLOW))
+            store(run, records)
+        selected = organize(run, [Path(r['path']) for r in records])
+        # Only final, current pathnames count. Reselect after moving/renaming.
+        saved = discarded = 0
+        for record, fd in zip(records, descriptors):
+            try:
+                path = current_path(fd)
+                if identity(path) != record['identity']:
+                    print('Left changed attachment untouched: ' + str(path), file=sys.stderr)
+                    continue
+                record['path'] = str(path)
+                store(run, records)
+                if str(path) in selected:
+                    saved += 1
+                else:
+                    discard(run, path, record['identity'])
+                    discarded += 1
+            except FileNotFoundError:
+                # The user may have moved it to another volume, removed it,
+                # or replaced it in an editor. Never guess a replacement path.
+                continue
+        print(f'Saved {saved} attachment(s); moved {discarded} unselected file(s) to Trash.')
+    finally:
+        for fd in descriptors:
+            os.close(fd)
+
+
+def move_selection(run, arguments):
+    # nnn invokes mv -i -- SOURCES... DESTINATION. Number collisions instead.
+    while arguments and arguments[0].startswith('-'):
+        option = arguments.pop(0)
+        if option == '--':
+            break
+        if option not in ('-i', '-v'):
+            raise ValueError('Unsupported move option: ' + option)
+    if len(arguments) < 2:
+        raise ValueError('Missing move source or destination')
+    records = load(run)
+    destination = Path(arguments[-1]).absolute()
+    for name in arguments[:-1]:
+        source = Path(name).absolute()
+        key = identity(source)
+        if not any(r['identity'] == key for r in records):
+            raise ValueError('This save session can move only its own attachments')
+        target = destination / source.name if destination.is_dir() else destination
+        if target == source:
+            continue
+        try:
+            move_new(source, target)
+        except OSError as error:
+            if error.errno == errno.EXDEV:
+                raise ValueError('Moves between volumes are not supported; source retained: ' + str(source)) from error
+            raise
+
+
+def rename_attachment(run, name):
+    source = Path(name).absolute()
+    expected = identity(source)
+    if not any(r['identity'] == expected for r in load(run)):
+        raise ValueError('This save session can rename only its own attachments')
+    name = input('New filename (collisions get numbered): ').strip()
+    if not name:
+        return
+    if name in ('.', '..') or '/' in name or any(ord(c) < 32 for c in name):
+        raise ValueError('Enter a filename; use move to change directories')
+    destination = source.with_name(name)
+    if destination != source:
+        move_new(source, destination)
+        # Like nnn's move operation, discard its stale selection paths.
+        with open(os.environ['NNN_PIPE'], 'wb', buffering=0) as pipe:
+            pipe.write(b'-0c' + os.fsencode(source.parent))
+
+
+def main():
+    os.umask(0o077)
+    if Path(sys.argv[0]).name == 'mv':
+        move_selection(Path(os.environ['NEOMUTT_SAVE_RUN']), sys.argv[1:])
+        return
+    if len(sys.argv) == 3 and sys.argv[1] == 'rename':
+        rename_attachment(Path(os.environ['NEOMUTT_SAVE_RUN']), sys.argv[2])
+        return
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=['prepare', 'collect', 'manage'])
+    parser.add_argument('run', nargs='?', type=Path)
+    parser.add_argument('source', nargs='?', type=Path)
+    args = parser.parse_args()
+    if args.action == 'prepare':
+        prepare()
+    elif args.action == 'collect':
+        collect(args.run, args.source)
+    else:
+        manage(args.run)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError) as error:
+        print('Attachment save: ' + str(error), file=sys.stderr)
+        raise SystemExit(1)

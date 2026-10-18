@@ -143,7 +143,7 @@ index-format-hook attachflag "~X 1-" " "
 index-format-hook attachflag "~A"    ""
 
 index-format-hook provinence "~f '@uu\\.nl$'"            " "
-index-format-hook provinence "~f '@students\\.uu\\.nl$'" "studi "
+index-format-hook provinence "~f '@students\\.uu\\.nl$'" "󰸐 "
 index-format-hook provinence "~A"                        ""
 
 
@@ -180,7 +180,7 @@ set   charset             = "utf-8"
 # Pager settings
 # ----------------------------------------
 
-set   pager_index_lines = 10  # Shows 10 lines of index when pager is active
+set   pager_index_lines = 0   # Give the reader the full pane/popup.
 set   pager_context     = 3
 set   pager_stop
 set   tilde

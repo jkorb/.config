@@ -1,86 +1,129 @@
 #! /Users/jkorbmacher/.venvs/mail-env/bin/python
 
-import json
-import subprocess
-import csv
 import argparse
-from ldap3 import Server, Connection, ALL
+import csv
+import io
+import json
+import re
+import signal
+import subprocess
+import sys
+
+from ldap3 import Connection, NONE, Server
+from ldap3.core.exceptions import LDAPException
+from ldap3.utils.conv import escape_filter_chars
+
+
+# Finish before mail.nvim's three-second timeout, keeping any local results.
+LOOKUP_TIMEOUT = 2.5
+MU_TIMEOUT = 0.75
+PASSWORD_TIMEOUT = 0.5
+LDAP_MIN_LENGTH = 3
+
+
+class LookupDeadline(Exception):
+    pass
+
+
+def warn(message):
+    print(f"fetch_contacts: {message}", file=sys.stderr)
+
 
 def get_password(pass_name):
-    """Safely retrieve and parse a password using the pass password manager, suppressing errors."""
     try:
-        completed_process = subprocess.run(
-            ["pass", pass_name], check=True, text=True, stdout=subprocess.PIPE
+        result = subprocess.run(
+            ["pass", pass_name], check=True, text=True, capture_output=True,
+            timeout=PASSWORD_TIMEOUT,
         )
-        # Extract the password after 'pass: '
-        for line in completed_process.stdout.splitlines():
-            if line.startswith("pass: "):
-                return line[len("pass: "):].strip()
-        return None  # Return None if the password line isn't found
-    except:
-        return None  # Return None if there's an exception
+    except (OSError, subprocess.SubprocessError, UnicodeError) as error:
+        warn(f"password lookup failed ({type(error).__name__})")
+        return None
+    for line in result.stdout.splitlines():
+        if line.startswith("pass: "):
+            return line[len("pass: "):].strip()
+    warn("password entry has no 'pass: ' line")
+    return None
 
 
 def get_mu_contacts(pattern):
-    """Run 'mu cfind --format=csv' with a pattern and parse the CSV output, suppressing errors."""
+    # Match abbreviations such as KleiD -> Klein, D.; punctuation stays literal.
+    expression = ".*".join(re.escape(char) for char in pattern)
+    try:
+        result = subprocess.run(
+            ["mu", "cfind", "--format=csv", "-q", "--", expression],
+            check=True, text=True, capture_output=True, timeout=MU_TIMEOUT,
+        )
+    except subprocess.CalledProcessError as error:
+        if error.returncode != 2:  # mu uses 2 when no contacts match.
+            warn(f"mu lookup failed (exit {error.returncode})")
+        return []
+    except (OSError, subprocess.TimeoutExpired, UnicodeError) as error:
+        warn(f"mu lookup failed ({type(error).__name__})")
+        return []
     contacts = []
     try:
-        completed_process = subprocess.run(
-            ["mu", "cfind", "--format=csv", "-q", pattern],
-            check=True,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        csv_reader = csv.reader(completed_process.stdout.splitlines())
-        for row in csv_reader:
-            if row:
+        for row in csv.reader(io.StringIO(result.stdout)):
+            if not row:
+                continue
+            if len(row) < 2:
+                warn("skipping a mu row without an address")
+                continue
+            if row[1]:
                 contacts.append({row[0]: row[1]})
-        return contacts
-    except:
-        return contacts
+    except csv.Error as error:
+        warn(f"invalid mu CSV ({type(error).__name__})")
+    return contacts
 
 
 def search_ldap(search_input):
-    """Search LDAP for entries matching the search_input, suppressing errors."""
-    contacts = []
+    if len(search_input.strip()) < LDAP_MIN_LENGTH:
+        return []
     password = get_password("login.uu.nl")
     if password is None:
-        return contacts
-
-    server = Server("ldap://localhost:1389", get_info=ALL)
-    user = "uid=j.korbmacher@uu.nl,ou=people"
-    search_base = "ou=people"
-    search_filter = f"(&(objectClass=*)(|(mail=*{search_input}*)(cn=*{search_input}*)))"
-
+        return []
+    # DavMail expects one literal substring, not wildcards between letters.
+    pattern = "*" + escape_filter_chars(search_input) + "*"
+    search_filter = f"(&(objectClass=*)(|(mail={pattern})(cn={pattern})))"
+    contacts = []
     try:
-        with Connection(server, user, password) as conn:
-            if conn.search(search_base, search_filter, attributes=["cn", "mail"]):
-                for entry in conn.entries:
-                    contacts.append({entry.cn.value: entry.mail.value})
-    except:
-        pass
+        server = Server("ldap://localhost:1389", get_info=NONE, connect_timeout=0.5)
+        with Connection(server, "uid=j.korbmacher@uu.nl,ou=people", password,
+                        receive_timeout=1, read_only=True) as conn:
+            conn.search("ou=people", search_filter, attributes=["cn", "mail"], time_limit=1)
+            if conn.result.get("result", 0) != 0:
+                warn(f"LDAP search returned {conn.result.get('description', 'an error')}")
+            for entry in conn.entries:
+                attributes = entry.entry_attributes_as_dict
+                names = attributes.get("cn", [])
+                name = names[0] if names else ""
+                for address in attributes.get("mail", []):
+                    if isinstance(name, str) and isinstance(address, str) and address:
+                        contacts.append({name: address})
+    except (LDAPException, OSError) as error:
+        warn(f"LDAP lookup failed ({type(error).__name__})")
+    return contacts
 
+
+def fetch_contacts(pattern):
+    def expired(_signum, _frame):
+        raise LookupDeadline()
+
+    contacts = []
+    previous_handler = signal.signal(signal.SIGALRM, expired)
+    signal.setitimer(signal.ITIMER_REAL, LOOKUP_TIMEOUT)
+    try:
+        contacts.extend(get_mu_contacts(pattern))
+        contacts.extend(search_ldap(pattern))
+    except LookupDeadline:
+        warn("lookup timed out; returning contacts collected so far")
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
     return contacts
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Search LDAP and mu for contacts matching a pattern."
-    )
-    parser.add_argument(
-        "search_pattern", help="The pattern to search for in the contacts."
-    )
-
+    parser = argparse.ArgumentParser(description="Search LDAP and mu for contacts.")
+    parser.add_argument("search_pattern", help="Name or address abbreviation; punctuation is literal.")
     args = parser.parse_args()
-    contacts = []
-
-    try:
-        contacts.extend(get_mu_contacts(args.search_pattern))
-        # Check once before deciding to search LDAP
-        # if len(args.search_pattern) >= 3:
-        contacts.extend(search_ldap(args.search_pattern))
-    except:
-        pass
-
-    print(json.dumps(contacts))
+    print(json.dumps(fetch_contacts(args.search_pattern)))

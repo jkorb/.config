@@ -40,6 +40,10 @@
     "target": "neomutt/core/colors-html"
   },
   {
+    "template": "chawan-mail.css",
+    "target": "chawan/mail.css"
+  },
+  {
     "template": "newsboat",
     "target": "newsboat/configs/colors"
   },

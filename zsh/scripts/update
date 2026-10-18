@@ -2,6 +2,7 @@
 # Weekly maintenance. Full command output stays in the per-run logs.
 emulate -LR zsh
 setopt pipefail
+unsetopt bgnice
 
 case ${1:-} in
   '') ;;
@@ -22,6 +23,25 @@ export GIT_TERMINAL_PROMPT=0
 export HOMEBREW_NO_AUTO_UPDATE=1
 export ZINIT_HOME=${ZINIT_HOME:-$XDG_CONFIG_HOME/zsh/zinit}
 
+spinner_pid=''
+ok='' error=''
+spinner_color='' spinner_reset=''
+if [[ -t 1 && ${TERM:-dumb} != dumb && -z ${NO_COLOR:-} ]]; then
+  ok=$'\e[32m\e[0m'
+  spinner_color=$'\e[36m' spinner_reset=$'\e[0m'
+fi
+if [[ -t 2 && ${TERM:-dumb} != dumb && -z ${NO_COLOR:-} ]]; then
+  error=$'\e[31m\e[0m'
+fi
+
+stop_spinner() {
+  [[ -n $spinner_pid ]] || return 0
+  kill "$spinner_pid" 2>/dev/null
+  wait "$spinner_pid" 2>/dev/null
+  spinner_pid=''
+  printf '\r\033[K'
+}
+
 state_dir="$XDG_STATE_HOME/config-update"
 mkdir -p "$state_dir" || exit 1
 if ! mkdir "$state_dir/running" 2>/dev/null; then
@@ -30,8 +50,8 @@ if ! mkdir "$state_dir/running" 2>/dev/null; then
   exit 1
 fi
 print $$ > "$state_dir/running/pid"
-trap 'rm -f -- "$state_dir/running/pid"; rmdir -- "$state_dir/running"' EXIT
-trap 'print -u2 "Update interrupted; logs: $run_dir"; exit 130' INT
+trap 'stop_spinner; rm -f -- "$state_dir/running/pid"; rmdir -- "$state_dir/running"' EXIT
+trap 'stop_spinner; print -u2 "Update interrupted;  Logs: $run_dir"; exit 130' INT
 trap 'exit 143' TERM
 run_dir=$(mktemp -d "$state_dir/$(date +%Y%m%d-%H%M%S).XXXXXX") || exit 1
 typeset -i failures=0 step=0 total=6
@@ -135,19 +155,45 @@ run_step() {
   local summary="$run_dir/$name.summary" log="$run_dir/$name.log"
   : > "$summary"
   (( ++step ))
-  print "↻ [$step/$total] $label"
-  if ( "$@" ) > "$log" 2>&1; then
+  # Leave sudo's password prompt readable for the optional TeX step.
+  if [[ -t 1 && ${TERM:-dumb} != dumb && $name != tex ]]; then
+    (
+      # Only the animation runs in the background; updates retain terminal input.
+      trap - EXIT INT TERM
+      local -a frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
+      local -i frame=1
+      while true; do
+        printf '\r%s%s%s [%d/%d] %s' "$spinner_color" "$frames[$frame]" "$spinner_reset" "$step" "$total" "$label"
+        sleep 0.1
+        (( frame = frame % ${#frames} + 1 ))
+      done
+    ) &
+    spinner_pid=$!
+  else
+    print "↻ [$step/$total] $label"
+  fi
+  ( "$@" ) > "$log" 2>&1
+  local result=$?
+  if [[ -n $spinner_pid ]]; then
+    stop_spinner
+    if (( result == 0 )); then
+      print -r -- "$ok [$step/$total] $label"
+    else
+      print -ru2 -- "$error [$step/$total] $label"
+    fi
+  fi
+  if (( result == 0 )); then
     if [[ -s $summary ]]; then
       cat "$summary"
     else
-      print '  ✓ No version changes.'
+      print '  No version changes.'
     fi
   else
     (( ++failures ))
     [[ -s $summary ]] && cat "$summary"
-    print -u2 "  ✗ $label failed. Last 60 log lines:"
+    print -ru2 -- "  $error $label failed. Last 60 log lines:"
     tail -n 60 "$log" >&2
-    print -u2 "  Full log: $log"
+    print -u2 "   Full log: $log"
   fi
 }
 
@@ -160,8 +206,8 @@ run_step treesitter 'Treesitter parsers' update_nvim treesitter
 [[ ${1:-} = --tex ]] && run_step tex 'TeX Live packages' update_tex
 
 if (( failures )); then
-  print -u2 "⚠ $failures update step(s) failed. Logs: $run_dir"
+  print -ru2 -- "$error $failures update step(s) failed.  Logs: $run_dir"
   exit 1
 fi
 print '🎉 Updates finished. Restart Neovim and open a new shell to load changes.'
-print -r -- "Logs: $run_dir"
+print -r -- " Logs: $run_dir"

@@ -1,0 +1,16 @@
+# vim: filetype=muttrc
+macro index l "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-view prepare |\"<enter>" "Read HTML"
+macro index <Return> "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-view prepare |\"<enter>" "Read HTML"
+macro index H "<display-message>" "Read text"
+
+macro index,pager cc "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html start mail |\"<enter>" "Compose Markdown/HTML"
+macro index,pager cr "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html start reply |\"<enter>" "Reply in Markdown/HTML"
+macro index,pager ca "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html start group-reply |\"<enter>" "Group reply in Markdown/HTML"
+macro index,pager cf "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html start forward-message |\"<enter>" "Forward in Markdown/HTML"
+macro index,pager c@ "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html start compose-to-sender |\"<enter>" "Compose Markdown/HTML to sender"
+
+macro compose cc "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html send $my_html_draft |\"<enter>" "Send generated HTML and text"
+macro compose ce "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html edit $my_html_draft |\"<enter>" "Edit Markdown source"
+macro compose ch "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html preview $my_html_draft |\"<enter>" "Preview generated HTML"
+unmacro compose cC
+macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_off'<enter>" "Use text mode"

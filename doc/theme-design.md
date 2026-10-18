@@ -150,6 +150,12 @@ and using slots keeps the shared colors through WezTerm's palette. The HTML
 mode sources a separate generated fragment to preserve the visible mode
 indicator. Theme work does not alter mail content or recipient-facing HTML.
 
+Chawan's mail wrapper passes the generated `chawan/mail.css` as a user stylesheet.
+It overrides viewing colors while keeping the message layout and images. The
+same wrapper serves received mail and compose previews; standalone browsing
+does not use this stylesheet. CSS also hides MathML source annotations that
+would otherwise appear as duplicate formula text.
+
 Newsboat and cmus use ANSI indices because their installed color interfaces do
 not take arbitrary RGB colors. nnn uses ANSI context colors as well. khal uses
 RGB values for its interactive palette and terminal color names for calendar

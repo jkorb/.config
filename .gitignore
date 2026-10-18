@@ -4,6 +4,7 @@
 
 !btop
 !bat
+!chawan
 !cmus
 !codex
 !amethyst
@@ -32,6 +33,7 @@ nvim/nvim.log
 !msmtp
 !neomutt
 neomutt/core/aliases
+neomutt/scripts/fetch_contacts_bak
 neomutt/app/.DS_Store
 neomutt/app/*.app
 neomutt/app/*.icns

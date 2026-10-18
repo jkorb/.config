@@ -115,15 +115,20 @@ belong in a configuration repository.
 ### A8. Multi-process behavior needs focused checks
 
 The Markdown reader uses a temporary directory per run, but several other
-helpers use shared paths: nnn's `.lastd`, the Neovim app socket, and NeoMutt's
-HTML command file. Neovim also rewrites its server map on startup, directory
+helpers use shared paths: nnn's `.lastd` and the Neovim app socket.
+Neovim also rewrites its server map on startup, directory
 changes, and exit. These are observations from source, not demonstrated races.
 
 Open two instances with temporary fixtures and check whether they overwrite
 each other's state. For annotations, test what happens when source lines change
 and when the document moves: Plannotator's storage identity is based on the
-file path. For HTML mail, inspect repeated conversion and the resulting MIME
-tree without sending a message.
+file path.
+
+NeoMutt's active HTML workflow now uses a private directory per composition.
+Isolated tests capture outgoing MIME to local files and cover repeated editing,
+previews, quoted markup/images, ordinary attachments, and failed-send retries.
+The old shared-command-file converter is no longer bound. Markdown restoration
+from postponed drafts after restarting NeoMutt remains a follow-up.
 
 ## Review prompts
 

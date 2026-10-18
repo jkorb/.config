@@ -1,0 +1,24 @@
+# vim: filetype=muttrc
+unmacro index l
+unmacro index <Return>
+bind index l display-message
+bind index <Return> display-message
+macro index H "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-view prepare |\"<enter>" "Read HTML (A: attachments, H: text)"
+
+unmacro index,pager cc
+unmacro index,pager cr
+unmacro index,pager ca
+unmacro index,pager cf
+unmacro index,pager c@
+bind index,pager cc mail
+bind index,pager cr reply
+bind index,pager ca group-reply
+bind index,pager cf forward-message
+bind index,pager c@ compose-to-sender
+unmacro compose cc
+unmacro compose ce
+unmacro compose ch
+unmacro compose cC
+bind compose cc send-message
+bind compose ce edit-message
+macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_on'<enter>" "Use HTML mode"

@@ -181,6 +181,31 @@ Install the annotation reader with `brew install plannotator/tap/plannotator-tui
 After changing the nnn configuration, start a new shell or run
 `source ~/.config/zsh/plugins/nnn/conf.zsh`, then restart nnn.
 
+## HTML mail in the terminal
+
+NeoMutt opens messages as text by default, using w3m to render HTML. The reader
+fills the current pane. Press `H` for Chawan, or toggle HTML mode with
+`gh` to make Chawan the default for Enter and `l`; `H` then opens text instead.
+In Chawan's mail view, `A` opens attachments, `H` switches to text, and `q`
+returns to NeoMutt. Embedded `cid:` images are extracted for viewing. Remote
+images also load, which may tell the sender that the message was opened.
+The reader uses One Dark colors without changing the message. Usual mail keys
+such as `cr` and `sa` work from Chawan. Notification clicks open a temporary
+tmux window with working images; there, one `q` closes mail and returns to your
+previous window.
+
+In HTML mode, write replies in Markdown and save normally. Conversion is
+automatic; `ce` edits the source again, `ch` optionally previews the final HTML,
+and `cc` sends both text and HTML. Keep the marked quote block intact to retain
+the original HTML. Account HTML footers are restored automatically, and simple
+LaTeX math is emitted as Unicode once. See [Writing HTML mail](services.md#writing-html-mail).
+
+Chawan uses Sixel images through tmux and WezTerm. For a standalone browser
+session, run `cha https://chawan.net`. For an offline check, run
+`cha ~/.config/chawan/test.html`; a blue square should appear. JavaScript and
+cookies are disabled. See the [Chawan guide](../chawan/README.md) for settings
+and the distinction between web browsing and local HTML.
+
 ## Shell and tmux sessions
 
 Run `n` to open nnn and return the shell to its last directory when you leave.

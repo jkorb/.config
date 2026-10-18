@@ -147,12 +147,24 @@ Sources: [keymaps](../nvim/lua/config/keymaps.lua), [autocmds](../nvim/lua/confi
 | Zathura | b / f | Toggle status bar / fullscreen |
 | Zathura | i / r / Ctrl-R | Toggle recolor / reload / recolor then reload |
 | Zathura | J / K; R; p | Zoom out / in; rotate; print |
-| NeoMutt index | l / Enter | Read message |
+| NeoMutt index | l / Enter | Read in full-pane text; Chawan when HTML mode is on |
 | NeoMutt index/pager | cc / cr / cf / ca | Compose / reply / forward / group reply |
-| NeoMutt compose | ce / ca | Edit message / attach with picker |
-| NeoMutt compose | cc | Send; in HTML mode, first remove the Markdown body |
+| NeoMutt compose | ce / ca | Edit message (Markdown source in HTML mode) / attach with picker |
+| NeoMutt attachments | Space Space; s | Tag attachments; save current or tagged files through nnn |
+| Mail save picker | Space; v; ;r | Select; move here; rename with numbered collisions (reselect after move/rename) |
+| Mail save picker | q / Ctrl-G | Finish, sending unselected new files to Trash / retain all exported files |
+| NeoMutt compose | cc | Send; HTML mode automatically includes generated text and HTML alternatives |
 | NeoMutt index/pager | gh | Toggle HTML mode |
-| NeoMutt HTML compose | ch / cC | Convert Markdown to alternatives / remove Markdown body without sending |
+| NeoMutt index | H | Open the other view: HTML in text mode, text in HTML mode |
+| NeoMutt text pager | H | Open Chawan, loading remote images |
+| Chawan mail view | A / H | Open NeoMutt attachments / switch to text |
+| Chawan mail view | cr / ca / cc / cf | Reply / reply all / compose / forward through NeoMutt |
+| Chawan mail view | sa / si / sj / ss | Archive / move to inbox / move to junk / choose save destination using existing account bindings |
+| Notification mail reader | q | Close mail and return to the previous tmux window |
+| Chawan | h / j / k / l; Ctrl-d / Ctrl-u | Scroll left / down / up / right; half-page down / up |
+| Chawan | Arrows; f; [ / ]; Enter | Move cursor; select link by hint; previous / next link; open selected link |
+| Chawan | /; n / N; q | Search; next / previous match; quit |
+| NeoMutt HTML compose | ch | Preview generated HTML in Chawan; q returns |
 | NeoMutt index/pager | /; gi; gf | Custom mu search; inbox; choose folder |
 | NeoMutt index | ? / ss | Limit messages / save message |
 | NeoMutt index | dd / du / D | Delete current or tagged messages / undelete / purge |

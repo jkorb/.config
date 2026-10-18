@@ -4,9 +4,10 @@ network_access = "enabled"
 include = "config.local.toml"
 personality = "pragmatic"
 model = "gpt-6-astra"
-model_reasoning_effort = "high"
+model_reasoning_effort = "xhigh"
 
 notify = ["/Users/jkorbmacher/.config/codex/computer-use/Codex Computer Use.app/Contents/SharedSupport/SkyComputerUseClient.app/Contents/MacOS/SkyComputerUseClient", "turn-ended"]
+approvals_reviewer = "auto_review"
 
 [tui]
 notifications = true
@@ -100,6 +101,15 @@ trust_level = "trusted"
 [projects."/Users/jkorbmacher/Dropbox/Projects/Bruijn"]
 trust_level = "trusted"
 
+[projects."/Users/jkorbmacher/Dropbox/Projects/algebra/exact-algebra-paper"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Lean/propositional_logic.lean"]
+trust_level = "trusted"
+
+[projects."/Users/jkorbmacher/Dropbox/Projects/treesitter-mail/tree-sitter-mail"]
+trust_level = "trusted"
+
 [notice.model_migrations]
 "gpt-5.3-codex" = "gpt-5.4"
 "gpt-5.4" = "gpt-5.5"
@@ -167,8 +177,8 @@ BROWSER_USE_TINYSKY_ENABLED = "1"
 NODE_REPL_INSTRUCTIONS_USE_CASE_BROWSER = "Control the in-app browser in conjunction with the Browser Plugin."
 NODE_REPL_INSTRUCTIONS_USE_CASE_CHROME = "Control the Chrome browser in conjunction with the Chrome Plugin. Prefer this method of controlling Chrome over alternatives (such as Computer Use) unless the user explicitly mentions an alternative."
 BROWSER_USE_CODEX_APP_BUILD_FLAVOR = "prod"
-BROWSER_USE_CODEX_APP_VERSION = "26.930.41038"
-NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/jkorbmacher/.codex/plugins/cache/openai-bundled/browser/26.930.41038/scripts/browser-service.mjs"}'
+BROWSER_USE_CODEX_APP_VERSION = "26.1013.40934"
+NODE_REPL_TRUSTED_SERVICES = '{"browser":"/Users/jkorbmacher/.codex/plugins/cache/openai-bundled/browser/26.1013.40934/scripts/browser-service.mjs"}'
 CODEX_CLI_PATH = "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex"
 
 [mcp_servers.cua_repl]

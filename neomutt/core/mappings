@@ -86,9 +86,8 @@ bind index               ss         save-message
 # Attachment
 # ----------------------------------------
 
-# bind attach             s          save-entry
-macro attach              s         "<shell-escape>neomutt_dirpicker<enter><enter-command>source $XDG_CACHE_DIR/neomutt_dirpicker/save_tmp<enter><enter-command>" "Save file to ..."
-macro index,pager         H         "<view-attachments>/text\/html<enter><view-mailcap><exit>"
+macro attach              s         "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-save prepare |\"<enter>" "Save attachments with nnn"
+macro index,pager         H         "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-view prepare |\"<enter>" "View HTML in Chawan (A: attachments, H: text)"
 
 # Composing
 # ----------------------------------------
@@ -150,15 +149,10 @@ macro index,pager          <Tab>  "<enter-command>toggle sidebar_visible<enter><
 # <pipe-entry>convert_email<enter>\
 # <enter-command>source /tmp/neomutt-commands<enter>
 
-macro compose ch \
-"<enter-command>set pipe_decode<enter>\
-<pipe-message> $XDG_CONFIG_HOME/neomutt/scripts/convert_email<enter>\
-<enter-command>unset pipe_decode<enter>\
-  <enter-command>source $XDG_CACHE_DIR/neomutt-html/commands<enter>\
-" \
-"Convert markdown to HTML5 and plaintext alternative content types"
-
 # bind index,pager gr sync-mailbox
 
 macro index R "<tag-pattern>~U<enter><tag-prefix><clear-flag>N<untag-pattern>.<enter>" \
   "mark all unread as read"
+
+# Preserve the current mail mode when returning from sidebar navigation.
+ifdef my_mail_keys 'source "$my_mail_keys"'

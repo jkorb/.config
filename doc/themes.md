@@ -60,6 +60,7 @@ next build.
 | Reader bars | [reader-prompt](../glow/scripts/reader-prompt) uses the generated Glow heading, link and comment colors for the breadcrumb row and shortcut footer | Reopen `md-read` or `bat-read` |
 | Zathura | [theme](../zathura/theme), included by zathurarc | Reopen Zathura |
 | NeoMutt | [colors](../neomutt/core/colors), with an additional [HTML mode theme](../neomutt/core/colors-html); ANSI slots inherit WezTerm's palette | Restart; HTML mode still has its red status indicator |
+| Chawan mail reader | [mail.css](../chawan/mail.css) overrides message colors for local reading only, with cyan links and subdued quotes | Reopen the message or preview |
 | Newsboat | [colors](../newsboat/configs/colors), using the terminal's 16 named color slots | Restart Newsboat |
 | khal / ikhal | Generated `[palette]` section in [config](../khal/config); calendar identity colors still use terminal color names | Restart ikhal; CLI commands read the config each time |
 | cmus | [shared.theme](../cmus/shared.theme), selected by [rc](../cmus/rc) after saved state loads | `:colorscheme shared`, or restart |
@@ -92,8 +93,9 @@ Its remaining interface colors and Plannotator's built-in dark UI are controlled
 by those programs. This setup does not replace their renderers.
 
 PDF page colors remain the document's own until Zathura recolor is toggled.
-Websites, macOS controls, received HTML, and outgoing email styling are outside
-this theme. Old Linux desktop configs and unused alternate cmus/btop themes are
+Websites, macOS controls, and outgoing email styling are outside this theme.
+Received HTML is themed only while viewed in the mail reader; its stored source
+is unchanged. Old Linux desktop configs and unused alternate cmus/btop themes are
 also outside the generated set.
 
 ## Typography and spacing

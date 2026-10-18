@@ -1,52 +1,10 @@
 # vim: filetype=muttrc
-
 source ~/.config/neomutt/core/settings
-source ~/.config/neomutt/core/colors
-
 source ~/.config/neomutt/core/colors-html
 
-unset sig_dashes
-
-set   forward_attribution_intro = "_---------- Forwarded message ---------_"
-set   attribution               = "_On %d, %n wrote:_\n"
-
-set   mailcap_path        = "~/.config/neomutt/core/mailcap_html"
-set   editor              = "nvim -c 'set ft=mail' -c 'MarkdownPreview'"
-
-
-unhook reply-hook
-unhook send-hook
-
-send-hook '~f jkorbmacher@gmail.com'   "set signature = '~/.config/neomutt/accounts/gmail_html_signature.html'"
-send-hook '~f logische.methoden@uu.nl' "set signature = '~/.config/neomutt/accounts/lm_html_signature.html'"
-send-hook '~f j.korbmacher@uu.nl'      "set signature = '~/.config/neomutt/accounts/uu_html_signature.html'"
-
-set pager = "w3m %s"
-# set pager = "glow -s dark -w 78 -p"
-unset prompt_after
-
-set ts_enabled = true
-set ts_status_format = "NeoMutt  %f"
-set pager_format = ""
-set attach_format = "%t%n %d (%m/%M, %s)"
-
-set compose_confirm_detach_first = no
-
-macro compose cc \
-"<first-entry><detach-file><send-message>" \
-"Send HTML (drop markdown body)"
-
-macro compose cC \
-"<first-entry><detach-file>" \
-"Clear markdown body (no send)"
-
-macro compose ch \
-"<enter-command>set pipe_decode<enter>\
-<pipe-message> $XDG_CONFIG_HOME/neomutt/scripts/convert_email<enter>\
-<enter-command>unset pipe_decode<enter>\
-<enter-command>source $XDG_CACHE_DIR/neomutt-html/commands<enter>\
-" \
-"Convert markdown to HTML5 and plaintext alternative content types"
-
-unbind gh
-macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_off'<enter>"
+# Reading and quoting are independent; quoted HTML bypasses Markdown conversion.
+unset pager
+set include=no
+set forward_quote=no
+set my_mail_keys = "~/.config/neomutt/dynamic/mail_html_keys"
+source $my_mail_keys

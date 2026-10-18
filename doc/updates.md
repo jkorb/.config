@@ -8,8 +8,11 @@ Run this from a terminal:
 update
 ```
 
-The command prints one progress line per step and lists changed package versions
-or Git revisions. It keeps full output under
+The command animates a cyan spinner beside the active step in a terminal, then replaces
+it with a green  or red . It lists changed package versions or Git
+revisions below each step, or a plain "No version changes." message. Log paths
+use the  icon. Redirected output stays plain; `NO_COLOR=1` disables colors.
+It keeps full output under
 `~/.local/state/config-update/`, in a separate directory for each run. If a step
 fails, it prints the last 60 log lines and the full log's path, continues with
 the remaining steps, and exits with a failure status. A successful run ends
@@ -47,8 +50,9 @@ update --tex
 
 This adds `tlmgr update --self --all` with machine-readable output for the change
 summary. The MacTeX installation is system-owned, so this step uses sudo and
-may ask for a password. It updates the installed TeX Live release; moving to a
-new annual release is separate maintenance.
+may ask for a password. Its heading stays static to keep that prompt readable.
+It updates the installed TeX Live release; moving to a new annual release is
+separate maintenance.
 
 ## Scope and reloads
 
@@ -58,7 +62,8 @@ own updaters, App Store software, and macOS updates retain their own update path
 
 Lean toolchains selected by a project's `lean-toolchain` file, project package
 locks, the English dictionary submodule, and locally developed plugins stay at
-their chosen revisions. The local mail plugin/parser source trees and custom
+their chosen revisions. The public mail.nvim plugin and mail grammar use the
+normal Neovim plugin/parser update steps; their development checkouts and custom
 macOS app builds are maintained separately. There are no additional global npm
 tools in the reviewed installation beyond Homebrew's npm itself.
 

@@ -1,0 +1,326 @@
+#!/usr/bin/python3
+"""Keep Markdown editable; generate mail alternatives without converting quoted HTML."""
+import argparse
+from email import policy
+from email.parser import BytesParser, Parser
+from email.utils import parseaddr
+import hashlib
+import html
+import json
+import mimetypes
+import os
+from pathlib import Path
+import re
+import shlex
+import subprocess
+import sys
+import tempfile
+from urllib.parse import unquote, urlparse
+
+SELF = Path(__file__).resolve()
+BEGIN = '<!-- neomutt-quote -->'
+END = '<!-- /neomutt-quote -->'
+SIGNATURE_BEGIN = '<!-- neomutt-signature -->'
+SIGNATURE_END = '<!-- /neomutt-signature -->'
+
+
+def quote(value):
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$') + '"'
+
+
+def command(action, run):
+    return shlex.join([str(SELF), action, str(run)])
+
+
+def source(action, run):
+    return '<enter-command>source ' + quote(command(action, run) + ' |') + '<enter>'
+
+
+def load(run):
+    return json.loads((run / 'state.json').read_text())
+
+
+def store(run, state):
+    (run / 'state.json').write_text(json.dumps(state, ensure_ascii=True))
+
+
+def pandoc(text, writer, reader='markdown+hard_line_breaks', **kwargs):
+    return subprocess.run(['pandoc', '-f', reader, '-t', writer, '--wrap=none', '--math-method=plain'],
+                          input=text, text=True, capture_output=True, check=True, **kwargs).stdout
+
+
+def signature_for(headers):
+    address = parseaddr(str(Parser(policy=policy.default).parsestr(headers + '\n\n').get('From', '')))[1].lower()
+    accounts = Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home() / '.config'))) / 'neomutt/accounts'
+    for account in accounts.glob('*.conf'):
+        match = re.search(r'^set\s+from\s*=\s*["\']([^"\']+)["\']', account.read_text(), re.M)
+        signature = accounts / (account.stem + '_html_signature.html')
+        if match and match[1].lower() == address and signature.is_file():
+            plain = accounts / (account.stem + '_signature.txt')
+            markup = signature.read_text().strip()
+            return markup, plain.read_text().strip() if plain.is_file() else pandoc(markup, 'plain', 'html').strip()
+    return '', ''
+
+
+def start(kind):
+    cache = Path(os.environ.get('XDG_CACHE_DIR', str(Path.home() / '.cache'))) / 'neomutt-html'
+    cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    run = Path(tempfile.mkdtemp(prefix='draft-', dir=cache))
+    store(run, {'prepared': False, 'valid': False, 'initialized': False,
+                'kind': kind, 'capture_required': kind in ('reply', 'group-reply', 'forward-message')})
+    print('set my_html_draft = ' + quote(str(run)))
+    print('set editor = ' + quote(command('editor', run)))
+    keys = ''
+    if kind in ('reply', 'group-reply', 'forward-message'):
+        print('set my_html_pipe_decode = "$pipe_decode"')
+        print('set my_html_auto_tag = "$auto_tag"')
+        print('set pipe_decode=no auto_tag=no')
+        keys += '<pipe-message>' + command('capture', run) + '<enter>'
+        keys += '<enter-command>set pipe_decode="$my_html_pipe_decode" auto_tag="$my_html_auto_tag"<enter>'
+    keys += '<' + kind + '>'
+    print('push ' + quote(keys))
+
+
+def html_fragment(text):
+    """Slice the original source; don't reserialize its tables/styles/markup."""
+    opening = re.search(r'<body\b[^>]*>', text, re.I)
+    closing = list(re.finditer(r'</body\s*>', text, re.I))
+    if opening and closing and closing[-1].start() >= opening.end():
+        styles = '\n'.join(re.findall(r'<style\b[^>]*>.*?</style\s*>', text[:opening.start()], re.I | re.S))
+        wrapper = re.sub(r'^<body\b', '<div', opening[0], flags=re.I)
+        return styles + '\n' + wrapper + text[opening.end():closing[-1].start()] + '</div>'
+    return text
+
+
+def capture(run):
+    message = BytesParser(policy=policy.default).parse(sys.stdin.buffer)
+    part = message.get_body(preferencelist=('html', 'plain'))
+    if part is None:
+        raise ValueError('No quoted body found; use a text reply for this message')
+    state = load(run)
+    text_part = message.get_body(preferencelist=('plain',))
+    original = part.get_content()
+    plain = text_part.get_content() if text_part else pandoc(original, 'plain', 'html')
+    attribution = 'On ' + str(message.get('Date', '')) + ', ' + str(message.get('From', '')) + ' wrote:'
+    state['quote_plain'] = attribution + '\n' + '\n'.join('> ' + line for line in plain.splitlines())
+    state['quote_block'] = BEGIN + '\n' + state['quote_plain'] + '\n' + END
+    state['quote_html'] = ('<p>' + html.escape(attribution) + '</p><blockquote>'
+                           + (html_fragment(original) if part.get_content_type() == 'text/html'
+                              else '<pre>' + html.escape(original) + '</pre>') + '</blockquote>')
+    resources = []
+    for item in message.walk():
+        cid = str(item.get('Content-ID', '')).strip('<>')
+        if cid and 'cid:' + cid in state['quote_html'] and not item.is_multipart():
+            new_id = cid if re.fullmatch(r'[-.0-9@A-Za-z_]+', cid) else hashlib.sha256(cid.encode()).hexdigest() + '@quote'
+            if new_id != cid:
+                state['quote_html'] = state['quote_html'].replace('cid:' + cid, 'cid:' + new_id)
+            extension = mimetypes.guess_extension(item.get_content_type()) or ''
+            path = run / ('quoted-' + hashlib.sha256(cid.encode()).hexdigest() + extension)
+            path.write_bytes(item.get_payload(decode=True) or b'')
+            content_type = item.get_content_type()
+            if not re.fullmatch(r'[a-zA-Z0-9!#$&^_.+-]+/[a-zA-Z0-9!#$&^_.+-]+', content_type):
+                content_type = 'application/octet-stream'
+            resources.append({'path': str(path), 'cid': new_id, 'type': content_type})
+    state['quote_resources'] = resources
+    store(run, state)
+
+
+def render(run, markdown):
+    state = load(run)
+    # Protected sections bypass Markdown parsing, preserving their original HTML.
+    sections = []
+    resources = []
+    for name, begin, end in [('quote', BEGIN, END), ('signature', SIGNATURE_BEGIN, SIGNATURE_END)]:
+        if begin not in markdown and end not in markdown:
+            continue
+        block = state.get(name + '_block')
+        if not block or markdown.count(begin) != 1 or markdown.count(end) != 1 or block not in markdown:
+            label = 'Quoted' if name == 'quote' else 'Signature'
+            raise ValueError(label + ' section changed. Keep it unchanged or remove the complete marked block.')
+        sections.append((markdown.index(block), block, state[name + '_html'], state[name + '_plain']))
+        resources.extend(state.get(name + '_resources', []))
+    if not state.get('initialized') and state.get('capture_required') and not state.get('quote_block'):
+        raise ValueError('Original message capture failed')
+
+    parts = []
+    offset = 0
+    for index, block, markup, plain in sorted(sections):
+        parts.append((markdown[offset:index], None, None))
+        parts.append(('', markup, plain))
+        offset = index + len(block)
+    parts.append((markdown[offset:], None, None))
+    html_parts, plain_parts = [], []
+    for text, markup, plain in parts:
+        if markup is not None:
+            html_parts.append(markup)
+            plain_parts.append(plain)
+            continue
+        ast = json.loads(pandoc(text, 'json'))
+        def images(node):
+            if isinstance(node, dict):
+                if node.get('t') == 'Image':
+                    target = node['c'][2][0]
+                    parsed = urlparse(target)
+                    if not parsed.scheme or parsed.scheme == 'file':
+                        path = Path(unquote(parsed.path)).expanduser().resolve()
+                        data = path.read_bytes()
+                        cid = hashlib.sha256(data).hexdigest() + '@markdown'
+                        copy = run / (cid + (path.suffix or '.bin'))
+                        copy.write_bytes(data)
+                        resources.append({'path': str(copy), 'cid': cid,
+                                          'type': mimetypes.guess_type(path.name)[0] or 'application/octet-stream'})
+                        node['c'][2][0] = 'cid:' + cid
+                for value in node.values():
+                    images(value)
+            elif isinstance(node, list):
+                for value in node:
+                    images(value)
+        images(ast)
+        encoded = json.dumps(ast)
+        html_parts.append('<div style="font-family: sans-serif; font-size: 15px; line-height: 1.5">'
+                          + pandoc(encoded, 'html5', 'json') + '</div>')
+        plain_parts.append(pandoc(encoded, 'plain', 'json'))
+    body_html = '\n'.join(html_parts)
+    body_plain = '\n'.join(plain_parts)
+    document = ('<!doctype html><html><head><meta charset="utf-8"></head><body>'
+                + body_html + '</body></html>')
+    (run / 'message.html').write_text(document, encoding='utf-8')
+    (run / 'message.txt').write_text(body_plain, encoding='utf-8')
+    state['resources'] = list({r['cid']: r for r in resources}.values())
+    state['valid'] = True
+    store(run, state)
+    return body_plain
+
+
+def editor(run, path):
+    state = load(run)
+    if state.get('capture_required') and not state.get('quote_block'):
+        raise ValueError('Original message capture failed; the draft was left unchanged')
+    original = path.read_text()
+    headers, separator, body = original.partition('\n\n')
+    if not separator:
+        raise ValueError('Expected a mail draft with editable headers')
+    if (run / 'source.md').exists():
+        body = (run / 'source.md').read_text()
+    elif not state.get('initialized'):
+        if state.get('kind') == 'forward-message':
+            body = ''
+        markup, plain = signature_for(headers)
+        if markup:
+            if plain and body.rstrip().endswith(plain):
+                body = body.rstrip()[:-len(plain)].rstrip()
+                body = re.sub(r'(^|\n)--\s*$', '', body)
+            block = SIGNATURE_BEGIN + '\n' + markup + '\n' + SIGNATURE_END
+            state.update(signature_html=markup, signature_plain=pandoc(markup, 'plain', 'html').strip(), signature_block=block)
+            body = body.rstrip() + '\n\n' + block + '\n'
+        if state.get('quote_block'):
+            body = body.rstrip() + '\n\n' + state['quote_block'] + '\n'
+    path.write_text(headers + separator + body)
+    state.update(valid=False, initialized=True)
+    store(run, state)
+    # An override is useful for isolated tests; normal editing keeps live preview.
+    edit = shlex.split(os.environ.get('NEOMUTT_MARKDOWN_EDITOR', "nvim -c 'set ft=mail' -c MarkdownPreview"))
+    try:
+        subprocess.run(edit + [str(path)], check=True)
+    except Exception:
+        (run / 'recovery.eml').write_text(path.read_text())
+        path.write_text(original)
+        raise
+    edited = path.read_text()
+    (run / 'recovery.eml').write_text(edited)
+    headers, separator, markdown = edited.partition('\n\n')
+    if not separator:
+        path.write_text(original)
+        raise ValueError('Keep a blank line between the mail headers and body; edits are in recovery.eml')
+    (run / 'source.md').write_text(markdown)
+    # Keep edited headers and Markdown on conversion failure; cc remains blocked.
+    plain = render(run, markdown)
+    path.write_text(headers + separator + plain)
+
+
+def send(run):
+    state = load(run)
+    if not state.get('valid'):
+        raise ValueError('Draft is not converted. Use ce to fix the Markdown; nothing was sent.')
+    for path in [run / 'message.html', run / 'message.txt'] + [Path(r['path']) for r in state.get('resources', [])]:
+        if not path.is_file():
+            raise ValueError('A generated file is missing. Use ce to regenerate the draft; nothing was sent.')
+    if state.get('prepared'):
+        print('push "<send-message>"')
+        return
+    print('set my_html_auto_tag = "$auto_tag"')
+    print('set auto_tag=no')
+    keys = '<tag-prefix-cond><tag-entry><end-cond>'
+    keys += '<attach-file>' + str(run / 'message.html') + '<enter><toggle-disposition><tag-entry>'
+    for resource in state.get('resources', []):
+        keys += ('<attach-file>' + resource['path'] + '<enter><toggle-disposition>'
+                 + '<edit-type><kill-line>' + resource['type'] + '<enter>'
+                 + '<edit-content-id><kill-line>' + resource['cid'] + '<enter><tag-entry>')
+    if state.get('resources'):
+        keys += '<group-related><tag-entry>'
+    keys += '<first-entry><tag-entry><group-alternatives>' + source('prepared', run)
+    keys += '<enter-command>set auto_tag="$my_html_auto_tag"<enter><send-message>'
+    print('push ' + quote(keys))
+
+
+def edit(run):
+    state = load(run)
+    keys = ''
+    if state.get('prepared'):
+        keys = '<first-entry><ungroup-attachment><next-entry><detach-file>'
+        state['prepared'] = False
+        store(run, state)
+    print('push ' + quote(keys + '<first-entry><edit-message>'))
+
+
+def preview(run):
+    state = load(run)
+    if not state.get('valid'):
+        raise ValueError('Use ce to fix the draft before previewing')
+    document = (run / 'message.html').read_text()
+    resources = {r['cid']: Path(r['path']).as_uri() for r in state.get('resources', [])}
+    document = re.sub(r'cid:([^\s"\'<>]+)',
+                      lambda m: resources.get(unquote(m[1]), m[0]), document, flags=re.I)
+    with tempfile.TemporaryDirectory(prefix='preview-', dir=run) as temporary:
+        path = Path(temporary) / 'message.html'
+        path.write_text(document, encoding='utf-8')
+        subprocess.run([str(SELF.with_name('neomutt-view')), 'part', str(path)], check=True)
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=['start', 'capture', 'editor', 'send', 'edit', 'prepared', 'preview', 'view-preview'])
+    parser.add_argument('target')
+    parser.add_argument('path', nargs='?', type=Path)
+    args = parser.parse_args()
+    if args.action == 'start':
+        start(args.target)
+        return
+    run = Path(args.target)
+    if args.action == 'capture':
+        capture(run)
+    elif args.action == 'editor':
+        editor(run, args.path)
+    elif args.action == 'send':
+        send(run)
+    elif args.action == 'edit':
+        edit(run)
+    elif args.action == 'prepared':
+        state = load(run)
+        state['prepared'] = True
+        store(run, state)
+    elif args.action == 'preview':
+        if not load(run).get('valid'):
+            raise ValueError('Use ce to fix the draft before previewing')
+        print('push ' + quote('<shell-escape>' + command('view-preview', run) + '<enter>'))
+    else:
+        preview(run)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        print('HTML mail: ' + str(error), file=sys.stderr)
+        raise SystemExit(1)

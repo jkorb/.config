@@ -1,22 +1,6 @@
 # vim: filetype=muttrc
-
 source ~/.config/neomutt/core/settings
 source ~/.config/neomutt/core/colors
-
-# unhook folder-hook
-#
-# folder-hook '~/.mail/gmail'  'source ~/.config/neomutt/accounts/gmail.conf'
-# folder-hook '~/.mail/lm'     'source ~/.config/neomutt/accounts/lm.conf'
-# folder-hook '~/.mail/uu'     'source ~/.config/neomutt/accounts/uu.conf'
-
 unset pager
-
-unhook send-hook
-
-unmacro compose cc
-unmacro compose cC
-bind compose cc send-message
-
-unbind ch
-unbind gh
-macro index,pager gh "<enter-command>source '~/.config/neomutt/dynamic/html_on'<enter>"
+set my_mail_keys = "~/.config/neomutt/dynamic/mail_text_keys"
+source $my_mail_keys

@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import json
 import os
+import shlex
 import subprocess
 import sys
 from datetime import datetime
@@ -13,7 +14,7 @@ GROUP = "mail-sync"
 DEBUG = "--debug" in sys.argv
 XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
 ICON_PATH = os.path.join(XDG_CONFIG_HOME, "launchd", "assets", "neomutt_icon.png")
-ACTIVATE_APP = "com.jkorbmacher.tmux"
+OPEN_MAIL = str(Path(XDG_CONFIG_HOME) / "neomutt/scripts/neomutt-notification")
 
 
 def cache_dir():
@@ -127,8 +128,12 @@ def notify(messages):
             subject,
             "-group",
             group,
-            "-activate",
-            ACTIVATE_APP,
+            "-execute",
+            shlex.join([
+                OPEN_MAIL,
+                "--message-id", str(msg.get(":message-id") or msg.get("message-id") or ""),
+                "--path", str(msg.get(":path") or msg.get("path") or ""),
+            ]),
         ]
         if os.path.exists(ICON_PATH):
             cmd += ["-contentImage", ICON_PATH]
