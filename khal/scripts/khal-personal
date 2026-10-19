@@ -1,0 +1,9 @@
+#!/opt/homebrew/opt/khal/libexec/bin/python
+"""Run khal with the local calendar customizations."""
+
+from personal import install
+from khal.cli import main_khal
+
+if __name__ == "__main__":
+    install()
+    main_khal()

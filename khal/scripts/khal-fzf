@@ -1,0 +1,8 @@
+#!/bin/zsh -f
+# Load the same keys and generated colors in shells and tmux calendar popups.
+if [[ -z $FZF_DEFAULT_OPTS ]]; then
+  source "$XDG_CONFIG_HOME/zsh/plugins/fzf/options.zsh"
+fi
+typeset -A ZSH_HIGHLIGHT_STYLES
+source "$XDG_CONFIG_HOME/zsh/theme.zsh"
+exec /opt/homebrew/bin/fzf "$@"

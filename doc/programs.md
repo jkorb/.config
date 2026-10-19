@@ -66,7 +66,7 @@ disabled mappings should not be treated as available commands.
 | NeoMutt | Read and compose mail in local Maildirs | [muttrc](../neomutt/muttrc), [core](../neomutt/core) |
 | isync (`mbsync`), mu | Download mail and index it for search | [isyncrc](../isyncrc), [mail-sync](../launchd/scripts/mail-sync) |
 | msmtp | Send outgoing mail for the selected account | [config](../msmtp/config) |
-| DavMail | Local gateway for institutional mail and calendars | [template](../davmail/davmail.properties.template) |
+| DavMail | Local gateway for institutional mail and calendars | [template](../davmail/graph.properties.template) |
 | vdirsyncer, khal | Sync calendar files, show the agenda, and edit events | [vdirsyncer](../vdirsyncer/config), [khal](../khal/config) |
 | terminal-notifier, launchd | Notifications and scheduled jobs | [services guide](services.md) |
 | Newsboat | RSS reading; automatic reload every 60 minutes | [config](../newsboat/config) |

@@ -17,11 +17,9 @@ source ~/.config/neomutt/core/aliases
 # ----------------------------------------
 
 folder-hook '~/.mail/gmail'  'source ~/.config/neomutt/accounts/gmail.conf'
-folder-hook '~/.mail/lm'     'source ~/.config/neomutt/accounts/lm.conf'
 folder-hook '~/.mail/uu'     'source ~/.config/neomutt/accounts/uu.conf'
 
 reply-hook '~t jkorbmacher@gmail.com'   "set signature   = '~/.config/neomutt/accounts/gmail_signature.txt'"
-reply-hook '~t logische.methoden@uu.nl' "set signature   = '~/.config/neomutt/accounts/lm_signature.txt'"
 reply-hook '~t j.korbmacher@uu.nl'      "set signature   = '~/.config/neomutt/accounts/uu_signature.txt'"
 
 # Default account

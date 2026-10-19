@@ -1,37 +1,6 @@
-IMAPAccount lm
-Host localhost
-Port 1143
-AuthMechs LOGIN
-PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
-TLSType None
-SystemCertificates yes
-#CertificateFile /etc/ssl/certs/ca-certificates.crt
-User j.korbmacher@uu.nl/logische.methoden@uu.nl
-Timeout 0
-
-IMAPStore lm-remote
-Account lm
-PathDelimiter "/"
-
-MaildirStore lm-local
-SubFolders Verbatim
-Path ~/.mail/lm/
-Inbox ~/.mail/lm/Inbox
-
-Channel lm
-Far :lm-remote:
-Near :lm-local:
-Patterns *
-#Patterns "INBOX" "Archive" "Drafts" "Sent Items" "Deleted Items" "Junk Email" "Unsent Messages"
-Sync All
-Create Both
-Remove Both
-Expunge Both
-SyncState *
-
 IMAPAccount uu
-Host localhost
-Port 1143
+Host 127.0.0.1
+Port 2143
 AuthMechs LOGIN
 PassCmd "pass login.uu.nl | sed -n 's/^pass: //p'"
 TLSType None
@@ -48,15 +17,39 @@ SubFolders Verbatim
 Path ~/.mail/uu/
 Inbox ~/.mail/uu/Inbox
 
-Channel uu
+Channel uu-main
 Far :uu-remote:
 Near :uu-local:
-Patterns "INBOX" "Archive" "Drafts" "Sent" "Trash" "Junk" "Unsent Messages"
+Patterns "INBOX" "Archive" "Drafts" "Junk" "Unsent Messages"
 Sync All
 Create Both
 Remove Both
 Expunge Both
 SyncState *
+
+# DavMail Graph can advertise Sent twice in LIST; address it explicitly.
+Channel uu-sent
+Far :uu-remote:Sent
+Near :uu-local:Sent
+Sync All
+Create Both
+Remove Both
+Expunge Both
+SyncState *
+
+Channel uu-trash
+Far :uu-remote:Trash
+Near :uu-local:Trash
+Sync All
+Create Both
+Remove Both
+Expunge Both
+SyncState *
+
+Group uu
+Channel uu-main
+Channel uu-sent
+Channel uu-trash
 
 IMAPAccount gmail
 Host imap.gmail.com

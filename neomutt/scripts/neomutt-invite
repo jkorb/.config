@@ -1,0 +1,63 @@
+#!/opt/homebrew/opt/khal/libexec/bin/python
+"""NeoMutt ci: review and respond to the current invitation."""
+
+import argparse
+import os
+from pathlib import Path
+import shlex
+import sys
+import tempfile
+
+import invite
+
+SELF = Path(__file__).resolve()
+
+
+def quote(value):
+    return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$') + '"'
+
+
+def prepare():
+    cache = Path(os.environ.get("XDG_CACHE_DIR", str(Path.home() / ".cache"))) / "neomutt-invites"
+    cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    run = Path(tempfile.mkdtemp(dir=cache))
+    options = ("pipe_decode", "auto_tag", "wait_key")
+    (run / "restore.rc").write_text("\n".join(f'set {key} = "$my_invite_{key}"' for key in options) + "\n")
+    for key in options:
+        print(f'set my_invite_{key} = "${key}"')
+    print("set pipe_decode=no auto_tag=no wait_key=no")
+    keys = ("<pipe-message>" + shlex.join([str(SELF), "message"])
+            + "<enter><enter-command>source " + quote(str(run / "restore.rc")) + "<enter>")
+    print("push " + quote(keys))
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("action", choices=("prepare", "message", "check"))
+    args = parser.parse_args()
+    if args.action == "prepare":
+        prepare()
+        return
+    raw = sys.stdin.buffer.read(invite.MAX_SIZE + 1)
+    try:
+        if args.action == "check":
+            client = invite.configured_client(read_only=True)
+            request = invite.invitation(raw)
+            _, _, calendar = client.locate(request)
+            event = invite.matching_event(request, calendar, client.account)
+            status = invite.own_attendee(event, client.account).params.get("PARTSTAT", "NEEDS-ACTION")
+            print("Invitation matches the current server event; status: " + str(status) + ". Read-only check; nothing sent.")
+        else:
+            invite.run(raw)
+    except Exception as error:
+        message = str(error) if isinstance(error, invite.InviteError) else f"Could not read the invitation ({type(error).__name__})."
+        if args.action == "check":
+            print(message, file=sys.stderr)
+            return 1
+        invite.notice(message)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -18,13 +18,34 @@ Calendar service → vdirsyncer → local calendar files → khal
                                                        └→ upcoming alerts
 ```
 
-DavMail sits between the institutional services and their sync/send clients.
-Passwords are fetched through pass by command hooks. Its live
-`davmail.properties` is ignored; the repo contains a template. These docs omit
-account addresses and password contents.
+DavMail connects the personal UU account to Microsoft Graph. The
+`davmail-graph` launchd job provides IMAP, SMTP, CalDAV and LDAP on localhost;
+password hooks use pass. Shared mailboxes and calendars are disabled. See
+[DavMail](../davmail/README.md) for ports and service commands.
+
+Graph saves sent mail on the server. NeoMutt leaves the UU `record` empty to
+avoid duplicate copies; mbsync downloads the server copy on its next run.
+Events with attendees get a Teams link. The local khal launcher supplies the
+organizer for new UU events so DavMail can create the meeting.
+In ikhal, press Tab in Attendees to open a searchable contact picker. See
+[Khal](../khal/README.md) for the keys and launcher.
+
+On a UU invitation, `ci` opens a response popup from the index, text reader,
+or Chawan. Review the organizer, time, scope and current reply; choose Accept,
+Tentative or Decline with ←/→, Tab or Ctrl-N/P, then confirm Send. Escape or
+`q` closes the popup. The response goes
+through DavMail to the existing server event and notifies the organizer.
+The next calendar sync brings the result into khal.
+
+Series invitations apply to the whole series; occurrence invitations apply
+only to that occurrence if it is present on the server. Missing, ambiguous
+or changed meetings stop without sending. An uncertain send is never retried
+automatically; check Outlook before trying again. Private response records
+live in `~/.local/state/neomutt-invites`. The attachment list's calendar action
+still only imports into khal; use `ci` to respond.
 
 Sources: [isyncrc](../isyncrc), [msmtp](../msmtp/config),
-[NeoMutt](../neomutt/muttrc), [DavMail template](../davmail/davmail.properties.template),
+[NeoMutt](../neomutt/muttrc), [DavMail template](../davmail/graph.properties.template),
 [vdirsyncer](../vdirsyncer/config), [khal](../khal/config).
 
 ### Mail index in narrow panes
@@ -92,19 +113,23 @@ existing files are never overwritten by the export or the managed move command.
 In this picker:
 
 - `Space` toggles a file's selection.
+- `Ctrl-G` opens the usual directory picker. Inside fzf, `Ctrl-G` or Escape
+  cancels only the jump and returns to nnn.
 - Navigate to a destination and press `v` to move the selected attachments there.
   Collisions get numbered names. Reselect the moved files with `Space`.
 - `;r` renames the hovered attachment, numbering collisions. Reselect it afterward.
   Native `Ctrl-R` still uses nnn's own overwrite prompt; use `;r` for numbered names.
 - `q` finishes. Selected attachments keep their current names and locations;
   unselected copies created by this save are sent to macOS Trash.
-- `Ctrl-G` cancels cleanup and leaves all exported files where they are.
+- `Ctrl-X` in nnn cancels cleanup and leaves all exported files where they are.
 
 nnn clears selection after moves, so **reselect before quitting**. The helper
 tracks the created files by their filesystem identity, including across renames,
-and never cleans up unrelated files merely because they are unselected. If the
-picker fails or a file cannot be identified safely, it is retained. Only regular
-attachment files created by the current run are eligible for automatic cleanup.
+and compares selected files by that identity too, so symlinked directories such
+as `~/Teaching` work. It never cleans up unrelated files merely because they are
+unselected. If any selected path cannot be verified, all exports are retained;
+picker failures also retain all exports. Only regular attachment files created
+by the current run are eligible for automatic cleanup.
 The managed move currently stays on the same volume; moving to another volume
 fails without removing the source. Normal nnn commands remain available, so their
 own prompts still apply to manual operations on other files.
@@ -130,7 +155,7 @@ The plugin supplies mail highlighting and spell-check captures.
 
 | Job | Schedule | Script behavior |
 | --- | --- | --- |
-| `davmail` | Run at load, keep alive | Start Homebrew DavMail with the private properties file |
+| `davmail-graph` | Run at load, keep alive | Personal UU Graph gateway |
 | `mail-sync` | Run at load and at minutes 00, 05, …, 55 | Check connectivity and DavMail, run `mbsync -a`, index mu, then run mail notifications |
 | `vdirsyncer-sync` | Run at load and at minutes 00, 05, …, 55 | Discover/sync when online with DavMail running; check upcoming local events either way |
 

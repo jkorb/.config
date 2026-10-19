@@ -3,11 +3,11 @@
 <plist version="1.0">
   <dict>
     <key>Label</key>
-    <string>com.jkorbmacher.davmail</string>
+    <string>com.jkorbmacher.davmail-graph</string>
     <key>ProgramArguments</key>
     <array>
       <string>/opt/homebrew/bin/davmail</string>
-      <string>/Users/jkorbmacher/.config/davmail/davmail.properties</string>
+      <string>/Users/jkorbmacher/.config/davmail/private/graph.properties</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>

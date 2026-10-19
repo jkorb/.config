@@ -11,6 +11,8 @@
 !davmail
 davmail/davmail.log
 davmail/davmail.properties
+davmail/private/
+davmail/**/__pycache__/
 !despell
 !doc
 
@@ -28,10 +30,13 @@ nvim/nvim.log
 !gnupg
 !glow
 !khal
+khal/**/__pycache__/
 !latexmk
 !launchd
+launchd/**/__pycache__/
 !msmtp
 !neomutt
+neomutt/**/__pycache__/
 neomutt/core/aliases
 neomutt/scripts/fetch_contacts_bak
 neomutt/app/.DS_Store

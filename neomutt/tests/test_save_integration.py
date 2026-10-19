@@ -30,6 +30,10 @@ class SaveIntegration(unittest.TestCase):
         self.downloads.mkdir(parents=True)
         (self.home / '.cache').mkdir()
         (self.home / '.config').mkdir()
+        # Exercise the real directory-jump plugin/fzf against only the fake HOME.
+        repo = SCRIPT.parents[2]
+        for name in ('nnn', 'zsh'):
+            (self.home / '.config' / name).symlink_to(repo / name, target_is_directory=True)
         (self.downloads / 'report.txt').write_bytes(b'existing document')
         self.sentinel = self.downloads / 'unrelated.txt'
         self.sentinel.write_bytes(b'untouched')
@@ -69,12 +73,16 @@ bind attach t tag-entry
 macro attach s "<enter-command>source \\\"''' + str(self.helper) + ''' prepare |\\\"<enter>"
 ''')
         config = self.root / 'tmux.conf'
-        config.write_text('set -g default-shell /bin/bash\nset -g status off\nset -s escape-time 10\n')
+        jump_binding = next(line for line in (repo / 'tmux/conf/keybinds.conf').read_text().splitlines()
+                            if line.startswith('bind-key -n C-g '))
+        config.write_text('set -g default-shell /bin/bash\nset -g status off\nset -s escape-time 10\n' + jump_binding + '\n')
         self.env = {**os.environ, 'HOME':str(self.home), 'XDG_CACHE_DIR':str(self.home / '.cache'),
                     'XDG_CONFIG_HOME':str(self.home / '.config'),
                     'TERM':'xterm-256color', 'PATH':'/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin',
                     'SHELL':'/bin/bash', 'TMPDIR':str(self.root) + '/', 'NNN_OPTS':'',
-                    'NNN_BMS':'t:' + str(self.destination), 'PYTHONDONTWRITEBYTECODE':'1'}
+                    'NNN_BMS':'t:' + str(self.destination), 'NNN_PLUG':'g:goto-dir',
+                    'FZF_DEFAULT_OPTS':'', 'FZF_DEFAULT_OPTS_FILE':'',
+                    'PYTHONDONTWRITEBYTECODE':'1'}
         self.env.pop('TMUX', None)
         self.env.pop('TMUX_PANE', None)
         self.base = ['/opt/homebrew/bin/tmux', '-S', str(self.root / 'tmux.sock')]
@@ -208,9 +216,55 @@ macro attach s "<enter-command>source \\\"''' + str(self.helper) + ''' prepare |
         self.assertEqual(moved.read_bytes(), b'first payload')
         self.assertEqual(existing.read_bytes(), b'existing destination')
 
+    def test_move_to_symlinked_directory_and_reselect(self):
+        paths = self.start_picker()
+        destination = self.home / 'Dropbox/Teaching/Letters/Example, Person'
+        destination.mkdir(parents=True)
+        (self.destination / 'Teaching').symlink_to(self.home / 'Dropbox/Teaching', target_is_directory=True)
+        self.keys('b', 't', 'l', 'l', 'l')
+        self.wait(lambda: 'Example, Person' in self.screen(), 'symlinked destination')
+        self.keys('v')
+        moved = destination / paths[0].name
+        self.wait(moved.exists, 'move through directory symlink')
+        self.keys('g', 'Space')
+        self.wait(lambda: any(p.endswith('/' + moved.name) for p in self.selection()), 'select moved file through alias')
+        self.finish()
+        self.assertEqual(moved.read_bytes(), b'first payload')
+        self.assertEqual(list(self.trash.iterdir()), [])
+
+    def test_ctrl_g_jumps_and_selected_move_is_kept(self):
+        paths = self.start_picker()
+        # Physical client input exercises the normal tmux binding as well.
+        os.write(self.master, b'\x07')
+        self.wait(lambda: '🚀' in self.screen(), 'directory picker')
+        self.tmux('send-keys', '-l', 'destination')
+        self.keys('Enter')
+        self.wait(lambda: '~/destination' in self.screen(), 'jump to destination')
+        self.keys('v')
+        moved = self.destination / paths[0].name
+        self.wait(moved.exists, 'move after jump')
+        self.keys('g', 'Space')
+        self.wait(lambda: str(moved) in self.selection(), 'reselect after jump and move')
+        self.finish()
+        self.assertEqual(moved.read_bytes(), b'first payload')
+        self.assertEqual(list(self.trash.iterdir()), [])
+
+    def test_ctrl_g_in_fzf_cancels_only_directory_jump(self):
+        paths = self.start_picker()
+        os.write(self.master, b'\x07')
+        self.wait(lambda: '🚀' in self.screen(), 'directory picker')
+        os.write(self.master, b'\x07')
+        self.wait(lambda: '~/Downloads' in self.screen() and '🚀' not in self.screen(), 'return from cancelled jump')
+        self.assertTrue(paths[0].exists())
+        self.keys('Space')
+        self.wait(lambda: not self.selection(), 'deselection after cancelling jump')
+        self.finish()
+        self.assertFalse(paths[0].exists())
+        self.assertEqual((self.trash / paths[0].name).read_bytes(), b'first payload')
+
     def test_cancel_keeps_exported_files(self):
         paths = self.start_picker()
-        self.keys('C-g')
+        self.keys('C-x')
         self.wait(lambda: 'kept' in self.screen(), 'cancellation diagnostic')
         self.keys('Enter')
         self.wait(lambda: 'Attachments' in self.screen(), 'return after cancel')
@@ -242,16 +296,22 @@ macro attach s "<enter-command>source \\\"''' + str(self.helper) + ''' prepare |
         self.assertFalse(moved.exists())
         self.assertEqual((self.trash / moved.name).read_bytes(), b'first payload')
 
-    def test_unselected_renamed_file_goes_to_trash(self):
+    def test_stale_selection_after_native_rename_keeps_exports(self):
         paths = self.start_picker()
         self.keys('C-r', 'C-u')
         self.tmux('send-keys', '-l', 'renamed.txt')
         self.keys('Enter')
         renamed = self.downloads / 'renamed.txt'
         self.wait(renamed.exists, 'rename')
-        self.finish()
-        self.assertFalse(renamed.exists())
-        self.assertEqual((self.trash / renamed.name).read_bytes(), b'first payload')
+        # Native rename can leave the old (now missing) path in nnn's selection.
+        # An unresolved selection must retain everything rather than guess.
+        self.assertIn(str(paths[0]), self.selection())
+        self.keys('q')
+        self.wait(lambda: 'all exported files were kept' in self.screen(), 'stale selection diagnostic')
+        self.keys('Enter')
+        self.wait(lambda: 'Attachments' in self.screen(), 'return after retaining exports')
+        self.assertEqual(renamed.read_bytes(), b'first payload')
+        self.assertEqual(list(self.trash.iterdir()), [])
 
 
 if __name__ == '__main__':

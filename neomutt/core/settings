@@ -28,16 +28,6 @@ named-mailboxes "uu.trash"      '+uu/Trash'
 # named-mailboxes "󰢐"   '+div2'
 named-mailboxes " "   '+div2'
 
-named-mailboxes "lm.inbox"      '+lm/Inbox'
-named-mailboxes "lm.archive"    '+lm/Archive'
-named-mailboxes "lm.sent"       '+lm/Sent Items'
-named-mailboxes "lm.drafts"     '+lm/Drafts'
-named-mailboxes "lm.junk"       '+lm/Junk Email'
-named-mailboxes "lm.trash"      '+lm/Deleted Items'
-
-# named-mailboxes "󰊫"   '+div3'
-named-mailboxes " "   '+div3'
-
 named-mailboxes "gmail.inbox"   '+gmail/Inbox'
 named-mailboxes "gmail.archive" '+gmail/All Mail'
 named-mailboxes "gmail.drafts"  '+gmail/Drafts'

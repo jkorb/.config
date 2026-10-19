@@ -86,7 +86,7 @@ def search_ldap(search_input):
     search_filter = f"(&(objectClass=*)(|(mail={pattern})(cn={pattern})))"
     contacts = []
     try:
-        server = Server("ldap://localhost:1389", get_info=NONE, connect_timeout=0.5)
+        server = Server("ldap://127.0.0.1:2389", get_info=NONE, connect_timeout=0.5)
         with Connection(server, "uid=j.korbmacher@uu.nl,ou=people", password,
                         receive_timeout=1, read_only=True) as conn:
             conn.search("ou=people", search_filter, attributes=["cn", "mail"], time_limit=1)

@@ -44,7 +44,7 @@ Sources: [WezTerm](../wezterm/wezterm.lua), [fzf](../zsh/plugins/fzf/conf.zsh),
 | Prefix v / s | Split side by side / above and below, at the current directory |
 | Prefix Ctrl-N | New window at the session home directory |
 | Prefix Ctrl-_ | Fuzzy session switcher |
-| Prefix Ctrl-C | Open `khal interactive` in a popup |
+| Prefix Ctrl-C | Open the calendar in a popup, with attendee completion |
 | Prefix z or Ctrl-Z | Toggle pane zoom |
 | Prefix Ctrl-W | Last pane |
 | Prefix Ctrl-J / Ctrl-K | Rotate panes forward / backward |
@@ -152,13 +152,15 @@ Sources: [keymaps](../nvim/lua/config/keymaps.lua), [autocmds](../nvim/lua/confi
 | NeoMutt compose | ce / ca | Edit message (Markdown source in HTML mode) / attach with picker |
 | NeoMutt attachments | Space Space; s | Tag attachments; save current or tagged files through nnn |
 | Mail save picker | Space; v; ;r | Select; move here; rename with numbered collisions (reselect after move/rename) |
-| Mail save picker | q / Ctrl-G | Finish, sending unselected new files to Trash / retain all exported files |
+| Mail save picker | Ctrl-G | Open the shared directory picker; Ctrl-G inside fzf cancels only the jump |
+| Mail save picker | q / Ctrl-X | Finish, sending unselected new files to Trash / retain all exported files |
 | NeoMutt compose | cc | Send; HTML mode automatically includes generated text and HTML alternatives |
 | NeoMutt index/pager | gh | Toggle HTML mode |
 | NeoMutt index | H | Open the other view: HTML in text mode, text in HTML mode |
 | NeoMutt text pager | H | Open Chawan, loading remote images |
 | Chawan mail view | A / H | Open NeoMutt attachments / switch to text |
 | Chawan mail view | cr / ca / cc / cf | Reply / reply all / compose / forward through NeoMutt |
+| NeoMutt index/pager or Chawan mail view | ci | Review an invitation and send Accept, Tentative, or Decline |
 | Chawan mail view | sa / si / sj / ss | Archive / move to inbox / move to junk / choose save destination using existing account bindings |
 | Notification mail reader | q | Close mail and return to the previous tmux window |
 | Chawan | h / j / k / l; Ctrl-d / Ctrl-u | Scroll left / down / up / right; half-page down / up |

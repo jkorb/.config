@@ -1,0 +1,42 @@
+# Personal account Graph gateway.
+# Copy to private/graph.properties and set userWhiteList before starting.
+davmail.mode=O365Graph
+davmail.authentication=O365DeviceCode
+davmail.enableOidc=false
+davmail.oauth.clientId=d3590ed6-52b3-4102-aeff-aad2292ab01c
+davmail.oauth.persistToken=true
+davmail.oauth.tokenFilePath=/Users/jkorbmacher/.config/davmail/private/graph-tokens.properties
+davmail.url=https://outlook.office365.com/EWS/Exchange.asmx
+davmail.userWhiteList=you@example.edu
+davmail.server=true
+davmail.bindAddress=127.0.0.1
+davmail.allowRemote=false
+davmail.imapPort=2143
+davmail.smtpPort=2025
+davmail.caldavPort=2080
+davmail.ldapPort=2389
+davmail.popPort=0
+davmail.keepDelay=0
+davmail.sentKeepDelay=0
+davmail.imapAutoExpunge=false
+davmail.smtpSaveInSent=false
+davmail.caldavPastDelay=90
+davmail.caldavDisableTasks=true
+davmail.caldavAutoSchedule=true
+davmail.caldav.enableOnlineMeeting=true
+# Keep bare UTC timestamps in UTC; khal supplies Amsterdam TZIDs for local times.
+# DavMail 7.1.0 incorrectly attaches a non-UTC fallback TZID to Z timestamps.
+davmail.timezoneId=UTC
+davmail.disableUpdateCheck=true
+davmail.disableGuiNotifications=true
+davmail.showStartupBanner=false
+davmail.enableProxy=false
+davmail.useSystemProxies=false
+davmail.clientSoTimeout=300
+davmail.logFilePath=/Users/jkorbmacher/.config/davmail/private/graph.log
+davmail.logFileSize=1MB
+log4j.rootLogger=WARN
+log4j.logger.davmail=WARN
+log4j.logger.httpclient.wire=OFF
+log4j.logger.org.apache.http=OFF
+log4j.logger.org.apache.commons.httpclient=OFF

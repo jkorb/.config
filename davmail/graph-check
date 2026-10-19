@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""Graph access checks using read requests only. Tokens stay in memory."""
+
+import argparse
+import json
+import re
+import sys
+import time
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote, urlencode
+from urllib.request import HTTPRedirectHandler, Request, build_opener
+
+
+# DavMail's published public application ID. No client secret is needed.
+CLIENT_ID = "facd6cff-a294-4415-b59f-c5b01937d7bd"
+OUTLOOK_CLIENT_ID = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+LOGIN = "https://login.microsoftonline.com/organizations/oauth2/v2.0"
+LEGACY_LOGIN = "https://login.microsoftonline.com/common/oauth2"
+GRAPH_RESOURCE = "https://graph.microsoft.com"
+GRAPH = "https://graph.microsoft.com/v1.0"
+SCOPES = {"User.Read", "Calendars.Read.Shared"}
+CALENDAR_FIELDS = (
+    "name,canEdit,allowedOnlineMeetingProviders,defaultOnlineMeetingProvider"
+)
+
+
+class CheckError(Exception):
+    pass
+
+
+class APIError(CheckError):
+    def __init__(self, code, message):
+        self.code = code
+        super().__init__(f"{clean(code)}: {clean(message)}")
+
+
+class NoRedirect(HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def clean(value):
+    return "".join(c for c in str(value) if c.isprintable())[:800]
+
+
+def request_json(request):
+    # Do not forward credentials through a redirect, even to another MS host.
+    try:
+        with build_opener(NoRedirect()).open(request, timeout=30) as response:
+            result = json.load(response)
+    except HTTPError as error:
+        with error:
+            try:
+                result = json.load(error)
+            except (ValueError, UnicodeError):
+                raise CheckError(f"Microsoft returned HTTP {error.code}.") from None
+        if not isinstance(result, dict) or "error" not in result:
+            raise CheckError(f"Microsoft returned HTTP {error.code}.")
+    except URLError as error:
+        raise CheckError(f"Connection failed: {clean(error.reason)}") from None
+    except TimeoutError:
+        raise CheckError("Connection timed out. Run the check again to retry.") from None
+    except (ValueError, UnicodeError):
+        raise CheckError("Microsoft returned an invalid JSON response.") from None
+    if not isinstance(result, dict):
+        raise CheckError("Microsoft returned an unexpected response.")
+    if "error" in result:
+        error = result["error"]
+        if isinstance(error, dict):
+            raise APIError(error.get("code", "error"), error.get("message", ""))
+        raise APIError(error, result.get("error_description", ""))
+    return result
+
+
+def oauth_post(action, fields, outlook=False):
+    if action not in {"devicecode", "token"}:
+        raise CheckError("Unsupported authentication action.")
+    return request_json(Request(
+        f"{LEGACY_LOGIN if outlook else LOGIN}/{action}",
+        data=urlencode(fields).encode("ascii"),
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        method="POST",
+    ))
+
+
+def checked_token(response):
+    # Fail closed if an application's existing consent grants broader access.
+    scope = response.get("scope")
+    if not isinstance(scope, str):
+        raise CheckError("No granted permission list; stopping before Graph access.")
+    granted = {s.removeprefix("https://graph.microsoft.com/") for s in scope.split()}
+    unexpected = granted - SCOPES - {"openid", "profile", "email"}
+    if unexpected:
+        raise CheckError(
+            "Unexpected permissions; stopping before Graph access: "
+            + ", ".join(sorted(unexpected))
+        )
+    if not SCOPES <= granted:
+        raise CheckError("The required read-only permissions were not granted.")
+    token = response.get("access_token")
+    if not isinstance(token, str) or not token:
+        raise CheckError("No access token returned.")
+    return token
+
+
+def checked_outlook_token(response):
+    # The user explicitly selected the broader Outlook token. This is not a
+    # fallback for a rejected narrow token; all Graph operations remain GETs.
+    if response.get("resource", "").rstrip("/") != GRAPH_RESOURCE:
+        raise CheckError("The Outlook token is not identified as a Microsoft Graph token.")
+    if str(response.get("token_type", "")).casefold() != "bearer":
+        raise CheckError("Unexpected Outlook token type.")
+    scope = response.get("scope")
+    token = response.get("access_token")
+    if not isinstance(scope, str) or not scope.strip():
+        raise CheckError("No granted permission list; stopping before Graph access.")
+    if not isinstance(token, str) or not token:
+        raise CheckError("No access token returned.")
+    print("Granted Outlook permissions (the token permits more than this test uses):")
+    for permission in sorted(set(scope.split())):
+        print("  " + clean(permission))
+    print("The checks below use GET requests only. No tokens will be saved.", flush=True)
+    return token
+
+
+def authenticate(client_id, outlook=False):
+    fields = {"client_id": OUTLOOK_CLIENT_ID if outlook else client_id}
+    if outlook:
+        fields["resource"] = GRAPH_RESOURCE
+        print("Using Microsoft's classic Office/Outlook app registration.")
+        print("This can grant a broad token, including mail/calendar write access.")
+        print("The test only reads metadata and never saves or refreshes tokens.", flush=True)
+    else:
+        fields["scope"] = " ".join("https://graph.microsoft.com/" + s for s in sorted(SCOPES))
+    device = oauth_post("devicecode", fields, outlook=outlook)
+    print("Open https://microsoft.com/devicelogin in your browser.")
+    print(f"Enter code: {clean(device['user_code'])}", flush=True)
+    print("Sign in with the account specified above and complete MFA.")
+    if outlook:
+        print("The browser should identify the app as Microsoft Office.")
+        print("If administrator approval or device enrollment is required, cancel and report it.")
+    else:
+        print("Only profile and shared-calendar READ permissions are requested.")
+        print("If asked for write/send access or administrator approval, cancel and report it.")
+    print("Waiting for sign-in (Ctrl-C cancels)...", flush=True)
+    interval = max(5, int(device.get("interval", 5)))
+    deadline = time.monotonic() + min(int(device["expires_in"]), 900)
+    while time.monotonic() + interval < deadline:
+        time.sleep(interval)
+        try:
+            response = oauth_post("token", {
+                "client_id": OUTLOOK_CLIENT_ID if outlook else client_id,
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "code" if outlook else "device_code": device["device_code"],
+            }, outlook=outlook)
+        except APIError as error:
+            if error.code == "authorization_pending":
+                continue
+            if error.code == "slow_down":
+                interval += 5
+                continue
+            raise
+        return checked_outlook_token(response) if outlook else checked_token(response)
+    raise CheckError("Sign-in expired. Run the check again for a new code.")
+
+
+def graph_get(token, path, outlook=False):
+    # Only these metadata endpoints are allowed. No message/event or write API.
+    query = {}
+    if path == "/me":
+        fields = "mail,userPrincipalName"
+    elif re.fullmatch(r"/(me|users/[^/?#]+)/calendar", path):
+        fields = CALENDAR_FIELDS
+    elif outlook and re.fullmatch(r"/(me|users/[^/?#]+)/mailFolders/inbox", path):
+        fields = "id"
+    elif outlook and path in {"/me/contacts", "/me/people"}:
+        fields = "id"
+        query["$top"] = "1"
+    elif outlook and path == "/me/mailboxSettings":
+        fields = "timeZone"
+    else:
+        raise CheckError("Endpoint outside this test's metadata allowlist.")
+    query["$select"] = fields
+    return request_json(Request(
+        GRAPH + path + "?" + urlencode(query),
+        headers={"Authorization": "Bearer " + token, "Accept": "application/json"},
+        method="GET",
+    ))
+
+
+def check_calendars(token, account, shared):
+    profile = graph_get(token, "/me")
+    identities = {str(profile.get(key) or "").casefold() for key in ("mail", "userPrincipalName")}
+    if account.casefold() not in identities:
+        raise CheckError("Signed in to a different account; calendar checks were not run.")
+    print(f"Account verified: {clean(account)}")
+    failed = False
+    targets = [("Your default calendar", "/me/calendar")]
+    targets += [(address, "/users/" + quote(address, safe="") + "/calendar") for address in shared]
+    for label, path in targets:
+        try:
+            calendar = graph_get(token, path)
+        except CheckError as error:
+            print(f"{clean(label)}: FAILED — {error}")
+            failed = True
+            continue
+        providers = calendar.get("allowedOnlineMeetingProviders")
+        teams = "unknown" if not isinstance(providers, list) else (
+            "yes" if "teamsForBusiness" in providers else "no"
+        )
+        editable = {True: "yes", False: "no"}.get(calendar.get("canEdit"), "unknown")
+        print(f"{clean(label)}: readable; Teams supported: {teams}; account can edit: {editable}")
+        print(f"  Default meeting provider: {clean(calendar.get('defaultOnlineMeetingProvider', 'unknown'))}")
+    return 1 if failed else 0
+
+
+def check_outlook_services(token, shared_mailboxes):
+    targets = [
+        ("Personal mailbox", "/me/mailFolders/inbox", "id"),
+        ("Mailbox settings", "/me/mailboxSettings", "timeZone"),
+        ("Personal contacts API", "/me/contacts", "value"),
+        ("People lookup API", "/me/people", "value"),
+    ]
+    targets += [("Shared mailbox " + address,
+                 "/users/" + quote(address, safe="") + "/mailFolders/inbox", "id")
+                for address in shared_mailboxes]
+    failed = False
+    for label, path, expected_key in targets:
+        try:
+            metadata = graph_get(token, path, outlook=True)
+            if expected_key not in metadata:
+                raise CheckError("The metadata response was incomplete.")
+        except CheckError as error:
+            print(f"{clean(label)}: FAILED — {error}")
+            failed = True
+            continue
+        print(f"{clean(label)}: readable")
+    return 1 if failed else 0
+
+
+def email_address(value):
+    if not re.fullmatch(r"[^@\s/\\?#]+@[^@\s/\\?#]+", value):
+        raise argparse.ArgumentTypeError("Use the account's full email address.")
+    return value
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--account", required=True, type=email_address, help="Expected sign-in email address")
+    parser.add_argument("--shared", action="append", default=[], type=email_address, help="Shared mailbox calendar to check")
+    parser.add_argument("--shared-mailbox", action="append", default=[], type=email_address,
+                        help="Shared mailbox metadata to check (requires --outlook)")
+    auth = parser.add_mutually_exclusive_group()
+    auth.add_argument("--client-id", help="Public app ID; defaults to DavMail's published app")
+    auth.add_argument("--outlook", action="store_true",
+                      help="Test classic Office/Outlook authentication; allows its broader token")
+    args = parser.parse_args()
+    if args.shared_mailbox and not args.outlook:
+        parser.error("--shared-mailbox requires --outlook")
+    print(f"Graph read checks for {clean(args.account)}.", flush=True)
+    try:
+        token = authenticate(args.client_id or CLIENT_ID, outlook=args.outlook)
+        result = check_calendars(token, args.account, args.shared)
+        if args.outlook:
+            result |= check_outlook_services(token, args.shared_mailbox)
+        print("Only metadata was read. No calendar or mail changes were made.")
+        print("Sending, meeting creation, RSVP, LDAP search and DavMail sync remain untested.")
+        return result
+    except CheckError as error:
+        print(f"Stopped: {error}", file=sys.stderr)
+        return 1
+    except KeyboardInterrupt:
+        print("\nCancelled. No tokens were saved.", file=sys.stderr)
+        return 130
+
+
+if __name__ == "__main__":
+    sys.exit(main())

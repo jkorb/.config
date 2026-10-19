@@ -156,6 +156,50 @@ class SaveSafety(unittest.TestCase):
         trash.assert_not_called()
         self.assertEqual(foreign.read_bytes(), b'keep')
 
+    def test_selection_through_directory_symlink_keeps_moved_attachment(self):
+        save.collect(self.run, self.source)
+        destination = self.root / 'Dropbox/Teaching/Letters/Example, Person'
+        destination.mkdir(parents=True)
+        alias = self.root / 'Teaching'
+        alias.symlink_to(self.root / 'Dropbox/Teaching', target_is_directory=True)
+        moved = destination / 'main_-_with_abstract.pdf'
+        def picker(run, paths):
+            paths[0].rename(moved)
+            return {str(alias / 'Letters/Example, Person' / moved.name)}
+        with patch.object(save.Path, 'home', return_value=self.root), patch.object(save, 'organize', side_effect=picker), patch.object(save.subprocess, 'run') as trash, contextlib.redirect_stdout(io.StringIO()):
+            save.manage(self.run)
+        trash.assert_not_called()
+        self.assertEqual(moved.read_bytes(), b'new attachment')
+
+    def test_unreadable_selection_cancels_all_cleanup(self):
+        save.collect(self.run, self.source)
+        def picker(run, paths):
+            return {str(self.root / 'missing-selected-file.pdf')}
+        with patch.object(save.Path, 'home', return_value=self.root), patch.object(save, 'organize', side_effect=picker), patch.object(save.subprocess, 'run') as trash:
+            with self.assertRaisesRegex(RuntimeError, 'all exported files were kept'):
+                save.manage(self.run)
+        trash.assert_not_called()
+        self.assertEqual((self.root / 'Downloads/report.txt').read_bytes(), b'new attachment')
+
+    def test_bulk_symlink_selection_trashes_only_unselected_export(self):
+        save.collect(self.run, self.source)
+        save.collect(self.run, self.source)
+        destination = self.root / 'real folder'
+        destination.mkdir()
+        alias = self.root / 'linked folder'
+        alias.symlink_to(destination, target_is_directory=True)
+        moved = []
+        def picker(run, paths):
+            for path in paths:
+                moved.append(destination / path.name)
+                path.rename(moved[-1])
+            return {str(alias / moved[0].name)}
+        with patch.object(save.Path, 'home', return_value=self.root), patch.object(save, 'organize', side_effect=picker), patch.object(save.subprocess, 'run') as trash, contextlib.redirect_stdout(io.StringIO()):
+            save.manage(self.run)
+        self.assertEqual(moved[0].read_bytes(), b'new attachment')
+        self.assertFalse(moved[1].exists())
+        trash.assert_called_once_with([save.TRASH, str(self.run / 'discarded' / moved[1].name)], check=True)
+
     def test_filename_sanitization(self):
         self.assertEqual(save.safe_name('../../report.txt'), 'report.txt')
         self.assertEqual(save.safe_name('a\nb.txt'), 'a_b.txt')

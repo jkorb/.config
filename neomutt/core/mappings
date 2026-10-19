@@ -97,6 +97,7 @@ bind  index,pager        cr         reply
 bind  index,pager        cf         forward-message
 bind  index,pager        ca         group-reply
 bind  index,pager        c@         compose-to-sender
+macro index,pager        ci         "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-invite prepare |\"<enter>" "Respond to invitation"
 
 bind  compose            cc         send-message
 bind  compose            ce         edit-message

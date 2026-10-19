@@ -45,6 +45,8 @@ alias mk=make
 alias music=cmus
 
 alias mail=neomutt
+alias khal='khal-personal'
+alias ikhal='khal-personal interactive'
 
 bindkey -v
 

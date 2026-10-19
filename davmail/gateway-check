@@ -1,0 +1,278 @@
+#!/usr/bin/env python3
+"""Temporary personal-account Graph gateway trial; no production config or sync."""
+
+import argparse
+import base64
+import datetime as dt
+import http.client
+import imaplib
+from pathlib import Path
+import re
+import secrets
+import socket
+import subprocess
+import tempfile
+import threading
+import time
+from urllib.parse import quote, urlsplit
+import xml.etree.ElementTree as ET
+
+
+OFFICE_CLIENT = "d3590ed6-52b3-4102-aeff-aad2292ab01c"
+DAVMAIL = "/opt/homebrew/bin/davmail"
+DAV = "{DAV:}"
+
+
+def configuration(directory, ports, account):
+    return {
+        "davmail.mode": "O365Graph",
+        "davmail.authentication": "O365DeviceCode",
+        "davmail.enableOidc": "false",
+        "davmail.oauth.clientId": OFFICE_CLIENT,
+        "davmail.oauth.persistToken": "false",
+        "davmail.oauth.tokenFilePath": str(directory / "unused-tokens.properties"),
+        "davmail.url": "https://outlook.office365.com/EWS/Exchange.asmx",
+        "davmail.server": "true",
+        "davmail.bindAddress": "127.0.0.1",
+        "davmail.allowRemote": "false",
+        "davmail.userWhiteList": account,
+        "davmail.imapPort": str(ports[0]),
+        "davmail.caldavPort": str(ports[1]),
+        "davmail.ldapPort": str(ports[2]),
+        "davmail.smtpPort": "0",
+        "davmail.popPort": "0",
+        "davmail.keepDelay": "0",
+        "davmail.sentKeepDelay": "0",
+        "davmail.imapAutoExpunge": "false",
+        "davmail.caldavReadonly": "true",
+        "davmail.caldavDisableTasks": "true",
+        "davmail.caldavAutoSchedule": "false",
+        "davmail.timezoneId": "W. Europe Standard Time",
+        "davmail.disableUpdateCheck": "true",
+        "davmail.disableGuiNotifications": "true",
+        "davmail.showStartupBanner": "false",
+        "davmail.enableProxy": "false",
+        "davmail.useSystemProxies": "false",
+        "davmail.clientSoTimeout": "900",
+        "davmail.logFilePath": str(directory / "gateway.log"),
+        "log4j.rootLogger": "OFF",
+        "log4j.logger.davmail": "OFF",
+        "log4j.logger.httpclient.wire": "OFF",
+        "log4j.logger.org.apache.http": "OFF",
+        "log4j.logger.org.apache.commons.httpclient": "OFF",
+    }
+
+
+def show_device_code(stream):
+    """DavMail repeats this prompt; never forward arbitrary gateway output."""
+    seen = set()
+    for line in stream:
+        match = re.search(r"enter the code ([A-Z0-9-]+)", line)
+        if match and match[1] not in seen:
+            seen.add(match[1])
+            print("Sign in at https://microsoft.com/devicelogin", flush=True)
+            print("Device code: " + match[1], flush=True)
+            print("Use the requested account; app: Microsoft Office. "
+                  "Cancel if admin approval or device enrollment is required.", flush=True)
+
+
+def stop_gateway(process):
+    if process.poll() is None:
+        process.terminate()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            process.kill()
+            process.wait(timeout=5)
+
+
+def wait_for_ports(process, ports):
+    expected = {"n127.0.0.1:" + str(port) for port in ports}
+    deadline = time.monotonic() + 20
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            raise RuntimeError("temporary gateway exited during startup")
+        # Check ownership as well as readiness, rather than trusting a port race.
+        result = subprocess.run(
+            ["/usr/sbin/lsof", "-nP", "-a", "-p", str(process.pid),
+             "-iTCP", "-sTCP:LISTEN", "-F", "n"],
+            capture_output=True, text=True, timeout=5,
+        )
+        listening = {line for line in result.stdout.splitlines() if line.startswith("n")}
+        if listening == expected:
+            return
+        time.sleep(0.2)
+    raise RuntimeError("temporary gateway did not bind exactly its three loopback ports")
+
+
+def check_imap(port, account, password):
+    client = imaplib.IMAP4("127.0.0.1", port, timeout=900)
+    try:
+        client.login(account, password)
+        print("PASS: DavMail Graph device authentication", flush=True)
+        client.sock.settimeout(120)
+        status, counts = client.select("INBOX", readonly=True)  # EXAMINE, never SELECT
+        if status != "OK":
+            raise RuntimeError("read-only Inbox open failed")
+        print("PASS: IMAP Inbox opened read-only", flush=True)
+        # UID/FLAGS cannot mark messages read. No body, STORE, CLOSE or EXPUNGE.
+        if counts and int(counts[-1]) > 0:
+            status, _ = client.fetch("1", "(UID FLAGS)")
+            if status != "OK":
+                raise RuntimeError("IMAP metadata fetch failed")
+            print("PASS: IMAP message UID and flags", flush=True)
+    finally:
+        # LOGOUT does not expunge; IMAP CLOSE can, even after EXAMINE in DavMail.
+        try:
+            client.logout()
+        except (OSError, imaplib.IMAP4.error):
+            client.shutdown()
+
+
+def caldav_read(port, authorization, method, path, body=None, depth="0"):
+    if method not in {"GET", "PROPFIND", "REPORT"}:
+        raise ValueError("only CalDAV read operations are permitted")
+    if not path.startswith("/users/") or urlsplit(path).netloc:
+        raise ValueError("expected a local calendar path")
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=120)
+    try:
+        connection.request(method, path, body=body, headers={
+            "Authorization": authorization, "Depth": depth,
+            "Content-Type": "application/xml; charset=utf-8",
+        })
+        response = connection.getresponse()
+        content = response.read(16 * 1024 * 1024 + 1)
+        if response.status not in {200, 207}:
+            raise RuntimeError("CalDAV returned HTTP " + str(response.status))
+        if len(content) > 16 * 1024 * 1024:
+            raise RuntimeError("CalDAV response exceeded test limit")
+        return content
+    finally:
+        connection.close()
+
+
+def check_calendar(port, account, password):
+    authorization = "Basic " + base64.b64encode((account + ":" + password).encode()).decode()
+    path = "/users/" + quote(account, safe="@") + "/calendar/"
+    properties = caldav_read(port, authorization, "PROPFIND", path,
+        '<d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/></d:prop></d:propfind>')
+    root = ET.fromstring(properties)
+    if root.find(".//{urn:ietf:params:xml:ns:caldav}calendar") is None:
+        raise RuntimeError("CalDAV did not return a calendar collection")
+    print("PASS: CalDAV calendar collection", flush=True)
+    start = dt.datetime.now(dt.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+    end = start + dt.timedelta(days=7)
+    report = ('<c:calendar-query xmlns:d="DAV:" xmlns:c="urn:ietf:params:xml:ns:caldav">'
+              '<d:prop><d:getetag/></d:prop><c:filter><c:comp-filter name="VCALENDAR">'
+              '<c:comp-filter name="VEVENT"><c:time-range '
+              f'start="{start:%Y%m%dT%H%M%SZ}" end="{end:%Y%m%dT%H%M%SZ}"/>'
+              '</c:comp-filter></c:comp-filter></c:filter></c:calendar-query>')
+    root = ET.fromstring(caldav_read(port, authorization, "REPORT", path, report, depth="1"))
+    hrefs = [response.findtext(DAV + "href") for response in root.findall(DAV + "response")
+             if response.find(".//" + DAV + "getetag") is not None]
+    print("PASS: CalDAV event query", flush=True)
+    if not hrefs:
+        print("SKIP: no matching event for ICS conversion check", flush=True)
+        return
+    # Use only a returned item in this exact collection. Never follow redirects.
+    item = hrefs[0]
+    if not item or not item.startswith(path) or urlsplit(item).query or ".." in item:
+        raise RuntimeError("CalDAV returned an unexpected event path")
+    content = caldav_read(port, authorization, "GET", item)
+    if not all(marker in content for marker in (b"BEGIN:VCALENDAR", b"BEGIN:VEVENT", b"\nUID:")):
+        raise RuntimeError("CalDAV did not return a usable ICS event")
+    print("PASS: one event retrieved as ICS (contents not printed or saved)", flush=True)
+
+
+def check_contacts(port, account, password, query):
+    from ldap3 import Connection, Server, SUBTREE
+    from ldap3.utils.conv import escape_filter_chars
+
+    client = Connection(Server("127.0.0.1", port=port, connect_timeout=30),
+                        user=account, password=password, read_only=True,
+                        receive_timeout=120, auto_bind=True)
+    try:
+        literal = escape_filter_chars(query)
+        client.search("ou=people", "(&(objectClass=*)(|(mail=*" + literal +
+                      "*)(cn=*" + literal + "*)))", search_scope=SUBTREE,
+                      attributes=["cn", "mail"], size_limit=10, time_limit=30)
+        code = client.result.get("result")
+        if code not in {0, 4}:  # Size limit can be reached by a successful lookup.
+            raise RuntimeError("LDAP search failed (result " + str(code) + ")")
+        count = sum(bool(entry.mail.value) for entry in client.entries if "mail" in entry)
+        print(f"{'PASS' if count else 'INCONCLUSIVE'}: LDAP lookup returned "
+              f"{count} address(es); contact details not printed or saved", flush=True)
+    finally:
+        client.unbind()
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--account", required=True)
+    parser.add_argument("--contact-query", required=True)
+    args = parser.parse_args()
+    if not re.fullmatch(r"[A-Za-z0-9._+-]+@[A-Za-z0-9.-]+", args.account):
+        parser.error("use the personal account's email address")
+    if not args.contact_query.strip():
+        parser.error("contact query cannot be empty")
+    try:
+        import ldap3  # Check the existing mail environment before starting anything.
+    except ImportError:
+        parser.error("run with ~/.venvs/mail-env/bin/python (ldap3 is required)")
+
+    print("Temporary Graph gateway: personal account only; read commands; no sync or sending.", flush=True)
+    with tempfile.TemporaryDirectory(prefix="davmail-gateway-check-") as name:
+        directory = Path(name)
+        reservations = [socket.socket() for _ in range(3)]
+        try:
+            for reservation in reservations:
+                reservation.bind(("127.0.0.1", 0))
+            ports = [reservation.getsockname()[1] for reservation in reservations]
+        finally:
+            for reservation in reservations:
+                reservation.close()
+        settings = configuration(directory, ports, args.account)
+        properties = directory / "trial.properties"
+        properties.write_text("".join(key + "=" + value + "\n" for key, value in settings.items()))
+        properties.chmod(0o600)
+        password = secrets.token_urlsafe(24)  # Local session key, not the account password.
+        process = subprocess.Popen([DAVMAIL, "-server", str(properties)], cwd=directory,
+                                   stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                   text=True, start_new_session=True)
+        output = threading.Thread(target=show_device_code, args=(process.stdout,), daemon=True)
+        output.start()
+        expiry = threading.Timer(1200, stop_gateway, args=(process,))
+        expiry.daemon = True
+        expiry.start()
+        failures = 0
+        try:
+            wait_for_ports(process, ports)
+            print("Temporary gateway ready on three verified loopback ports. Waiting for sign-in.", flush=True)
+            check_imap(ports[0], args.account, password)
+            for label, probe, extra in (("CalDAV", check_calendar, ()),
+                                        ("LDAP", check_contacts, (args.contact_query,))):
+                try:
+                    probe(ports[1 if label == "CalDAV" else 2], args.account, password, *extra)
+                except Exception as error:
+                    failures += 1
+                    # RuntimeErrors above contain our own non-sensitive descriptions.
+                    detail = str(error) if type(error) is RuntimeError else type(error).__name__
+                    print("FAIL: " + label + " — " + detail, flush=True)
+        except KeyboardInterrupt:
+            failures = 1
+            print("Cancelled.", flush=True)
+        except Exception as error:
+            failures = 1
+            detail = str(error) if type(error) is RuntimeError else type(error).__name__
+            print("FAIL: gateway trial — " + detail, flush=True)
+        finally:
+            expiry.cancel()
+            stop_gateway(process)
+            output.join(timeout=2)
+            process.stdout.close()
+            print("Temporary gateway stopped; private test files removed on exit.", flush=True)
+        return int(bool(failures))
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -146,6 +146,19 @@ def read_selection(path):
     return {os.fsdecode(p) for p in path.read_bytes().split(b'\0') if p}
 
 
+def selected_identities(paths):
+    # nnn may use a symlinked directory spelling; F_GETPATH uses the real path.
+    # Verify every selection before cleanup so an unresolved entry keeps all files.
+    selected = set()
+    for path in paths:
+        try:
+            info = os.stat(path)
+        except OSError as error:
+            raise RuntimeError('Cannot verify selection; all exported files were kept: ' + path) from error
+        selected.add((info.st_dev, info.st_ino))
+    return selected
+
+
 def organize(run, paths):
     """Forward the terminal; use nnn's hover FIFO to select only our new files."""
     selection = run / 'selection'
@@ -162,6 +175,8 @@ def organize(run, paths):
                ESCDELAY='25')
     # ;r renames without overwriting; the private mv wrapper protects moves.
     plugins = [p for p in env.get('NNN_PLUG', '').split(';') if p and not p.startswith('r:')]
+    if not any(p.startswith('g:') for p in plugins):
+        plugins.append('g:goto-dir')
     plugins.append('r:!' + shlex.quote(str(SELF)) + ' rename "$nnn"')
     env['NNN_PLUG'] = ';'.join(plugins)
     env.pop('NNN_TMPFILE', None)
@@ -225,13 +240,22 @@ def organize(run, paths):
                 if not data:
                     cancelled = True
                     break
-                if b'\x07' in data:  # nnn Ctrl-G cancels a picker.
-                    cancelled = True
+                if b'\x07' in data or b'\x18' in data:
+                    # tmux/WezTerm cannot see nnn on this nested PTY. Translate
+                    # here, but leave fzf, editors and other nnn children alone.
+                    idle = subprocess.run(['/usr/bin/pgrep', '-P', str(child)],
+                                          stdout=subprocess.DEVNULL).returncode == 1
+                    if idle and b'\x18' in data:  # Ctrl-X keeps all exports.
+                        cancelled = True
+                        break
+                    if idle:
+                        data = data.replace(b'\x07', b'\x1bg')
                 os.write(master, data)
             if initializing and time.monotonic() > deadline:
                 raise RuntimeError('nnn did not finish preselection; all files were kept')
-        _, status = os.waitpid(child, 0)
-        child = None
+        if not cancelled:
+            _, status = os.waitpid(child, 0)
+            child = None
     finally:
         try:
             termios.tcsetattr(terminal, termios.TCSADRAIN, previous)
@@ -262,7 +286,9 @@ def organize(run, paths):
                 pass
         for fd in (terminal, master, fifo_fd):
             os.close(fd)
-    if cancelled or initializing or status != 0 or not selection.exists():
+    if cancelled:
+        raise RuntimeError('Save cancelled; all exported files were kept')
+    if initializing or status != 0 or not selection.exists():
         raise RuntimeError('Save picker cancelled or failed; all exported files were kept')
     return read_selection(selection)
 
@@ -298,8 +324,8 @@ def manage(run):
             record['path'] = str(target)
             descriptors.append(os.open(target, os.O_RDONLY | os.O_NOFOLLOW))
             store(run, records)
-        selected = organize(run, [Path(r['path']) for r in records])
-        # Only final, current pathnames count. Reselect after moving/renaming.
+        selected = selected_identities(organize(run, [Path(r['path']) for r in records]))
+        # Compare file identities, not path spellings. Reselect after moving/renaming.
         saved = discarded = 0
         for record, fd in zip(records, descriptors):
             try:
@@ -309,7 +335,7 @@ def manage(run):
                     continue
                 record['path'] = str(path)
                 store(run, records)
-                if str(path) in selected:
+                if tuple(record['identity']) in selected:
                     saved += 1
                 else:
                     discard(run, path, record['identity'])

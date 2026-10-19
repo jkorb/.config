@@ -1,13 +1,8 @@
 [calendars]
 
-[[ki]]
-path                      = $XDG_DATA_HOME/khal/calendars/ki/calendar
-color                     = light magenta
-type                      = calendar
-
-
 [[uu]]
-path                      = $XDG_DATA_HOME/khal/calendars/uu/calendar
+path                      = $XDG_DATA_HOME/khal/calendars/uu-graph/calendar
+addresses                 = j.korbmacher@uu.nl
 color                     = dark blue
 type                      = calendar
 
