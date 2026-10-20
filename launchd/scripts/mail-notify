@@ -60,26 +60,29 @@ def fetch_messages(start, end):
         end_str = end.isoformat(timespec="seconds")
         # A delayed download can have an old Date header.
         query += f" AND flag:unread AND changed:{start_str}..{end_str}"
-    stderr = None if DEBUG else subprocess.DEVNULL
     result = subprocess.run(
         [MU, "find", "--format=json", "--sortfield=date", "--reverse"]
         + muhome_arg()
         + [query],
         stdout=subprocess.PIPE,
-        stderr=stderr,
+        stderr=subprocess.PIPE,
         text=True,
         check=False,
     )
     if result.returncode == 2:  # mu: no matches
         return []
     if result.returncode != 0:
+        print(f"mail-notify: mu find exited {result.returncode}", file=sys.stderr)
+        if result.stderr:
+            print(result.stderr, file=sys.stderr, end="")
         return None
     raw = result.stdout.strip()
     if not raw:
         return []
     try:
         data = json.loads(raw)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as error:
+        print(f"mail-notify: invalid JSON from mu: {error}", file=sys.stderr)
         return None
     if isinstance(data, dict):
         for key in ("results", "messages", "items"):
@@ -149,9 +152,11 @@ def notify(messages):
             "-title",
             "Gmail" if account == "gmail" else "Work mail",
             "-subtitle",
-            sender,
+            # NSUserDefaults parses leading punctuation as a property list.
+            # terminal-notifier removes this escape before displaying the text.
+            "\\" + sender,
             "-message",
-            subject,
+            "\\" + subject,
             "-group",
             group,
             "-execute",
@@ -165,11 +170,17 @@ def notify(messages):
         result = subprocess.run(
             cmd,
             stdout=subprocess.DEVNULL,
-            stderr=None if DEBUG else subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
             check=False,
         )
         if result.returncode == 0:
             sent.add(key)
+        else:
+            print(f"mail-notify: terminal-notifier exited {result.returncode} ({account})",
+                  file=sys.stderr)
+        if result.stderr and (DEBUG or result.returncode != 0):
+            print(result.stderr, file=sys.stderr, end="")
     return sent
 
 

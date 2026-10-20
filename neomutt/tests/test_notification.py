@@ -1,6 +1,7 @@
 """Notification tests never post notifications or open the user's mailbox."""
 import importlib.machinery
 import importlib.util
+import io
 import json
 import os
 import re
@@ -33,7 +34,7 @@ class NotificationTests(unittest.TestCase):
     def test_notification_action_preserves_arguments(self):
         message_id = "id'$(touch nope)@example.test"
         path = "/tmp/mail dir/cur/quote' file"
-        with patch.object(notify.subprocess, 'run') as run:
+        with patch.object(notify.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)) as run:
             notify.notify([{':message-id': message_id, ':path': path, ':subject': 'Fixture',
                             ':maildir': '/gmail/Inbox'}])
         args = run.call_args.args[0]
@@ -45,7 +46,7 @@ class NotificationTests(unittest.TestCase):
     def test_both_account_icons_and_query(self):
         messages = [{':message-id': 'id@example.test', ':maildir': '/' + account + '/Inbox'}
                     for account in ('uu', 'gmail')]
-        with patch.object(notify.subprocess, 'run') as run:
+        with patch.object(notify.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0)) as run:
             notify.notify(messages)
         work, gmail = [call.args[0] for call in run.call_args_list]
         self.assertIn('Work mail', work)
@@ -96,6 +97,30 @@ class NotificationTests(unittest.TestCase):
             self.assertEqual(notify.main(), 0)
             self.assertEqual(run.call_count, 2)
             self.assertGreater(notify.load_last_run(), checkpoint)
+
+    def test_notification_text_escapes_property_list_and_option_prefixes(self):
+        for value in ('[List] Subject', '(no subject)', '{Reminder}', '"Quoted"',
+                      '<Angle>', '-starts-with-dash', r'\literal', 'Ordinary text'):
+            with self.subTest(value=value), \
+                 patch.object(notify, 'format_sender', return_value=value), \
+                 patch.object(notify.subprocess, 'run',
+                              return_value=subprocess.CompletedProcess([], 0)) as run:
+                message = {':subject': value, ':maildir': '/uu/Inbox',
+                           ':message-id': 'fixture@example.test'}
+                self.assertEqual(notify.notify([message]), {notify.notification_key(message)})
+                args = run.call_args.args[0]
+                self.assertEqual(args[args.index('-message') + 1], '\\' + value)
+                self.assertEqual(args[args.index('-subtitle') + 1], '\\' + value)
+
+    def test_notifier_failure_reports_the_reason_without_debug(self):
+        with patch.object(notify, 'DEBUG', False), \
+             patch.object(notify.subprocess, 'run', return_value=subprocess.CompletedProcess(
+                 [], 1, stderr='Could not read the -message value.\n')), \
+             patch('sys.stderr', new_callable=io.StringIO) as stderr:
+            self.assertEqual(notify.notify([{':message-id': 'fixture@example.test',
+                                            ':maildir': '/uu/Inbox'}]), set())
+            self.assertIn('terminal-notifier exited 1 (uu)', stderr.getvalue())
+            self.assertIn('Could not read the -message value.', stderr.getvalue())
 
     def test_seen_rename_found_but_archived_deleted_and_wrong_ids_ignored(self):
         with tempfile.TemporaryDirectory() as tmp, patch.object(popup.Path, 'home', return_value=Path(tmp)):
