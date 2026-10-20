@@ -1,6 +1,7 @@
 #!/usr/bin/python3
-"""Open an HTML message in Chawan and hand mail actions back to NeoMutt."""
+"""Read mail in Chawan or Firefox, with mail actions passed back to NeoMutt."""
 import argparse
+import base64
 from email import policy
 from email.parser import BytesParser
 import hashlib
@@ -23,7 +24,7 @@ def quote(value):
     return '"' + value.replace('\\', '\\\\').replace('"', '\\"').replace('`', '\\`').replace('$', '\\$') + '"'
 
 
-def prepare():
+def prepare(firefox=False):
     cache = Path(os.environ.get('XDG_CACHE_DIR', str(Path.home() / '.cache'))) / 'neomutt-view'
     cache.mkdir(parents=True, exist_ok=True, mode=0o700)
     run = Path(tempfile.mkdtemp(dir=cache))
@@ -33,7 +34,10 @@ def prepare():
     for key in options:
         print(f'set my_view_{key} = "${key}"')
     print('set pipe_decode=no auto_tag=no wait_key=no')
-    keys = ('<pipe-message>' + shlex.join([str(SELF), 'message', str(run)])
+    command = [str(SELF), 'message', str(run)]
+    if firefox:
+        command.append('--firefox')
+    keys = ('<pipe-message>' + shlex.join(command)
             + '<enter><enter-command>source ' + quote(str(run / 'actions.rc')) + '<enter>')
     print('push ' + quote(keys))
 
@@ -64,12 +68,49 @@ def message_html(message, run):
                   lambda m: resources.get(unquote(m[1]), m[0]), content, flags=re.I)
 
 
+def open_firefox(path, charset='utf-8'):
+    content = path.read_bytes().decode(charset or 'utf-8', errors='replace')
+    # Embed only the CID images extracted by message_html, so the browser copy
+    # survives the terminal viewer closing and deleting its temporary files.
+    for image in path.parent.iterdir():
+        if not re.fullmatch(r'[0-9a-f]{64}\.[a-zA-Z0-9]+', image.name):
+            continue
+        mime = mimetypes.guess_type(image.name)[0] or ''
+        if mime.startswith('image/') and image.is_file() and not image.is_symlink():
+            uris = {image.absolute().as_uri(), image.resolve().as_uri()}
+            if any(uri in content for uri in uris):
+                data = base64.b64encode(image.read_bytes()).decode('ascii')
+                for uri in uris:
+                    content = content.replace(uri, f'data:{mime};base64,{data}')
+    # Display email HTML without giving it scripts, forms or embedded frames.
+    policy = ("default-src 'none'; img-src data: https: http:; "
+              "style-src 'unsafe-inline' https: http:; font-src data: https: http:; "
+              "base-uri 'none'; form-action 'none'")
+    content = ('<!doctype html><meta charset="utf-8">'
+               '<meta http-equiv="Content-Security-Policy" content="' + html.escape(policy, quote=True)
+               + '">' + content)
+    cache = Path(os.environ.get('XDG_CACHE_DIR', str(Path.home() / '.cache'))) / 'neomutt-browser'
+    cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    encoded = content.encode('utf-8')
+    target = cache / (hashlib.sha256(encoded).hexdigest() + '.html')
+    if not target.exists():
+        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, 'wb') as output:
+            output.write(encoded)
+    subprocess.run(['open', '-a', 'Firefox', target.as_uri()], check=True)
+
+
 def view(path, run=None, charset='utf-8'):
     command = ['cha', '-o', 'network.allow-http-from-file=true',
                '-o', 'buffer.history=false', '-I', charset or 'utf-8', '-T', 'text/html']
     style = SELF.parents[2] / 'chawan/mail.css'
     command += ['-o', 'buffer.user-style=' + json.dumps(style.read_text())]
+    command += ['-o', 'start.startup-script=' + json.dumps(str(style.with_name('mail.js')))]
     env = os.environ.copy()
+    env['NEOMUTT_VIEW_PATH'] = str(path.resolve())
+    browser_command = shlex.quote(str(SELF)) + ' firefox "$NEOMUTT_VIEW_PATH" "$CHA_CHARSET"'
+    browser_js = '() => pager.extern(' + json.dumps(browser_command) + ', {suspend: false})'
+    command += ['-o', 'page.B=' + json.dumps(browser_js)]
     if run:
         env['NEOMUTT_VIEW_ACTION'] = str(run / 'action')
         actions = [('A', 'attachments'), ('H', 'text')]
@@ -90,12 +131,15 @@ def view(path, run=None, charset='utf-8'):
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['prepare', 'message', 'part'])
+    parser.add_argument('action', choices=['prepare', 'message', 'part', 'firefox'])
     parser.add_argument('path', nargs='?', type=Path)
     parser.add_argument('charset', nargs='?', default='utf-8')
+    parser.add_argument('--firefox', action='store_true')
     args = parser.parse_args()
     if args.action == 'prepare':
-        prepare()
+        prepare(args.firefox)
+    elif args.action == 'firefox':
+        open_firefox(args.path, args.charset)
     elif args.action == 'part':
         view(args.path, charset=args.charset)
     else:
@@ -105,13 +149,23 @@ def main():
             assets = Path(temporary)
             path = assets / 'message.html'
             path.write_text(message_html(message, assets), encoding='utf-8')
-            view(path, run)
+            if args.firefox:
+                open_firefox(path)
+            else:
+                view(path, run)
         action = (run / 'action').read_text() if (run / 'action').exists() else ''
         keys = {'attachments': '<view-attachments>', 'text': '<display-message>', 'quit': 'q'}.get(action)
         if action in ('cr', 'ca', 'cc', 'cf', 'ci', 'sa', 'si', 'sj', 'ss'):
             keys = action
         if keys:
             with (run / 'actions.rc').open('a') as output:
+                if action in ('cr', 'ca'):
+                    output.write('source "~/.config/neomutt/dynamic/html_on"\n')
+                    kind = 'reply' if action == 'cr' else 'group-reply'
+                    command = shlex.join([str(SELF.with_name('neomutt-html')), 'start', kind])
+                    # Invoke HTML composition directly: the underlying menu
+                    # may be the text pager, whose reply keys select text mode.
+                    keys = '<enter-command>source ' + quote(command + ' |') + '<enter>'
                 output.write('push ' + quote(keys) + '\n')
 
 

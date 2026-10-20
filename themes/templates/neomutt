@@ -35,7 +35,7 @@ color attachment color@@cyan.ansi@@ default
 color tilde color@@black.ansi@@ default
 
 color hdrdefault color@@bright_black.ansi@@ default
-color header color@@cyan.ansi@@ default "^(Date:|To:|From:|CC:|BCC:|Subject:)"
+color header color@@cyan.ansi@@ default "^[ \t]*(Date:|To:|From:|CC:|BCC:|Subject:)"
 color signature color@@bright_black.ansi@@ default
 color quoted color@@bright_black.ansi@@ default
 color quoted1 color@@bright_black.ansi@@ default
@@ -46,10 +46,10 @@ color quoted5 color@@bright_black.ansi@@ default
 color body color@@cyan.ansi@@ default "(https?|ftp)://[^[:space:]<>]+"
 color body color@@cyan.ansi@@ default "[[:alnum:]._%+-]+@[[:alnum:].-]+"
 color body color@@green.ansi@@ default "\`[^\`]+\`"
-color body bold color@@white.ansi@@ default "^#{1,6} "
+color body bold color@@white.ansi@@ default "^[ \t]*#{1,6} "
 color body color@@red.ansi@@ default "(BAD signature)"
 color body color@@green.ansi@@ default "(Good signature)"
-color body color@@bright_black.ansi@@ default "^gpg: "
+color body color@@bright_black.ansi@@ default "^[ \t]*gpg: "
 
 color sidebar_background default default
 color sidebar_indicator bold color@@white.ansi@@ color@@black.ansi@@

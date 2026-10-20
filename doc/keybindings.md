@@ -163,8 +163,12 @@ Sources: [keymaps](../nvim/lua/config/keymaps.lua), [autocmds](../nvim/lua/confi
 | NeoMutt index/pager | gh | Toggle HTML mode |
 | NeoMutt index | H | Open the other view: HTML in text mode, text in HTML mode |
 | NeoMutt text pager | H | Open Chawan, loading remote images |
+| NeoMutt text pager | Ctrl-L | Recenter and wrap the message after resizing the pane |
+| NeoMutt index/pager or Chawan mail view | B | Open the whole message in Firefox |
+| Chawan mail view | Enter / click on a web link | Open the link in Firefox, keeping the mail open |
 | Chawan mail view | A / H | Open NeoMutt attachments / switch to text |
-| Chawan mail view | cr / ca / cc / cf | Reply / reply all / compose / forward through NeoMutt |
+| Chawan mail view | cc / cf | Compose / forward through NeoMutt |
+| Chawan mail view / NeoMutt text pager | cr / ca | Reply or reply all in Markdown/HTML from Chawan, plain text from the text pager |
 | NeoMutt index/pager or Chawan mail view | ci | Review a UU invitation; Accept / Tentative / Decline, then confirm Send |
 | NeoMutt attachments | Enter on a calendar attachment | Preview meeting details without importing into khal |
 | NeoMutt index/pager or Chawan mail view | sa / si / sj / ss | Archive / move to inbox / move to junk / choose save destination using existing account bindings |
@@ -187,8 +191,7 @@ Sources: [keymaps](../nvim/lua/config/keymaps.lua), [autocmds](../nvim/lua/confi
 | Newsboat articles | J / K; m; dd | Next / previous unread; toggle read; delete |
 | Newsboat articles | ' d | Delete and purge via macro |
 
-NeoMutt's `gr` currently calls `systemctl`; it needs a macOS replacement.
-See [audit A1](audits.md#a1-neomutts-manual-sync-still-calls-systemd).
+NeoMutt's `gr` runs the same mail-sync script as the scheduled macOS service.
 
 Sources: [Zathura](../zathura/zathurarc), [NeoMutt](../neomutt/core/mappings),
 [HTML mode](../neomutt/dynamic/html_on), [Newsboat](../newsboat/configs/bindings).

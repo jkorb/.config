@@ -11,7 +11,7 @@ application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; open %s &
 # HTML
 # Interactive HTML viewing loads remote images; text rendering uses w3m.
 text/html; $XDG_CONFIG_HOME/neomutt/scripts/neomutt-view part %s %{charset}; needsterminal; nametemplate=%s.html
-text/html; w3m -o display_link_number=1 -I %{charset} -T text/html; copiousoutput;
+text/html; $XDG_CONFIG_HOME/neomutt/scripts/mail-display html %{charset}; copiousoutput;
 text/plain; nvim %s
 text/markdown; nvim %s 
 

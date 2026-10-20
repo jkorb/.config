@@ -5,11 +5,45 @@
   border-color: @@border@@ !important;
 }
 html, body { background-color: @@background@@ !important; }
+html { margin: 0 !important; padding: 0 !important; }
 body {
+  box-sizing: border-box !important;
   width: auto !important;
-  max-width: 88ch !important;
+  max-width: 84ch !important;
+  min-width: 0 !important;
   margin: 1em auto !important;
   padding: 0 2ch !important;
+  text-align: left !important;
+}
+/* Mail often nests narrow mobile wrappers inside its outer layout. */
+div, section, article, main, header, footer, center, p {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  text-align: left !important;
+}
+/* Presentation tables are layout scaffolding; keep real data tables intact. */
+table {
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+table[role="presentation"], table[role="none"],
+table[role="presentation"] > tbody, table[role="none"] > tbody,
+table[role="presentation"] > tbody > tr, table[role="none"] > tbody > tr,
+table[role="presentation"] > tbody > tr > td, table[role="none"] > tbody > tr > td {
+  display: block !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: left !important;
 }
 h1, h2, h3, h4, h5, h6, strong, b { color: @@white@@ !important; }
 blockquote, blockquote * { color: @@comment@@ !important; }

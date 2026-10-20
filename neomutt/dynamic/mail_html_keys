@@ -9,6 +9,10 @@ macro index,pager ca "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/n
 macro index,pager cf "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html start forward-message |\"<enter>" "Forward in Markdown/HTML"
 macro index,pager c@ "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html start compose-to-sender |\"<enter>" "Compose Markdown/HTML to sender"
 
+# The native pager displays text, even when opened with H from HTML mode.
+macro pager cr "<enter-command>source '~/.config/neomutt/dynamic/html_off'<enter><reply>" "Reply in text"
+macro pager ca "<enter-command>source '~/.config/neomutt/dynamic/html_off'<enter><group-reply>" "Group reply in text"
+
 macro compose cc "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html send $my_html_draft |\"<enter>" "Send generated HTML and text"
 macro compose ce "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html edit $my_html_draft |\"<enter>" "Edit Markdown source"
 macro compose ch "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-html preview $my_html_draft |\"<enter>" "Preview generated HTML"

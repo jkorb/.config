@@ -40,8 +40,10 @@ inheriting the shared One Dark colors. Cursor coordinates are hidden; page
 titles, messages and hovered link destinations remain. Chawan's status settings
 offer text attributes, but no separate color palette or custom layout.
 These settings apply when Chawan next opens. Mail views also load the generated
-[One Dark reader stylesheet](mail.css), with a centered column up to 88 characters
-wide, cyan links and subdued quotes. Images fit the column; code wraps when needed.
+[One Dark reader stylesheet](mail.css), with an 80-character reading column,
+balanced margins, cyan links and subdued quotes. Narrow mobile wrappers and
+presentation tables adapt to the column; paragraphs align left. Data tables keep
+their rows and columns. Images fit the column; code wraps when needed.
 These changes affect viewing only, keeping stored and outgoing messages intact.
 Ordinary web browsing keeps website colors.
 
@@ -60,9 +62,18 @@ the existing live preview, with Chawan beside the editor in a tmux pane.
 ## Email
 
 NeoMutt defaults to text viewing, with w3m rendering HTML. Both readers fill
-the current pane. `H` opens Chawan; `gh` toggles HTML mode, where Enter
+the current pane, with the same centered reading width. In the text pager,
+`Ctrl-L` recenters the message after resizing the pane. `H` opens Chawan;
+`gh` toggles HTML mode, where Enter
 and `l` open Chawan and `H` opens text. In the text pager, `H` opens Chawan in
 either mode.
+
+Web links followed in Chawan's mail view open Firefox and leave the email open.
+Links within the same message still jump to their target in Chawan.
+Press `B` in NeoMutt's index, text pager or Chawan mail view to open the whole
+message in Firefox, with its original HTML styling. Browser copies include
+embedded images and stay in `~/.cache/neomutt-browser` after the terminal viewer
+closes. That private cache can be cleared when the copies are no longer needed.
 
 Inside Chawan's mail view, `A` opens NeoMutt's attachment list, `H` switches to
 the text view, and `q` returns to the index or message that opened it. HTML
@@ -71,6 +82,10 @@ to that list.
 The `cr`, `ca`, `cc`, `cf`, `sa`, `si`, `sj`, and `ss` sequences return control
 to the corresponding NeoMutt binding: replies, composition, forwarding, and
 account-specific filing work directly from the HTML reader.
+`cr` and `ca` select your Markdown/HTML compose mode when used in Chawan.
+In the text pager they select plain-text composition, including after switching
+views with `H`. Replies started from the index use the current compose mode;
+`gh` toggles it.
 
 Clicking a mail notification opens NeoMutt in a temporary tmux window and starts
 this HTML view automatically when the notified message has an HTML body. Press

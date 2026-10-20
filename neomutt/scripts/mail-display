@@ -1,0 +1,67 @@
+#!/usr/bin/python3
+"""Wrap and center NeoMutt's decoded display copy, using its pager width."""
+import os
+import re
+import sys
+import unicodedata
+
+# Keep NeoMutt's MIME/PGP color markers at the start of the line.
+MARKER = re.compile(r"^(\x1b]9;\d+\x07)")
+QUOTE = re.compile(r"^(\s*(?:[>|:]\s*)+)")
+
+
+def cells(char):
+    if unicodedata.combining(char):
+        return 0
+    return 2 if unicodedata.east_asian_width(char) in ("W", "F") else 1
+
+
+def wrap(line, width):
+    """Retain existing line breaks, indentation and quote prefixes."""
+    quoted = QUOTE.match(line)
+    prefix = quoted[0] if quoted else line[:len(line) - len(line.lstrip())]
+    if sum(map(cells, prefix)) >= width // 2:
+        prefix = ""
+    while line:
+        used = end = 0
+        for char in line:
+            if used + cells(char) > width:
+                break
+            used += cells(char)
+            end += 1
+        if end == len(line):
+            break
+        space = line.rfind(" ", len(prefix) + 1, end + 1)
+        if space > 0:
+            end = space
+        yield line[:end]
+        line = prefix + line[end:].lstrip(" ")
+    yield line
+
+
+def display(text, columns):
+    columns = max(4, columns)
+    width = min(80, columns - 4) if columns >= 20 else columns
+    margin = " " * ((columns - width) // 2)
+    for line in text.splitlines():
+        marker = MARKER.match(line)
+        control = marker[0] if marker else ""
+        line = line[len(control):].expandtabs(8)
+        if not line:
+            yield control
+            continue
+        for part in wrap(line, width):
+            yield control + margin + part
+
+
+if __name__ == "__main__":
+    # NeoMutt supplies the actual pager width, excluding any visible sidebar.
+    columns = int(os.environ.get("COLUMNS", "80"))
+    if sys.argv[1:2] == ["html"]:
+        width = min(80, max(4, columns - 4))
+        os.execvp("w3m", ["w3m", "-dump", "-cols", str(width),
+                         "-o", "display_link_number=1", "-I",
+                         (sys.argv[2] if len(sys.argv) > 2 else "") or "utf-8",
+                         "-T", "text/html"])
+    for line in display(sys.stdin.read(), columns):
+        print(line)

@@ -1,7 +1,7 @@
 return {
   {
     "jkorb/mail.nvim",
-    dir = vim.fn.expand("~/Dropbox/Projects/mail.nvim"),
+    -- dir = vim.fn.expand("~/Dropbox/Projects/mail.nvim"),
     enabled = true,
     -- Register the grammar before headless parser updates too.
     lazy = false,

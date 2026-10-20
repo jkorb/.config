@@ -25,6 +25,7 @@ bind index,attach,compose,browser k   previous-entry
 
 bind generic,pager                j   next-line
 bind generic,pager                k   previous-line
+macro pager                       \Cl "<exit><redraw-screen><display-message>" "Recenter message after resizing"
 
 bind generic,index,pager,browser  \Cd half-down
 bind generic,index,pager,browser  \Cu half-up
@@ -88,6 +89,7 @@ bind index,pager         ss         save-message
 
 macro attach              s         "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-save prepare |\"<enter>" "Save attachments with nnn"
 macro index,pager         H         "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-view prepare |\"<enter>" "View HTML in Chawan (A: attachments, H: text)"
+macro index,pager         B         "<enter-command>source \"$XDG_CONFIG_HOME/neomutt/scripts/neomutt-view prepare --firefox |\"<enter>" "Open message in Firefox"
 
 # Composing
 # ----------------------------------------

@@ -35,7 +35,7 @@ color attachment color6 default
 color tilde color0 default
 
 color hdrdefault color8 default
-color header color6 default "^(Date:|To:|From:|CC:|BCC:|Subject:)"
+color header color6 default "^[ \t]*(Date:|To:|From:|CC:|BCC:|Subject:)"
 color signature color8 default
 color quoted color8 default
 color quoted1 color8 default
@@ -46,10 +46,10 @@ color quoted5 color8 default
 color body color6 default "(https?|ftp)://[^[:space:]<>]+"
 color body color6 default "[[:alnum:]._%+-]+@[[:alnum:].-]+"
 color body color2 default "\`[^\`]+\`"
-color body bold color7 default "^#{1,6} "
+color body bold color7 default "^[ \t]*#{1,6} "
 color body color1 default "(BAD signature)"
 color body color2 default "(Good signature)"
-color body color8 default "^gpg: "
+color body color8 default "^[ \t]*gpg: "
 
 color sidebar_background default default
 color sidebar_indicator bold color7 color0
