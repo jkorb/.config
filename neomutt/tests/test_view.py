@@ -114,19 +114,45 @@ class ViewerIntegration(unittest.TestCase):
         self.assertIn('fixture@example.test', str(message['To']))
         self.assertIn('HTML VIEW MARKER', message.get_body(('html',)).get_content())
 
-    def test_archive_shortcut_uses_neomutt_account_binding(self):
-        archive = self.f.home / 'archive'
+    def check_account_archive(self, account, html):
+        archive = self.f.home / '.mail' / account / ('All Mail' if account == 'gmail' else 'Archive')
         for folder in ('cur', 'new', 'tmp'):
-            (archive / folder).mkdir(parents=True)
+            (archive / folder).mkdir(parents=True, exist_ok=True)
+            (archive.parent / 'Trash' / folder).mkdir(parents=True, exist_ok=True)
+        account_file = self.f.home / '.config/neomutt/accounts' / (account + '.conf')
+        account_text = (test_html.ROOT / 'neomutt/accounts' / account_file.name).read_text()
+        if account == 'uu':
+            account_text = account_text.replace('$my_uu_folder', str(self.f.home / '.mail/uu'))
+        account_file.write_text(account_text)
         with (self.f.root / 'html.rc').open('a') as rc:
-            rc.write('macro index,pager sa "<save-message>' + str(archive) + '<enter><sync-mailbox>"\n')
+            rc.write('\nsource "' + str(account_file) + '"\n')
+            rc.write('set folder="' + str(self.f.home / '.mail') + '" confirmappend=no confirmcreate=no delete=yes\n')
+            if not html:
+                rc.write('source ~/.config/neomutt/dynamic/html_off\n')
         self.f.tmux('respawn-pane', '-k', self.context.command)
         self.wait('Synthetic attachment fixture')
+        # Sidebar exit used to lose sa even though the account was still active.
+        self.f.keys('Tab')
+        time.sleep(.1)
+        self.f.keys('Tab')
+        time.sleep(.1)
         self.f.keys('Enter')
-        self.wait('Viewing <file://')
+        self.wait('Viewing <file://' if html else 'HTML VIEW MARKER')
         self.f.keys('sa')
         self.f.wait(lambda: len(list(archive.glob('cur/*'))) + len(list(archive.glob('new/*'))) == 1, 'archived fixture')
         self.f.wait(lambda: not list((self.f.home / 'mail/cur').iterdir()) and not list((self.f.home / 'mail/new').iterdir()), 'original removed after safe archive')
+
+    def test_archive_work_html_after_sidebar(self):
+        self.check_account_archive('uu', html=True)
+
+    def test_archive_work_text_after_sidebar(self):
+        self.check_account_archive('uu', html=False)
+
+    def test_archive_gmail_html_after_sidebar(self):
+        self.check_account_archive('gmail', html=True)
+
+    def test_archive_gmail_text_after_sidebar(self):
+        self.check_account_archive('gmail', html=False)
 
 
 if __name__ == '__main__':

@@ -7,7 +7,7 @@
     <key>ProgramArguments</key>
     <array>
       <string>/opt/homebrew/bin/davmail</string>
-      <string>/Users/jkorbmacher/.config/davmail/private/graph.properties</string>
+      <string>/Users/jkorbmacher/.config/davmail/graph.properties</string>
     </array>
     <key>EnvironmentVariables</key>
     <dict>

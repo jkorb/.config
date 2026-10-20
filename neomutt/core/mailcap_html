@@ -19,8 +19,9 @@ text/html; w3m -o display_link_number=1 -I %{charset} -T text/html; copiousoutpu
 text/plain; nvr %s
 text/markdown; nvr %s 
 
-# iCal
-text/calendar; /usr/bin/khal import %s
+# Calendar previews; ci on the message opens the response dialog.
+text/calendar; $XDG_CONFIG_HOME/neomutt/scripts/neomutt-invite preview %s; copiousoutput
+application/ics; $XDG_CONFIG_HOME/neomutt/scripts/neomutt-invite preview %s; copiousoutput
 
 #PDFs
 application/pdf; /usr/bin/zathura %s &

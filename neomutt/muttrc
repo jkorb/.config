@@ -4,6 +4,7 @@
 # ----------------------------------------
 
 shutdown-hook 'exec sync-mailbox'
+account-hook 'imap://.*@127\.0\.0\.1:2143/' 'set imap_user="j.korbmacher@uu.nl" imap_pass="`/bin/zsh /Users/jkorbmacher/.config/vdirsyncer/scripts/fetch-pw.zsh`" imap_authenticators=login ssl_force_tls=no ssl_starttls=no'
 
 # Core config
 # ----------------------------------------
@@ -18,6 +19,7 @@ source ~/.config/neomutt/core/aliases
 
 folder-hook '~/.mail/gmail'  'source ~/.config/neomutt/accounts/gmail.conf'
 folder-hook '~/.mail/uu'     'source ~/.config/neomutt/accounts/uu.conf'
+folder-hook 'imap://.*@127\.0\.0\.1:2143/' 'source ~/.config/neomutt/accounts/uu.conf'
 
 reply-hook '~t jkorbmacher@gmail.com'   "set signature   = '~/.config/neomutt/accounts/gmail_signature.txt'"
 reply-hook '~t j.korbmacher@uu.nl'      "set signature   = '~/.config/neomutt/accounts/uu_signature.txt'"

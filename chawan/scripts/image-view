@@ -1,0 +1,46 @@
+#!/usr/bin/python3
+"""View a local image in the terminal; q returns to the calling app."""
+import html
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+
+def main():
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: image-view FILE")
+    image = Path(sys.argv[1]).resolve(strict=True)
+    style = (Path(__file__).resolve().parents[1] / "mail.css").read_text()
+    style += "\nbody { max-width: none !important; margin: 0 !important; padding: 0 !important; }"
+    with tempfile.TemporaryDirectory(prefix="image-view-") as temporary:
+        # Attachment names need not have an extension; Chawan needs one.
+        mime = subprocess.check_output(["/usr/bin/file", "--brief", "--mime-type", str(image)],
+                                       text=True).strip()
+        extension = {"image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif",
+                     "image/webp": ".webp", "image/bmp": ".bmp", "image/x-ms-bmp": ".bmp",
+                     "image/svg+xml": ".svg"}.get(mime)
+        preview = Path(temporary) / ("preview" + (extension or ".png"))
+        if extension:
+            preview.symlink_to(image)
+        else:
+            # macOS supplies HEIC/TIFF decoding. Only the temporary copy changes.
+            subprocess.run(["/usr/bin/sips", "-s", "format", "png", str(image),
+                            "--out", str(preview)], check=True, stdout=subprocess.DEVNULL)
+        page = Path(temporary) / "image.html"
+        page.write_text('<!doctype html><meta charset="utf-8"><title>'
+                        + html.escape(image.name) + '</title><img src="'
+                        + html.escape(preview.as_uri(), quote=True) + '">')
+        return subprocess.run([
+            "cha", "-o", "buffer.images=true", "-o", "buffer.history=false",
+            "-o", "network.allow-http-from-file=false", "-o", "page.q=quit",
+            "-o", "buffer.user-style=" + json.dumps(style), str(page),
+        ]).returncode
+
+
+if __name__ == "__main__":
+    try:
+        raise SystemExit(main())
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        raise SystemExit("Image viewer: " + str(error))

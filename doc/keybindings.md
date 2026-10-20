@@ -43,7 +43,7 @@ Sources: [WezTerm](../wezterm/wezterm.lua), [fzf](../zsh/plugins/fzf/conf.zsh),
 | Prefix Tab | Next window |
 | Prefix v / s | Split side by side / above and below, at the current directory |
 | Prefix Ctrl-N | New window at the session home directory |
-| Prefix Ctrl-_ | Fuzzy session switcher |
+| Prefix Ctrl-_ | Fuzzy session picker with window counts and a current-session marker |
 | Prefix Ctrl-C | Open the calendar in a popup, with attendee completion |
 | Prefix z or Ctrl-Z | Toggle pane zoom |
 | Prefix Ctrl-W | Last pane |
@@ -78,6 +78,7 @@ Sources: [keybinds](../tmux/conf/keybinds.conf), [options](../tmux/conf/options.
 | --- | --- | --- |
 | nnn | l / Right / Enter | Enter a directory or open a file for reading |
 | nnn | e | Edit the selected file in Neovim |
+| Image preview (nnn or mail attachment) | q | Close Chawan and return |
 | nnn | Ctrl-G | Shared picker, through the terminal/tmux translation |
 | nnn | ; g, or Alt-G | Run the directory-picker plugin directly |
 | nnn | - | Return to the previous directory |
@@ -112,6 +113,10 @@ Sources: [nnn settings](../zsh/plugins/nnn/conf.zsh), [reader keys](../glow/less
 Downloads, `t` for Teaching, and `c` for `.config` in its bookmark menu.
 
 ## Neovim
+
+Unnamed buffers and files without a detected type default to Markdown.
+Recognized filetypes keep their usual settings; use `:set ft=text` (or another
+type) to override the choice.
 
 | Mode / file type | Key or command | Action |
 | --- | --- | --- |
@@ -160,9 +165,12 @@ Sources: [keymaps](../nvim/lua/config/keymaps.lua), [autocmds](../nvim/lua/confi
 | NeoMutt text pager | H | Open Chawan, loading remote images |
 | Chawan mail view | A / H | Open NeoMutt attachments / switch to text |
 | Chawan mail view | cr / ca / cc / cf | Reply / reply all / compose / forward through NeoMutt |
-| NeoMutt index/pager or Chawan mail view | ci | Review an invitation and send Accept, Tentative, or Decline |
-| Chawan mail view | sa / si / sj / ss | Archive / move to inbox / move to junk / choose save destination using existing account bindings |
+| NeoMutt index/pager or Chawan mail view | ci | Review a UU invitation; Accept / Tentative / Decline, then confirm Send |
+| NeoMutt attachments | Enter on a calendar attachment | Preview meeting details without importing into khal |
+| NeoMutt index/pager or Chawan mail view | sa / si / sj / ss | Archive / move to inbox / move to junk / choose save destination using existing account bindings |
+| NeoMutt index/pager | ga / gA | UU: browse the downloaded Archive read-only / open the live Archive for filing; Gmail: open All Mail |
 | Notification mail reader | q | Close mail and return to the previous tmux window |
+| ikhal event list | J (Shift-J) | Open the selected event's Teams meeting |
 | Chawan | h / j / k / l; Ctrl-d / Ctrl-u | Scroll left / down / up / right; half-page down / up |
 | Chawan | Arrows; f; [ / ]; Enter | Move cursor; select link by hint; previous / next link; open selected link |
 | Chawan | /; n / N; q | Search; next / previous match; quit |

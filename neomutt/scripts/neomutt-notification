@@ -1,8 +1,10 @@
 #!/usr/bin/python3
 """Open notification mail in a temporary tmux window with image support."""
 import argparse
+import imaplib
 from email import policy
-from email.parser import BytesParser
+from email.parser import BytesParser, BytesHeaderParser
+from glob import escape
 import os
 from pathlib import Path
 import re
@@ -12,6 +14,65 @@ import time
 
 TMUX = "/opt/homebrew/bin/tmux"
 NEOMUTT = "/opt/homebrew/bin/neomutt"
+NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
+UU_INBOX = "imap://j.korbmacher%40uu.nl@127.0.0.1:2143/INBOX"
+
+
+def inbox_message(message_id, message_path):
+    """Resolve Maildir flag renames, but never follow a message out of its inbox."""
+    if not message_id or any(c in '<>' or ord(c) < 32 or ord(c) == 127 for c in message_id):
+        return None
+    path = Path(message_path)
+    inbox = path.parent.parent
+    allowed = [Path.home() / ".mail" / account / "Inbox" for account in ("uu", "gmail")]
+    if path.parent.name not in {"new", "cur"} or inbox.resolve() not in [p.resolve() for p in allowed]:
+        return None
+    basename = path.name.split(":2,", 1)[0]
+    candidates = [path]
+    for directory in ("new", "cur"):
+        candidates.extend((inbox / directory).glob(escape(basename) + "*"))
+    for candidate in candidates:
+        if candidate.name.split(":2,", 1)[0] != basename:
+            continue
+        if ":2," in candidate.name and "T" in candidate.name.split(":2,", 1)[1]:
+            continue
+        try:
+            if candidate.resolve().parent.parent != inbox.resolve():
+                continue
+            with candidate.open("rb") as source:
+                headers = BytesHeaderParser(policy=policy.compat32).parse(source)
+            if str(headers.get("Message-ID", "")).strip().strip("<>") == message_id:
+                return candidate
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def work_message_present(message_id):
+    """Check the live Inbox without marking mail read; the mirror may be stale."""
+    client = None
+    try:
+        helper = Path(__file__).resolve().parents[2] / 'vdirsyncer/scripts/fetch-pw.zsh'
+        password = subprocess.check_output(['/bin/zsh', str(helper)], text=True, timeout=30).strip()
+        client = imaplib.IMAP4('127.0.0.1', 2143, timeout=30)
+        client.login('j.korbmacher@uu.nl', password)
+        status, count = client.select('INBOX', readonly=True)
+        if status != 'OK' or not count or count[0] == b'0':
+            return False
+        status, rows = client.uid('FETCH', '1:*', '(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])')
+        if status != 'OK':
+            return False
+        return any(str(BytesHeaderParser(policy=policy.compat32).parsebytes(row[1]).get(
+            'Message-ID', '')).strip().strip('<>') == message_id
+            for row in rows if isinstance(row, tuple))
+    except (OSError, subprocess.SubprocessError, imaplib.IMAP4.error):
+        return False
+    finally:
+        if client is not None:
+            try:
+                client.logout()
+            except (OSError, imaplib.IMAP4.error):
+                pass
 
 
 def mutt_quote(value):
@@ -33,10 +94,11 @@ def has_html_body(path, message_id):
 
 
 def mail_command(message_id="", message_path=""):
-    folder = Path.home() / ".mail/uu/Inbox"
+    folder = UU_INBOX
     path = Path(message_path) if message_path else None
     if path and path.is_file() and path.parent.name in {"new", "cur"}:
-        folder = path.parent.parent
+        folder = (UU_INBOX if path.parent.parent == Path.home() / ".mail/uu/Inbox"
+                  else path.parent.parent)
     command = [NEOMUTT, "-f", str(folder)]
     command += ['-e', 'macro index q "<quit>" "Close notification mail"',
                 '-e', 'macro pager q "<exit><quit>" "Close notification mail"']
@@ -69,7 +131,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--message-id", default="")
     parser.add_argument("--path", default="")
+    parser.add_argument("--group", default="")
     args = parser.parse_args()
+    if args.group:
+        subprocess.run([NOTIFIER, "-remove", args.group], stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, check=False)
+    message_id = args.message_id.strip().removeprefix("<").removesuffix(">")
+    message_path = inbox_message(message_id, args.path)
+    if message_path is None:
+        return 0
+    if message_path.parent.parent == Path.home() / ".mail/uu/Inbox" and not work_message_present(message_id):
+        return 0
     env = os.environ.copy()
     env.setdefault("XDG_CONFIG_HOME", str(Path.home() / ".config"))
     env.setdefault("XDG_CACHE_DIR", str(Path.home() / ".cache"))
@@ -88,7 +160,7 @@ def main():
                 "-e", "XDG_CACHE_DIR=" + env["XDG_CACHE_DIR"],
                 "-e", "XDG_DATA_HOME=" + env["XDG_DATA_HOME"],
                 '-e', 'NEOMUTT_NOTIFICATION=1',
-                'exec ' + shlex.join(mail_command(args.message_id, args.path)),
+                'exec ' + shlex.join(mail_command(message_id, str(message_path))),
             ], env=env, text=True).strip()
             subprocess.run([TMUX, 'set-option', '-w', '-t', window, 'remain-on-exit', 'off'], check=True)
             return subprocess.run([TMUX, 'select-window', '-t', window]).returncode

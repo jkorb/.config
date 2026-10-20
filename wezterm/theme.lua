@@ -2,9 +2,9 @@
 return {
   foreground = "#abb2bf", background = "#1e1e1e",
   cursor_bg = "#abb2bf", cursor_fg = "#1e1e1e", cursor_border = "#abb2bf",
-  selection_fg = "#1e1e1e", selection_bg = "#4aa5f0",
+  selection_fg = "#d7dae0", selection_bg = "#30363f",
   ansi = { "#3f4451", "#e05561", "#8cc265", "#d18f52", "#4aa5f0", "#c162de", "#42b3c2", "#d7dae0" },
-  brights = { "#4f5666", "#ff616e", "#a5e075", "#f0a45d", "#4dc4ff", "#de73ff", "#4cd1e0", "#e6e6e6" },
+  brights = { "#7f848e", "#ff616e", "#a5e075", "#f0a45d", "#4dc4ff", "#de73ff", "#4cd1e0", "#e6e6e6" },
   tab_bar = {
     background = "#1e1e1e",
     active_tab = { bg_color = "#282c34", fg_color = "#4aa5f0" },

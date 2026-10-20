@@ -5,13 +5,28 @@
   border-color: #3f4451 !important;
 }
 html, body { background-color: #1e1e1e !important; }
+body {
+  width: auto !important;
+  max-width: 88ch !important;
+  margin: 1em auto !important;
+  padding: 0 2ch !important;
+}
 h1, h2, h3, h4, h5, h6, strong, b { color: #d7dae0 !important; }
 blockquote, blockquote * { color: #7f848e !important; }
+blockquote {
+  border-left: 1px solid #3f4451 !important;
+  padding-left: 2ch !important;
+  margin-left: 1ch !important;
+}
 a[href], a[href] * { color: #42b3c2 !important; }
+a[href]:hover { color: #d7dae0 !important; text-decoration: underline !important; }
+img { max-width: 100% !important; height: auto !important; }
+hr { color: #3f4451 !important; }
 pre, code {
   color: #abb2bf !important;
   background-color: #282c34 !important;
   text-decoration: none !important;
 }
+pre { white-space: pre-wrap !important; }
 /* Chawan otherwise displays the source annotation beside MathML symbols. */
 annotation, annotation-xml { display: none !important; }

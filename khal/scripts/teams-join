@@ -1,0 +1,14 @@
+#!/usr/bin/python3
+"""Open a Teams meeting from a calendar reminder."""
+import subprocess
+import sys
+
+from teams import open_meeting
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        raise SystemExit("usage: teams-join MEETING_URL")
+    try:
+        open_meeting(sys.argv[1])
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        raise SystemExit(str(error))

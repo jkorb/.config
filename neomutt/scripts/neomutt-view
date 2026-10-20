@@ -41,7 +41,13 @@ def prepare():
 def message_html(message, run):
     part = message.get_body(preferencelist=('html', 'plain'))
     if part is None:
-        raise ValueError('This message has no displayable body')
+        calendar = next((item for item in message.walk() if item.get_content_type() in ('text/calendar', 'application/ics')), None)
+        if calendar is None:
+            raise ValueError('This message has no displayable body')
+        content = subprocess.run([str(SELF.with_name('neomutt-invite')), 'preview'],
+                                 input=calendar.get_payload(decode=True) or b'',
+                                 capture_output=True, check=True, timeout=10).stdout.decode('utf-8')
+        return '<!doctype html><meta charset="utf-8"><pre>' + html.escape(content) + '</pre>'
     content = part.get_content()
     if part.get_content_type() != 'text/html':
         return '<!doctype html><meta charset="utf-8"><pre>' + html.escape(content) + '</pre>'

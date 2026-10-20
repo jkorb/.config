@@ -34,13 +34,22 @@ def prepare():
 def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("prepare", "message", "check"))
+    parser.add_argument("action", choices=("prepare", "message", "check", "preview"))
+    parser.add_argument("path", nargs="?", type=Path)
     args = parser.parse_args()
     if args.action == "prepare":
         prepare()
         return
-    raw = sys.stdin.buffer.read(invite.MAX_SIZE + 1)
     try:
+        if args.action == "preview":
+            if args.path:
+                with args.path.open("rb") as source:
+                    raw = source.read(invite.MAX_SIZE + 1)
+            else:
+                raw = sys.stdin.buffer.read(invite.MAX_SIZE + 1)
+            print(invite.preview(raw))
+            return 0
+        raw = sys.stdin.buffer.read(invite.MAX_SIZE + 1)
         if args.action == "check":
             client = invite.configured_client(read_only=True)
             request = invite.invitation(raw)
@@ -52,7 +61,7 @@ def main():
             invite.run(raw)
     except Exception as error:
         message = str(error) if isinstance(error, invite.InviteError) else f"Could not read the invitation ({type(error).__name__})."
-        if args.action == "check":
+        if args.action in ("check", "preview"):
             print(message, file=sys.stderr)
             return 1
         invite.notice(message)

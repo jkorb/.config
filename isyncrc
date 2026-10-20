@@ -7,7 +7,7 @@ TLSType None
 SystemCertificates yes
 #CertificateFile /etc/ssl/certs/ca-certificates.crt
 User j.korbmacher@uu.nl
-Timeout 0
+Timeout 120
 
 IMAPStore uu-remote
 Account uu
@@ -21,29 +21,30 @@ Channel uu-main
 Far :uu-remote:
 Near :uu-local:
 Patterns "INBOX" "Archive" "Drafts" "Junk" "Unsent Messages"
-Sync All
-Create Both
-Remove Both
-Expunge Both
+# Retain downloaded mail. All server filing happens in NeoMutt over live IMAP.
+Sync Pull New
+Create Near
+Remove None
+Expunge None
 SyncState *
 
 # DavMail Graph can advertise Sent twice in LIST; address it explicitly.
 Channel uu-sent
 Far :uu-remote:Sent
 Near :uu-local:Sent
-Sync All
-Create Both
-Remove Both
-Expunge Both
+Sync Pull New
+Create Near
+Remove None
+Expunge None
 SyncState *
 
 Channel uu-trash
 Far :uu-remote:Trash
 Near :uu-local:Trash
-Sync All
-Create Both
-Remove Both
-Expunge Both
+Sync Pull New
+Create Near
+Remove None
+Expunge None
 SyncState *
 
 Group uu

@@ -4,7 +4,8 @@
 
 [themes/palette.json](../themes/palette.json) is the color source for the core
 terminal apps. It starts from the existing WezTerm One Dark palette. The
-background is a neutral dark gray; blue marks focus, cyan marks links, green
+background is a neutral dark gray; selections use slate with light text.
+Blue marks focus, cyan marks links, green
 marks success, orange marks warnings, and red marks errors. Syntax uses purple
 keywords, green strings, and orange numbers.
 
@@ -52,15 +53,15 @@ next build.
 | --- | --- | --- |
 | WezTerm | [theme.lua](../wezterm/theme.lua), loaded by the main config; includes ANSI colors, selection, cursor, and tab bar | Watches the generated file and reloads it |
 | Neovim | [theme.lua](../nvim/lua/config/theme.lua) overrides the onedark.nvim palette, lualine, and embedded terminal colors | Restart Neovim |
-| tmux | [colors.conf](../tmux/conf/colors.conf), including thumbs and easy-motion hints | `tmux source-file "$XDG_CONFIG_HOME/tmux/conf/colors.conf"` |
+| tmux | [colors.conf](../tmux/conf/colors.conf), including a rounded active tab, rounded popups, menus, thumbs and easy-motion hints | `tmux source-file "$XDG_CONFIG_HOME/tmux/tmux.conf"` |
 | zsh, Pure, fzf | [theme.zsh](../zsh/theme.zsh), sourced after plugin configuration; includes syntax highlighting, suggestions, file-list colors, and picker colors | Start a new shell |
 | nnn | `NNN_COLORS` and `NNN_FCOLORS` select terminal ANSI slots for contexts and file types | Restart from a new shell |
 | Glow | [onedark.json](../glow/onedark.json); the layout and transparent background are preserved | Reopen the reader, or press `r` in `md-read` |
 | bat | [shared-onedark.tmTheme](../bat/themes/shared-onedark.tmTheme), selected in tracked [config](../bat/config) | `bat cache --build`, then reopen the reader |
 | Reader bars | [reader-prompt](../glow/scripts/reader-prompt) uses the generated Glow heading, link and comment colors for the breadcrumb row and shortcut footer | Reopen `md-read` or `bat-read` |
 | Zathura | [theme](../zathura/theme), included by zathurarc | Reopen Zathura |
-| NeoMutt | [colors](../neomutt/core/colors), with an additional [HTML mode theme](../neomutt/core/colors-html); ANSI slots inherit WezTerm's palette | Restart; HTML mode still has its red status indicator |
-| Chawan mail reader | [mail.css](../chawan/mail.css) overrides message colors for local reading only, with cyan links and subdued quotes | Reopen the message or preview |
+| NeoMutt | [colors](../neomutt/core/colors); bold unread subjects, green replied mail, muted dates, filled sidebar selection, and an envelope/code icon for text/HTML mode | Reload with Space then `r`, or restart |
+| Chawan mail reader | [mail.css](../chawan/mail.css); centered column up to 88 characters wide, cyan links and subdued quotes | Reopen the message or preview |
 | Newsboat | [colors](../newsboat/configs/colors), using the terminal's 16 named color slots | Restart Newsboat |
 | khal / ikhal | Generated `[palette]` section in [config](../khal/config); calendar identity colors still use terminal color names | Restart ikhal; CLI commands read the config each time |
 | cmus | [shared.theme](../cmus/shared.theme), selected by [rc](../cmus/rc) after saved state loads | `:colorscheme shared`, or restart |
@@ -75,12 +76,26 @@ opening a new shell, update the URL picker with:
 tmux set -g @fzf-url-fzf-options "$FZF_DEFAULT_OPTS"
 ```
 
+The active tmux tab uses Powerline caps (`` and ``) in the same color as its
+fill. WezTerm draws these to the cell edges with its default `custom_block_glyphs`
+setting; ordinary half-circle characters leave gaps around the bar.
+
+The session picker (Prefix Ctrl-_) loads the current fzf theme each time it opens.
+Its centered popup fits the session list, with window counts and a mark beside
+the current session. The usual fzf navigation keys still apply.
+
 ## What uniform means here
 
 Apps with RGB support receive the same colors. NeoMutt, Newsboat, cmus, nnn, and colored
 file listings refer to ANSI slots and inherit their RGB values from WezTerm.
-In another terminal, those apps follow that terminal's palette. Their selection
-text uses ANSI black, which is lighter than the exact background used by RGB apps.
+In another terminal, those apps follow that terminal's palette. Their selections
+use light text on ANSI black; RGB apps use the slightly darker `surface_alt`.
+The bright-black slot matches the shared comment color, keeping dates and other
+secondary text readable.
+
+The invitation dialog reads the palette directly. It uses the terminal's dark
+background, with colored buttons inside its rounded frame. The khal popup uses
+the same tmux border; its list and editor leave the normal background visible.
 
 Neovim retains onedark.nvim's syntax rules and derives dark diagnostic and diff
 backgrounds from the palette. Its main window stays transparent; popups and

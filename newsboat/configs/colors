@@ -2,32 +2,32 @@
 color background           default default
 color listnormal           default default
 color listnormal_unread    color4 default
-color listfocus            color0 color4
-color listfocus_unread     color0 color4 bold
+color listfocus            color7 color0
+color listfocus_unread     color7 color0 bold
 color title                color4 default bold
-color info                 color4 color0
-color hint-key             color0 color6
+color info                 color8 default
+color hint-key             color6 default bold
 color hint-keys-delimiter  color4 default
 color hint-separator       color4 default
-color hint-description     color6 default
+color hint-description     default default
 color article              default default
-color end-of-text-marker   color7 default
+color end-of-text-marker   color0 default
 
 highlight all ""   color1 default
 
-highlight all "  "  color7 color1
-highlight all " 𝔚𝔓 "  color7 color0
-highlight all " 𝗦 " color7 color1
-highlight all " 𝗚 " color7 color4
-highlight all " 󰋙 "  color0 color7
+highlight all "  " color1 default
+highlight all " 𝔚𝔓 " color7 default
+highlight all " 𝗦 " color1 default
+highlight all " 𝗚 " color4 default
+highlight all " 󰋙 " color7 default
 
 highlight all " " color3 default
 
-highlight all "^Feed:"   color5 default
-highlight all "^Title:"  color5 default
-highlight all "^Author:" color5 default
-highlight all "^Date:"   color5 default
-highlight all "^Link:"   color5 default
+highlight all "^Feed:"   color8 default
+highlight all "^Title:"  color8 default
+highlight all "^Author:" color8 default
+highlight all "^Date:"   color8 default
+highlight all "^Link:"   color8 default
 
-highlight all "(https?|ftp)://[\-\.,/%~_:?&=\#a-zA-Z0-9]+" color4 default
-highlight all  "[\-\.+_a-zA-Z0-9]+@[\-\.a-zA-Z0-9]+" color2 default
+highlight all "(https?|ftp)://[\-\.,/%~_:?&=\#a-zA-Z0-9]+" color6 default
+highlight all  "[\-\.+_a-zA-Z0-9]+@[\-\.a-zA-Z0-9]+" color6 default

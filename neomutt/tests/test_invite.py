@@ -88,10 +88,80 @@ class FakeClient:
         return 200, None, b""
 
 
+class PreviewTests(unittest.TestCase):
+    def test_details_and_description_are_readable_without_calendar_access(self):
+        item = event()
+        item.add("location", "Test room")
+        raw = calendar(item, method="REQUEST").to_ical()
+        with patch.object(invite, "configured_client", side_effect=AssertionError("Preview contacted calendar")), \
+                patch.object(invite.subprocess, "run", side_effect=AssertionError("Preview ran a command")):
+            text = invite.preview(raw)
+        for expected in ("Synthetic invitation", "Test Organizer <host@example.test>",
+                         "11:00 CET", "12:00 CET", "Where: Test room", "me@example.test",
+                         "Not answered", "Keep this description"):
+            self.assertIn(expected, text)
+        self.assertEqual(raw, calendar(item, method="REQUEST").to_ical())
+
+    def test_cancelled_all_day_and_floating_events_can_still_be_viewed(self):
+        item = event()
+        item["DTSTART"].dt = date(2026, 11, 2)
+        item["DTEND"].dt = date(2026, 11, 4)
+        text = invite.preview(calendar(item, method="CANCEL").to_ical())
+        self.assertIn("Status: Cancelled", text)
+        self.assertIn("Mon 02 Nov 2026 – Tue 03 Nov 2026 (all day)", text)
+        item["DTSTART"].dt = datetime(2026, 11, 2, 10)
+        item["DTEND"].dt = datetime(2026, 11, 2, 11)
+        self.assertIn("time zone unspecified", invite.preview(calendar(item, method="PUBLISH").to_ical()))
+
+    def test_terminal_controls_are_removed(self):
+        item = event()
+        item["SUMMARY"] = "Untrusted \x1b[31m meeting"
+        item["DESCRIPTION"] = "Line one\n\x1b]52;c;payload\x07\nLine two"
+        text = invite.preview(calendar(item).to_ical())
+        self.assertNotIn("\x1b", text)
+        self.assertNotIn("\x07", text)
+        self.assertIn("Line two", text)
+
+    def test_cli_preview_needs_no_config_or_password_and_keeps_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "meeting with spaces.ics"
+            raw = calendar(event(), method="REQUEST").to_ical()
+            path.write_bytes(raw)
+            script = Path(__file__).resolve().parents[1] / "scripts/neomutt-invite"
+            env = {**os.environ, "HOME": directory, "XDG_CONFIG_HOME": directory,
+                   "XDG_STATE_HOME": directory, "XDG_CACHE_DIR": directory}
+            result = subprocess.run([str(script), "preview", str(path)], env=env,
+                                    capture_output=True, text=True, check=True, timeout=5)
+            self.assertIn("Synthetic invitation", result.stdout)
+            self.assertFalse(result.stderr)
+            self.assertEqual(path.read_bytes(), raw)
+            self.assertEqual(list(Path(directory).iterdir()), [path])
+
+    def test_calendar_only_html_view_uses_the_same_preview(self):
+        import test_html
+        mail = EmailMessage()
+        mail.set_content(calendar(event(), method="REQUEST").to_ical().decode(), subtype="calendar")
+        with tempfile.TemporaryDirectory() as directory:
+            text = test_html.viewer.message_html(mail, Path(directory))
+        self.assertIn("Synthetic invitation", text)
+        self.assertIn("&lt;host@example.test&gt;", text)
+        self.assertNotIn("BEGIN:VCALENDAR", text)
+
+    def test_malformed_empty_and_oversized_calendars_fail_without_action(self):
+        for raw in (b"not a calendar", calendar().to_ical(), b"x" * (invite.MAX_SIZE + 1)):
+            with self.assertRaises(invite.InviteError):
+                invite.preview(raw)
+
+
 class InvitationTests(unittest.TestCase):
     def test_raw_mime_calendar(self):
         parsed = invite.invitation(message().as_bytes())
         self.assertEqual(str(parsed["UID"]), "offline-invitation")
+
+    def test_application_ics_without_filename(self):
+        mail = EmailMessage()
+        mail.set_content(calendar(event(), method="REQUEST").to_ical(), maintype="application", subtype="ics")
+        self.assertEqual(str(invite.invitation(mail.as_bytes())["UID"]), "offline-invitation")
 
     def test_duplicate_calendar_part_is_one_invitation(self):
         mail = message()

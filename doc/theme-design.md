@@ -77,8 +77,9 @@ restricted to colors and indices, so templates never evaluate palette text as
 shell, Lua, or Python code.
 
 The templates retain app-specific settings such as heading weight and selection
-attributes. Opacity, font choices, layout, keybindings, and application behavior
-stay in ordinary configs. Neovim's generated Lua derives subdued diagnostic and
+attributes. The mail reader stylesheet also owns its column width and spacing.
+Opacity, fonts, other layouts, keybindings, and application behavior stay in
+ordinary configs. Neovim's generated Lua derives subdued diagnostic and
 diff backgrounds by mixing palette colors with the background. Those weights
 are adapter decisions in the template; they introduce no second RGB palette.
 
@@ -143,15 +144,15 @@ overridden by the generated values. lualine and the Prover9 operator override
 use the same generated module. A future onedark.nvim release could add palette
 keys; review its palette when updating if new colors appear unexpectedly.
 
-NeoMutt uses ANSI slots and retains its existing highlighting expressions.
+NeoMutt uses ANSI slots for its index, status icons and text highlighting.
 Its ncurses interface rejects RGB literals under this setup's `tmux-256color`,
 even when `color_directcolor` is enabled in the theme. Setting that option off
 and using slots keeps the shared colors through WezTerm's palette. The HTML
-mode sources a separate generated fragment to preserve the visible mode
-indicator. Theme work does not alter mail content or recipient-facing HTML.
+mode sources a separate generated fragment that restores the base colors and
+switches the header icon. Theme work does not alter mail content or recipient-facing HTML.
 
 Chawan's mail wrapper passes the generated `chawan/mail.css` as a user stylesheet.
-It overrides viewing colors while keeping the message layout and images. The
+It overrides viewing colors and centers a readable column while retaining images. The
 same wrapper serves received mail and compose previews; standalone browsing
 does not use this stylesheet. CSS also hides MathML source annotations that
 would otherwise appear as duplicate formula text.

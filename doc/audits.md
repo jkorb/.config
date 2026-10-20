@@ -37,20 +37,16 @@ spellchecker command works.
 
 ### A2. Sync failures can look successful
 
-[mail-sync](../launchd/scripts/mail-sync) calls `mbsync`, mu, and the notifier
-without checking their returned status, then exits zero. Output is suppressed
-outside debug mode. [vdirsyncer-sync](../launchd/scripts/vdirsyncer-sync) also
-continues after failed discover/sync commands. `lctl info` can report a successful
-job exit after a child command failed.
+Updated 2026-10-20: [mail-sync](../launchd/scripts/mail-sync) now propagates
+backup, sync, indexing and notification failures, records the error privately,
+and posts an error notification. UU is now a download-only mirror.
+[mail-notify](../launchd/scripts/mail-notify) retains its checkpoint when the
+mu query fails. Regression tests cover these paths.
 
-[mail-notify](../launchd/scripts/mail-notify) advances its last-run timestamp
-even when the mu query fails. A later successful query can therefore skip the
-failed interval. Include this case when testing notification recovery.
-
-The follow-up is to decide which failures should stop the job and how they
-should be reported. Test offline behavior, a failed child command, and a
-successful run with command stubs before trying live sync. Also review the
-DavMail gate: mail sync currently skips every account when that process is absent.
+[vdirsyncer-sync](../launchd/scripts/vdirsyncer-sync) still continues after failed
+discover/sync commands. Its successful job exit does not establish that calendar
+sync worked. Failure propagation there remains open. Mail sync also skips every
+account when offline or when DavMail is absent; that includes Gmail.
 
 ### A3. A clone does not reproduce the editor and theme
 

@@ -10,6 +10,9 @@ case ${file:e:l} in
 esac
 
 case $(file --brief --mime-type --dereference -- "$file") in
+  image/*)
+    exec "$XDG_CONFIG_HOME/chawan/scripts/image-view" "$file"
+    ;;
   text/*|application/json|application/xml|application/javascript|application/x-empty|inode/x-empty)
     exec "$XDG_CONFIG_HOME/bat/scripts/bat-read" -- "$file"
     ;;

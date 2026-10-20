@@ -4,6 +4,7 @@ import io
 import json
 import os
 import re
+import shutil
 from pathlib import Path
 import subprocess
 import sys
@@ -30,8 +31,15 @@ class HtmlIntegration(unittest.TestCase):
         f = self.fixture
         config = f.home / '.config/neomutt'
         config.mkdir()
-        for name in ('core', 'dynamic', 'scripts'):
+        for name in ('dynamic', 'scripts'):
             (config / name).symlink_to(ROOT / 'neomutt' / name, target_is_directory=True)
+        shutil.copytree(ROOT / 'neomutt/core', config / 'core')
+        settings = config / 'core/settings'
+        settings.write_text(settings.read_text().replace(
+            'imap://j.korbmacher%40uu.nl@127.0.0.1:2143', str(f.home / '.mail/uu')))
+        for name in ('INBOX', 'Archive', 'Sent', 'Junk', 'Trash', 'LocalDrafts'):
+            for sub in ('cur', 'new', 'tmp'):
+                (f.home / '.mail/uu' / name / sub).mkdir(parents=True, exist_ok=True)
         (config / 'accounts').mkdir()
         (f.home / '.config/chawan').symlink_to(ROOT / 'chawan', target_is_directory=True)
         for folder in re.findall(r"named-mailboxes.*?'\+([^']+)'", (ROOT / 'neomutt/core/settings').read_text()):

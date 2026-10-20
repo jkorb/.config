@@ -2,32 +2,32 @@
 color background           default default
 color listnormal           default default
 color listnormal_unread    color@@blue.ansi@@ default
-color listfocus            color@@black.ansi@@ color@@blue.ansi@@
-color listfocus_unread     color@@black.ansi@@ color@@blue.ansi@@ bold
+color listfocus            color@@white.ansi@@ color@@black.ansi@@
+color listfocus_unread     color@@white.ansi@@ color@@black.ansi@@ bold
 color title                color@@blue.ansi@@ default bold
-color info                 color@@blue.ansi@@ color@@black.ansi@@
-color hint-key             color@@black.ansi@@ color@@cyan.ansi@@
+color info                 color@@bright_black.ansi@@ default
+color hint-key             color@@cyan.ansi@@ default bold
 color hint-keys-delimiter  color@@blue.ansi@@ default
 color hint-separator       color@@blue.ansi@@ default
-color hint-description     color@@cyan.ansi@@ default
+color hint-description     default default
 color article              default default
-color end-of-text-marker   color@@white.ansi@@ default
+color end-of-text-marker   color@@black.ansi@@ default
 
 highlight all ""   color@@red.ansi@@ default
 
-highlight all "  "  color@@white.ansi@@ color@@red.ansi@@
-highlight all " 𝔚𝔓 "  color@@white.ansi@@ color@@black.ansi@@
-highlight all " 𝗦 " color@@white.ansi@@ color@@red.ansi@@
-highlight all " 𝗚 " color@@white.ansi@@ color@@blue.ansi@@
-highlight all " 󰋙 "  color@@black.ansi@@ color@@white.ansi@@
+highlight all "  " color@@red.ansi@@ default
+highlight all " 𝔚𝔓 " color@@white.ansi@@ default
+highlight all " 𝗦 " color@@red.ansi@@ default
+highlight all " 𝗚 " color@@blue.ansi@@ default
+highlight all " 󰋙 " color@@white.ansi@@ default
 
 highlight all " " color@@yellow.ansi@@ default
 
-highlight all "^Feed:"   color@@magenta.ansi@@ default
-highlight all "^Title:"  color@@magenta.ansi@@ default
-highlight all "^Author:" color@@magenta.ansi@@ default
-highlight all "^Date:"   color@@magenta.ansi@@ default
-highlight all "^Link:"   color@@magenta.ansi@@ default
+highlight all "^Feed:"   color@@bright_black.ansi@@ default
+highlight all "^Title:"  color@@bright_black.ansi@@ default
+highlight all "^Author:" color@@bright_black.ansi@@ default
+highlight all "^Date:"   color@@bright_black.ansi@@ default
+highlight all "^Link:"   color@@bright_black.ansi@@ default
 
-highlight all "(https?|ftp)://[\-\.,/%~_:?&=\#a-zA-Z0-9]+" color@@blue.ansi@@ default
-highlight all  "[\-\.+_a-zA-Z0-9]+@[\-\.a-zA-Z0-9]+" color@@green.ansi@@ default
+highlight all "(https?|ftp)://[\-\.,/%~_:?&=\#a-zA-Z0-9]+" color@@cyan.ansi@@ default
+highlight all  "[\-\.+_a-zA-Z0-9]+@[\-\.a-zA-Z0-9]+" color@@cyan.ansi@@ default

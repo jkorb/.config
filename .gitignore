@@ -12,6 +12,7 @@
 davmail/davmail.log
 davmail/davmail.properties
 davmail/private/
+davmail/graph.properties
 davmail/**/__pycache__/
 !despell
 !doc

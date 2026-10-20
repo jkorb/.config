@@ -1,6 +1,7 @@
 """Notification tests never post notifications or open the user's mailbox."""
 import importlib.machinery
 import importlib.util
+import json
 import os
 import re
 from pathlib import Path
@@ -33,11 +34,100 @@ class NotificationTests(unittest.TestCase):
         message_id = "id'$(touch nope)@example.test"
         path = "/tmp/mail dir/cur/quote' file"
         with patch.object(notify.subprocess, 'run') as run:
-            notify.notify([{':message-id': message_id, ':path': path, ':subject': 'Fixture'}])
+            notify.notify([{':message-id': message_id, ':path': path, ':subject': 'Fixture',
+                            ':maildir': '/gmail/Inbox'}])
         args = run.call_args.args[0]
         action = args[args.index('-execute') + 1]
-        self.assertEqual(shlex.split(action), [notify.OPEN_MAIL, '--message-id', message_id, '--path', path])
+        self.assertEqual(shlex.split(action), [notify.OPEN_MAIL, '--message-id', message_id,
+                                              '--path', path, '--group', notify.group_key('gmail-' + message_id)])
         self.assertNotIn('-activate', args)
+
+    def test_both_account_icons_and_query(self):
+        messages = [{':message-id': 'id@example.test', ':maildir': '/' + account + '/Inbox'}
+                    for account in ('uu', 'gmail')]
+        with patch.object(notify.subprocess, 'run') as run:
+            notify.notify(messages)
+        work, gmail = [call.args[0] for call in run.call_args_list]
+        self.assertIn('Work mail', work)
+        self.assertIn(str(notify.ASSETS / 'work_icon.png'), work)
+        self.assertIn('Gmail', gmail)
+        self.assertIn(str(notify.ASSETS / 'gmail_icon.png'), gmail)
+        self.assertNotEqual(work[work.index('-group') + 1], gmail[gmail.index('-group') + 1])
+        from datetime import datetime
+        with patch.object(notify.subprocess, 'run', return_value=subprocess.CompletedProcess([], 2, '')) as run, \
+             patch.dict(os.environ, XDG_CACHE_DIR='/tmp/mail-test-cache'):
+            self.assertEqual(notify.fetch_messages(datetime.now(), datetime.now()), [])
+        self.assertIn('(maildir:/uu/Inbox OR maildir:/gmail/Inbox)', run.call_args.args[0][-1])
+        self.assertIn('changed:', run.call_args.args[0][-1])
+        self.assertNotIn('date:', run.call_args.args[0][-1])
+
+    def test_baseline_and_uid_redownloads_do_not_repeat_notifications(self):
+        existing = {':message-id': 'old@example.test', ':maildir': '/uu/Inbox'}
+        delayed = {':message-id': 'delayed@example.test', ':maildir': '/uu/Inbox',
+                   ':date': '2001-01-01'}
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, XDG_CACHE_DIR=tmp), \
+             patch.object(notify, 'fetch_messages', return_value=[existing]) as fetch, \
+             patch.object(notify.subprocess, 'run',
+                          return_value=subprocess.CompletedProcess([], 0)) as run:
+            self.assertEqual(notify.main(), 0)
+            fetch.assert_called_once_with(None, None)
+            run.assert_not_called()
+            fetch.return_value = [existing, delayed, dict(delayed)]
+            self.assertEqual(notify.main(), 0)
+            self.assertEqual(run.call_count, 1)
+            self.assertEqual(notify.main(), 0)
+            self.assertEqual(run.call_count, 1)
+            self.assertEqual(len(json.loads((Path(tmp) / 'mail-sync/notified.json').read_text())), 2)
+
+    def test_failed_notification_keeps_checkpoint_and_retries(self):
+        from datetime import datetime
+        fixture = {':message-id': 'fixture@example.test', ':maildir': '/uu/Inbox'}
+        with tempfile.TemporaryDirectory() as tmp, patch.dict(os.environ, XDG_CACHE_DIR=tmp), \
+             patch.object(notify, 'fetch_messages', return_value=[fixture]) as fetch, \
+             patch.object(notify.subprocess, 'run',
+                          return_value=subprocess.CompletedProcess([], 1)) as run:
+            notify.save_notified(notify.cache_dir() / 'notified.json', set())
+            checkpoint = datetime(2026, 1, 1)
+            notify.write_last_run(checkpoint)
+            self.assertEqual(notify.main(), 1)
+            self.assertEqual(notify.load_last_run(), checkpoint)
+            self.assertEqual(fetch.call_args.args[0], checkpoint)
+            run.return_value = subprocess.CompletedProcess([], 0)
+            self.assertEqual(notify.main(), 0)
+            self.assertEqual(run.call_count, 2)
+            self.assertGreater(notify.load_last_run(), checkpoint)
+
+    def test_seen_rename_found_but_archived_deleted_and_wrong_ids_ignored(self):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(popup.Path, 'home', return_value=Path(tmp)):
+            for account in ('uu', 'gmail'):
+                inbox = Path(tmp) / '.mail' / account / 'Inbox'
+                for sub in ('cur', 'new'):
+                    (inbox / sub).mkdir(parents=True)
+                original = inbox / 'new' / 'fixture[1]'
+                original.write_text('Message-ID: <fixture@example.test>\n\nOnly synthetic mail.\n')
+                self.assertEqual(popup.inbox_message('fixture@example.test', str(original)), original)
+                renamed = inbox / 'cur' / 'fixture[1]:2,S'
+                original.rename(renamed)
+                self.assertEqual(popup.inbox_message('fixture@example.test', str(original)), renamed)
+                self.assertIsNone(popup.inbox_message('wrong@example.test', str(original)))
+                deleted = renamed.with_name('fixture[1]:2,ST')
+                renamed.rename(deleted)
+                self.assertIsNone(popup.inbox_message('fixture@example.test', str(original)))
+                deleted.rename(Path(tmp) / 'archived')
+                self.assertIsNone(popup.inbox_message('fixture@example.test', str(original)))
+                # An inbox symlink to an archived message is not an inbox copy.
+                original.symlink_to(Path(tmp) / 'archived')
+                self.assertIsNone(popup.inbox_message('fixture@example.test', str(original)))
+                (Path(tmp) / 'archived').unlink()
+
+    def test_stale_click_only_removes_notification(self):
+        with patch('sys.argv', ['notification', '--message-id', 'gone@example.test',
+                                '--path', '/tmp/missing/cur/mail', '--group', 'test-group']), \
+             patch.object(popup.subprocess, 'run') as run, patch.object(popup, 'clients') as clients:
+            self.assertEqual(popup.main(), 0)
+        self.assertEqual(run.call_args.args[0], [popup.NOTIFIER, '-remove', 'test-group'])
+        self.assertEqual(run.call_count, 1)
+        clients.assert_not_called()
 
     def test_maildir_selection_and_missing_path(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -46,7 +136,32 @@ class NotificationTests(unittest.TestCase):
             message = folder / 'cur/message'
             message.touch()
             self.assertEqual(popup.mail_command('', str(message))[:3], [popup.NEOMUTT, '-f', str(folder)])
-        self.assertEqual(popup.mail_command('', str(message))[2], str(Path.home() / '.mail/uu/Inbox'))
+        self.assertEqual(popup.mail_command('', str(message))[2], popup.UU_INBOX)
+
+    def test_work_notification_uses_live_imap_folder(self):
+        with tempfile.TemporaryDirectory() as temp, patch.object(popup.Path, 'home', return_value=Path(temp)):
+            folder = Path(temp) / '.mail/uu/Inbox/cur'
+            folder.mkdir(parents=True)
+            path = folder / 'message'
+            path.touch()
+            self.assertEqual(popup.mail_command('', str(path))[2], popup.UU_INBOX)
+
+    def test_work_presence_is_read_only_and_matches_exact_id(self):
+        from unittest.mock import MagicMock
+        client = MagicMock()
+        client.select.return_value = ('OK', [b'2'])
+        # Old Python's structured header parser crashes on this malformed ID.
+        client.uid.return_value = ('OK', [
+            (b'1 (BODY[] {37}', b'Message-ID: <[broken@example.test]>\r\n\r\n'),
+            (b'2 (BODY[] {37}', b'Message-ID: <fixture@example.test>\r\n\r\n'),
+        ])
+        with patch.object(popup.imaplib, 'IMAP4', return_value=client), \
+             patch.object(popup.subprocess, 'check_output', return_value='synthetic-password'):
+            self.assertTrue(popup.work_message_present('fixture@example.test'))
+            self.assertFalse(popup.work_message_present('another@example.test'))
+        client.select.assert_called_with('INBOX', readonly=True)
+        client.uid.assert_called_with('FETCH', '1:*', '(BODY.PEEK[HEADER.FIELDS (MESSAGE-ID)])')
+        client.logout.assert_called()
 
     def test_invalid_ids_cannot_inject_keys(self):
         for message_id in ('x<enter><shell-escape>bad', 'x\ny', 'x\x1by', 'x\x7fy'):
@@ -109,6 +224,10 @@ class NotificationWindowIntegration(unittest.TestCase):
         ]) + ' "$@"\n')
         neomutt.chmod(0o755)
         message = next((fixture.home / 'mail/new').iterdir())
+        inbox = fixture.home / '.mail/uu/Inbox'
+        inbox.parent.mkdir(parents=True)
+        inbox.symlink_to(fixture.home / 'mail', target_is_directory=True)
+        message = inbox / 'new' / message.name
         message.write_bytes(message.read_bytes().replace(b'fixture@example.test', message_id.encode()))
         if html:
             (fixture.home / '.config/neomutt').symlink_to(ROOT / 'neomutt', target_is_directory=True)
@@ -148,6 +267,8 @@ class NotificationWindowIntegration(unittest.TestCase):
             return real_run(args, **kwargs)
         result = []
         with patch.dict(os.environ, fixture.env), patch.object(popup, 'TMUX', str(tmux)), \
+             patch.object(popup, 'UU_INBOX', str(inbox)), \
+             patch.object(popup, 'work_message_present', return_value=True), \
              patch.object(popup, 'NEOMUTT', str(neomutt)), patch.object(popup.subprocess, 'run', side_effect=run), \
              patch('sys.argv', ['popup', '--message-id', '<' + message_id + '>', '--path', str(message)]):
             worker = threading.Thread(target=lambda: result.append(popup.main()), daemon=True)

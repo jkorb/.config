@@ -2,6 +2,7 @@
 
 import base64
 from contextlib import closing
+from email.message import EmailMessage
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import os
 import select
@@ -15,7 +16,7 @@ import unittest
 from icalendar import Calendar
 
 import test_html
-from test_invite import ACCOUNT, FakeClient, message
+from test_invite import ACCOUNT, FakeClient, calendar, event, message
 
 
 class InvitationIntegration(unittest.TestCase):
@@ -141,6 +142,36 @@ class InvitationIntegration(unittest.TestCase):
         self.drain()
         self.output.clear()
         os.write(self.f.master, data)
+
+    def test_calendar_attachment_opens_readable_preview_without_network(self):
+        original = (self.f.root / "calendar/test.ics").read_bytes()
+        self.f.keys("A")
+        self.wait_pane("text/calendar")
+        self.f.keys("G", "Enter")
+        self.wait_pane("Organizer: Test Organizer")
+        self.assertIn("Keep this description", self.f.screen())
+        self.assertNotIn("BEGIN:VCALENDAR", self.f.screen())
+        self.assertFalse(self.reads)
+        self.assertFalse(self.gateway.writes)
+        self.assertEqual((self.f.root / "calendar/test.ics").read_bytes(), original)
+
+    def test_calendar_only_message_renders_in_html_and_text(self):
+        mail = EmailMessage()
+        mail["From"] = "host@example.test"
+        mail["Subject"] = "Calendar-only fixture"
+        mail.set_content(calendar(event(), method="REQUEST").to_ical().decode(), subtype="calendar")
+        (self.f.home / "mail/new/fixture").write_bytes(mail.as_bytes())
+        self.f.tmux("respawn-pane", "-k", self.context.command)
+        self.wait_pane("Calendar-only fixture")
+        self.f.keys("Enter")
+        self.wait_pane("Viewing <file://")
+        self.assertIn("Organizer: Test Organizer", self.f.screen())
+        self.assertNotIn("BEGIN:VCALENDAR", self.f.screen())
+        self.f.keys("H")
+        self.wait_pane("Autoview")
+        self.assertIn("Organizer: Test Organizer", self.f.screen())
+        self.assertFalse(self.reads)
+        self.assertFalse(self.gateway.writes)
 
     def test_cancel_then_confirm_once_from_html(self):
         # Real mapping at the index, with cancellation at the confirmation step.

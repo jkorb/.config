@@ -51,13 +51,13 @@ class ThemeBuildTests(unittest.TestCase):
         self.assertEqual(target.read_text(), "manual drift\n")
 
     def test_palette_change_reaches_consumers_and_preserves_settings(self):
-        self.change_palette(lambda p: p["colors"].update(blue="#123456"))
+        self.change_palette(lambda p: p["colors"].update(blue="#123456", surface_alt="#234567"))
         self.run_build()
         for name in ("wezterm/theme.lua", "tmux/conf/colors.conf", "nvim/lua/config/theme.lua", "glow/onedark.json",
                      "btop/themes/shared.theme", "bat/themes/shared-onedark.tmTheme", "codex/themes/shared-onedark.tmTheme",
                      "zsh/theme.zsh", "khal/config"):
             self.assertIn("#123456", (self.root / name).read_text(), name)
-        self.assertIn("rgba(18,52,86,1)", (self.root / "zathura/theme").read_text())
+        self.assertIn("rgba(35,69,103,1)", (self.root / "zathura/theme").read_text())
         self.assertIn("color4", (self.root / "newsboat/configs/colors").read_text())
         self.assertIn("color4", (self.root / "neomutt/core/colors").read_text())
         khal = (self.root / "khal/config").read_text()

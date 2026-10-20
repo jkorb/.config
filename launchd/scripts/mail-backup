@@ -1,0 +1,60 @@
+#!/usr/bin/python3
+"""Retain local mail from both accounts, including removed and older files."""
+import argparse
+import os
+from pathlib import Path
+import subprocess
+import sys
+import uuid
+from datetime import datetime, timezone
+
+
+def backup(source, destination):
+    source, destination = Path(source), Path(destination)
+    if not (source / "Inbox" / "cur").is_dir():
+        raise RuntimeError("Maildir is unavailable; refusing to sync")
+    if (destination.is_symlink() or source.resolve() == destination.resolve()
+            or source.resolve() in destination.resolve().parents
+            or destination.resolve() in source.resolve().parents):
+        raise RuntimeError("Unsafe mail backup destination")
+    destination.mkdir(parents=True, exist_ok=True, mode=0o700)
+    destination.chmod(0o700)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
+    versions = destination / "versions" / stamp
+    # No --delete: removal/filing in the live Maildir must retain the backup.
+    # Changed files keep their previous bytes in a unique versions directory.
+    result = subprocess.run([
+        "/usr/bin/rsync", "-rt", "--backup", "--backup-dir=" + str(versions),
+        "--exclude=tmp/", "--exclude=.*",
+        str(source) + "/", str(destination / "maildir") + "/",
+    ], check=False, umask=0o077)
+    if result.returncode:
+        raise RuntimeError("Mail backup failed (rsync exit %d); refusing to sync" % result.returncode)
+    # Apple's openrsync preserves source modes despite --chmod/umask here.
+    # Enforce private permissions on the independent copies, never the source.
+    for directory, dirs, files in os.walk(destination):
+        Path(directory).chmod(0o700)
+        for name in dirs + files:
+            if (Path(directory) / name).is_symlink():
+                raise RuntimeError("Unexpected symlink in mail backup")
+        for name in files:
+            (Path(directory) / name).chmod(0o600)
+
+
+def main():
+    os.umask(0o077)
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--account', choices=('uu', 'gmail'))
+    account = parser.parse_args().account
+    for name in ('uu', 'gmail'):
+        if account is None or account == name:
+            backup(Path.home() / '.mail' / name, Path.home() / 'Backups/Mail' / name)
+
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (OSError, RuntimeError) as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(1)

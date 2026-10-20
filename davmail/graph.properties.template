@@ -1,11 +1,11 @@
 # Personal account Graph gateway.
-# Copy to private/graph.properties and set userWhiteList before starting.
+# Copy to graph.properties and set userWhiteList before starting.
 davmail.mode=O365Graph
 davmail.authentication=O365DeviceCode
 davmail.enableOidc=false
 davmail.oauth.clientId=d3590ed6-52b3-4102-aeff-aad2292ab01c
 davmail.oauth.persistToken=true
-davmail.oauth.tokenFilePath=/Users/jkorbmacher/.config/davmail/private/graph-tokens.properties
+davmail.oauth.tokenFilePath=/Users/jkorbmacher/.local/state/davmail/graph-tokens.properties
 davmail.url=https://outlook.office365.com/EWS/Exchange.asmx
 davmail.userWhiteList=you@example.edu
 davmail.server=true
@@ -33,7 +33,7 @@ davmail.showStartupBanner=false
 davmail.enableProxy=false
 davmail.useSystemProxies=false
 davmail.clientSoTimeout=300
-davmail.logFilePath=/Users/jkorbmacher/.config/davmail/private/graph.log
+davmail.logFilePath=/Users/jkorbmacher/.local/state/davmail/graph.log
 davmail.logFileSize=1MB
 log4j.rootLogger=WARN
 log4j.logger.davmail=WARN

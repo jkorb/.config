@@ -15,17 +15,15 @@ text/html; w3m -o display_link_number=1 -I %{charset} -T text/html; copiousoutpu
 text/plain; nvim %s
 text/markdown; nvim %s 
 
-# iCal
-text/calendar; /opt/homebrew/bin/khal import %s
+# Calendar previews; ci on the message opens the response dialog.
+text/calendar; $XDG_CONFIG_HOME/neomutt/scripts/neomutt-invite preview %s; copiousoutput
+application/ics; $XDG_CONFIG_HOME/neomutt/scripts/neomutt-invite preview %s; copiousoutput
 
 #PDFs
 application/pdf; open %s &
 
 #Images
-image/png; open %s &
-image/jpeg; open %s &
-image/*; wezterm imgcat "%s"; copiousoutput
-# image/*; anytopnm %s | pnmscale -xsize 80 -ysize 50 | ppmtopgm | pgmtopbm | pbmtoascii ; copiousoutput
+image/*; $XDG_CONFIG_HOME/chawan/scripts/image-view %s; needsterminal
 
 # Rest
 application/octet-stream; open %s &

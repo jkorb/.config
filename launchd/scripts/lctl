@@ -69,7 +69,7 @@ service_detail() {
   local exit_status
   state="$(echo "$info" | awk -F'= ' '/state =/ {print $2; exit}')"
   pid="$(echo "$info" | awk -F'= ' '/pid =/ {print $2; exit}')"
-  exit_status="$(echo "$info" | awk -F'= ' '/last exit status =/ {print $2; exit}')"
+  exit_status="$(echo "$info" | awk -F'= ' '/last exit (status|code) =/ {print $2; exit}')"
   [[ -z "$state" ]] && state="unknown"
   [[ -z "$pid" ]] && pid="-"
   [[ -z "$exit_status" ]] && exit_status="-"

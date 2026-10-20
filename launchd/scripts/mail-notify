@@ -1,19 +1,19 @@
 #!/usr/bin/python3
 import json
+import hashlib
 import os
 import shlex
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from email.utils import parseaddr
 from pathlib import Path
 
 MU = "/opt/homebrew/bin/mu"
 TERMINAL_NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
-GROUP = "mail-sync"
 DEBUG = "--debug" in sys.argv
 XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
-ICON_PATH = os.path.join(XDG_CONFIG_HOME, "launchd", "assets", "neomutt_icon.png")
+ASSETS = Path(XDG_CONFIG_HOME) / "launchd/assets"
 OPEN_MAIL = str(Path(XDG_CONFIG_HOME) / "neomutt/scripts/neomutt-notification")
 
 
@@ -54,12 +54,15 @@ def write_last_run(ts):
 
 
 def fetch_messages(start, end):
-    start_str = start.isoformat(timespec="seconds")
-    end_str = end.isoformat(timespec="seconds")
-    query = f"date:{start_str}..{end_str}"
+    query = "(maildir:/uu/Inbox OR maildir:/gmail/Inbox)"
+    if start is not None:
+        start_str = (start - timedelta(seconds=1)).isoformat(timespec="seconds")
+        end_str = end.isoformat(timespec="seconds")
+        # A delayed download can have an old Date header.
+        query += f" AND flag:unread AND changed:{start_str}..{end_str}"
     stderr = None if DEBUG else subprocess.DEVNULL
     result = subprocess.run(
-        [MU, "find", "--format=json", "--sortfield=date", "--reverse", "maildir:/uu/Inbox"]
+        [MU, "find", "--format=json", "--sortfield=date", "--reverse"]
         + muhome_arg()
         + [query],
         stdout=subprocess.PIPE,
@@ -67,6 +70,8 @@ def fetch_messages(start, end):
         text=True,
         check=False,
     )
+    if result.returncode == 2:  # mu: no matches
+        return []
     if result.returncode != 0:
         return None
     raw = result.stdout.strip()
@@ -110,18 +115,39 @@ def format_sender(msg):
     return ""
 
 
+def message_account(msg):
+    path = str(msg.get(":path") or msg.get("path") or "")
+    maildir = msg.get(":maildir") or msg.get("maildir") or ""
+    return next((name for name in ("uu", "gmail")
+                 if maildir == f"/{name}/Inbox"
+                 or Path(path).parent.parent == Path.home() / ".mail" / name / "Inbox"), None)
+
+
+def notification_key(msg):
+    account = message_account(msg)
+    message_id = str(msg.get(":message-id") or msg.get("message-id") or "")
+    if account and message_id:
+        return hashlib.sha256((account + "\0" + message_id).encode()).hexdigest()
+    return None
+
+
 def notify(messages):
-    if not messages:
-        return
+    sent = set()
     for msg in messages:
+        path = str(msg.get(":path") or msg.get("path") or "")
+        account = message_account(msg)
+        message_id = str(msg.get(":message-id") or msg.get("message-id") or "")
+        key = notification_key(msg)
+        if key is None or key in sent:
+            continue
         sender = trim(format_sender(msg) or "Unknown sender", 48)
         subject = trim(msg.get(":subject") or msg.get("subject") or "(no subject)", 140)
-        group = msg.get(":message-id") or msg.get("message-id") or GROUP
-        group = group_key(group)
+        group = group_key(account + "-" + message_id)
+        icon = ASSETS / ("gmail_icon.png" if account == "gmail" else "work_icon.png")
         cmd = [
             TERMINAL_NOTIFIER,
             "-title",
-            "✉️ Mail",
+            "Gmail" if account == "gmail" else "Work mail",
             "-subtitle",
             sender,
             "-message",
@@ -131,34 +157,59 @@ def notify(messages):
             "-execute",
             shlex.join([
                 OPEN_MAIL,
-                "--message-id", str(msg.get(":message-id") or msg.get("message-id") or ""),
-                "--path", str(msg.get(":path") or msg.get("path") or ""),
+                "--message-id", message_id, "--path", path, "--group", group,
             ]),
         ]
-        if os.path.exists(ICON_PATH):
-            cmd += ["-contentImage", ICON_PATH]
-        subprocess.run(
+        if icon.exists():
+            cmd += ["-contentImage", str(icon)]
+        result = subprocess.run(
             cmd,
             stdout=subprocess.DEVNULL,
             stderr=None if DEBUG else subprocess.DEVNULL,
             check=False,
         )
+        if result.returncode == 0:
+            sent.add(key)
+    return sent
 
 
 def main():
     now = datetime.now().replace(microsecond=0)
+    ledger = cache_dir() / "notified.json"
+    if not ledger.exists():
+        # Establish a baseline from mail already on disk, without an alert flood.
+        messages = fetch_messages(None, None)
+        if messages is None:
+            return 1
+        known = {key for msg in messages if (key := notification_key(msg))}
+        save_notified(ledger, known)
+        write_last_run(now)
+        return 0
+    known = set(json.loads(ledger.read_text()))
     last = load_last_run()
-    start_of_day = now.replace(hour=0, minute=0, second=0)
-    if last is None or last < start_of_day:
-        last = start_of_day
+    if last is None:
+        last = now.replace(hour=0, minute=0, second=0)
     if last > now:
         last = now
     messages = fetch_messages(last, now)
-    write_last_run(now)
     if messages is None:
-        return 0
-    notify(messages)
+        return 1
+    messages = [msg for msg in messages if notification_key(msg) not in known]
+    expected = {key for msg in messages if (key := notification_key(msg))}
+    sent = notify(messages)
+    save_notified(ledger, known | sent)
+    if expected - sent:
+        return 1
+    write_last_run(now)
     return 0
+
+
+def save_notified(path, keys):
+    temporary = path.with_suffix(".tmp")
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as output:
+        json.dump(sorted(keys), output)
+    temporary.replace(path)
 
 
 if __name__ == "__main__":

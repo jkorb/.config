@@ -1,9 +1,48 @@
-#! /usr/bin/env zsh
+#!/bin/zsh -f
 
-. $ZDOTDIR/plugins/fzf/conf.zsh
-
-session="$(tmux list-sessions -F '#{session_name}' | fzf-tmux -p --prompt="🔎 ")"
-
-if [[ -n $session ]]; then
-  tmux switch -t $session
+# Load the shared keys and current colors without initializing shell widgets.
+config_home=${XDG_CONFIG_HOME:-$HOME/.config}
+XDG_CACHE_DIR=${XDG_CACHE_DIR:-$HOME/.cache}
+if [[ -z $FZF_DEFAULT_OPTS ]]; then
+  source "$config_home/zsh/plugins/fzf/options.zsh"
 fi
+typeset -A ZSH_HIGHLIGHT_STYLES
+source "$config_home/zsh/theme.zsh"
+
+current_id=$(tmux display-message -p '#{session_id}') || exit 1
+session_rows=$(tmux list-sessions -F $'#{session_id}\t#{session_name}\t#{session_windows}') || exit 1
+session_rows=("${(@f)session_rows}")
+
+# Fit a short list without leaving half the terminal empty.
+client_size=($(tmux display-message -p '#{client_width} #{client_height}'))
+width=$(( client_size[1] - 4 ))
+(( width > 76 )) && width=76
+height=$(( ${#session_rows} + 8 ))
+(( height < 10 )) && height=10
+(( height > 20 )) && height=20
+(( height > client_size[2] - 4 )) && height=$(( client_size[2] - 4 ))
+name_width=0
+for row in "${session_rows[@]}"; do
+  fields=("${(@ps:\t:)row}")
+  (( ${#fields[2]} > name_width )) && name_width=${#fields[2]}
+done
+
+session_id=$(
+  for row in "${session_rows[@]}"; do
+    fields=("${(@ps:\t:)row}")
+    count_label=windows
+    [[ ${fields[3]} == 1 ]] && count_label=window
+    current_mark=' '
+    [[ ${fields[1]} == "$current_id" ]] && current_mark='●'
+    printf '%s\t%-*s\t\033[2;90m%2d %-7s %s\033[0m\n' \
+      "${fields[1]}" "$name_width" "${fields[2]}" "${fields[3]}" "$count_label" "$current_mark"
+  done | fzf-tmux -p "$width,$height" -x C -y C -- \
+    --ansi --delimiter=$'\t' --with-nth=2.. --nth=1 --accept-nth=1 \
+    --no-multi --no-preview --highlight-line --no-info --gutter=' ' \
+    --border=rounded --border-label='  Sessions ' --padding=1,2 \
+    --prompt='  ' --ghost='Find a session…' \
+    --footer='● current   ·   enter switch   ·   esc close' \
+    --footer-border=none --color=footer:8,ghost:8
+) || exit 0
+
+[[ -n $session_id ]] && tmux switch-client -t "$session_id"

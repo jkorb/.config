@@ -14,7 +14,7 @@ def rounded(widget, **kwargs):
 def palette():
     colors = json.loads((Path(__file__).resolve().parents[2] / "themes/palette.json").read_text())["colors"]
 
-    def entry(name, foreground, background="surface", bold=False):
+    def entry(name, foreground, background="background", bold=False):
         return (name, "default", "default", "bold" if bold else "",
                 colors[foreground] + (",bold" if bold else ""), colors[background])
 

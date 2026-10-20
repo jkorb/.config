@@ -1,14 +1,18 @@
 #!/usr/bin/python3
+import fcntl
 import os
 import socket
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
 
 MB_SYNC = "/opt/homebrew/bin/mbsync"
 MU = "/opt/homebrew/bin/mu"
 PGRP = "/usr/bin/pgrep"
 MAIL_NOTIFY = str(Path(__file__).resolve().parent / "mail-notify")
+MAIL_BACKUP = str(Path(__file__).resolve().parent / "mail-backup")
+NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
 DEBUG = "--debug" in sys.argv
 
 
@@ -31,14 +35,37 @@ def davmail_running():
 
 
 def run_cmd(args):
-    stderr = None if DEBUG else subprocess.DEVNULL
     stdout = None if DEBUG else subprocess.DEVNULL
     result = subprocess.run(
         args,
         stdout=stdout,
-        stderr=stderr,
+        stderr=subprocess.PIPE,
+        text=True,
         check=False,
     )
+    if DEBUG and result.stderr:
+        print(result.stderr, file=sys.stderr, end="")
+    if result.returncode:
+        directory = Path(os.environ["XDG_CACHE_DIR"]) / "mail-sync"
+        directory.mkdir(parents=True, exist_ok=True)
+        report = (f"{datetime.now().isoformat(timespec='seconds')} "
+                  f"{Path(args[0]).name} exited {result.returncode}\n" + (result.stderr or ""))
+        fd = os.open(directory / "last-error.log", os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w") as log:
+            log.write(report)
+        fd = os.open(directory / "errors.log", os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, "w") as log:
+            log.write(report + "\n")
+        try:
+            subprocess.run([
+                NOTIFIER, "-title", "Mail sync stopped", "-message",
+                "Check ~/.cache/mail-sync/last-error.log before retrying.",
+                "-group", "mail-sync-error",
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
+        except OSError:
+            pass  # Keep the original failure status even if notifications fail.
     return result.returncode
 
 
@@ -50,19 +77,43 @@ def muhome_arg():
     return ["--muhome", muhome]
 
 
-def main():
+def sync_accounts():
     if not has_internet():
         return 0
-    if not davmail_running():
-        return 0
-
-    run_cmd([MB_SYNC, "-a"])
-    run_cmd([MU, "-q", "index"] + muhome_arg())
     notify_cmd = [MAIL_NOTIFY]
     if DEBUG:
         notify_cmd.append("--debug")
-    run_cmd(notify_cmd)
-    return 0
+    failure = 0
+    # Finish Gmail's notifications before waiting for the Graph download.
+    for account in ("gmail", "uu"):
+        if account == "uu" and not davmail_running():
+            continue
+        result = run_cmd([MAIL_BACKUP, "--account", account])
+        if result:
+            failure = failure or result
+            continue
+        result = run_cmd([MB_SYNC, account])
+        # Preserve partial downloads even if syncing failed.
+        backup_result = run_cmd([MAIL_BACKUP, "--account", account])
+        if result or backup_result:
+            failure = failure or result or backup_result
+            continue
+        result = run_cmd([MU, "-q", "index"] + muhome_arg())
+        if result == 0:
+            result = run_cmd(notify_cmd)
+        failure = failure or result
+    return failure
+
+
+def main():
+    directory = Path(os.environ['XDG_CACHE_DIR']) / 'mail-sync'
+    directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with (directory / 'run.lock').open('a') as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return 0
+        return sync_accounts()
 
 
 if __name__ == "__main__":

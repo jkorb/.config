@@ -112,7 +112,7 @@ def invitation(raw):
         if part.is_multipart():
             for child in part.iter_parts():
                 visit(child)
-        elif (part.get_content_type() == "text/calendar"
+        elif (part.get_content_type() in ("text/calendar", "application/ics")
               or str(part.get_filename() or "").lower().endswith(".ics")):
             try:
                 calendar = Calendar.from_ical(part.get_payload(decode=True) or b"")
@@ -136,6 +136,73 @@ def invitation(raw):
         raise InviteError("The invitation has no start time.")
     recurrence(event)
     return event
+
+
+def preview(raw):
+    """Render a calendar attachment locally, without importing or responding."""
+    if len(raw) > MAX_SIZE:
+        raise InviteError("This calendar attachment is too large to preview.")
+    try:
+        calendar = Calendar.from_ical(raw)
+    except (ValueError, TypeError) as error:
+        raise InviteError("The calendar attachment could not be read.") from error
+    events = calendar.walk("VEVENT")
+    if not events:
+        raise InviteError("This calendar attachment contains no meeting.")
+
+    def when(value):
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                return value.strftime("%a %d %b %Y, %H:%M") + " (time zone unspecified)"
+            return value.astimezone(ZoneInfo("Europe/Amsterdam")).strftime("%a %d %b %Y, %H:%M %Z")
+        if isinstance(value, date):
+            return value.strftime("%a %d %b %Y")
+        return clean(value)
+
+    def person(value):
+        email = str(value)
+        if email.lower().startswith("mailto:"):
+            email = email[7:]
+        name = clean(value.params.get("CN", ""))
+        return f"{name} <{clean(email)}>" if name else clean(email)
+
+    sections = []
+    for event in events:
+        cancelled = str(calendar.get("METHOD", "")).upper() == "CANCEL" or str(event.get("STATUS", "")).upper() == "CANCELLED"
+        lines = ["󰃭  " + clean(event.get("SUMMARY", "Meeting"))]
+        if cancelled:
+            lines.append("Status: Cancelled")
+        elif calendar.get("METHOD"):
+            lines.append("Type: " + clean(calendar["METHOD"]))
+        if event.get("ORGANIZER"):
+            lines.append("Organizer: " + person(event["ORGANIZER"]))
+        start = event.decoded("DTSTART", None)
+        end = event.decoded("DTEND", None)
+        if start is not None:
+            if end is None and event.get("DURATION"):
+                end = start + event.decoded("DURATION")
+            if isinstance(start, date) and not isinstance(start, datetime):
+                last = end - timedelta(days=1) if isinstance(end, date) and not isinstance(end, datetime) else start
+                lines.append("When: " + when(start) + (" – " + when(last) if last > start else "") + " (all day)")
+            else:
+                lines.append("Starts: " + when(start))
+                if end is not None:
+                    lines.append("Ends:   " + when(end))
+        for key, label in (("LOCATION", "Where"), ("URL", "Link")):
+            if event.get(key):
+                lines.append(label + ": " + clean(event[key]))
+        if event.get("RRULE"):
+            lines.append("Repeats: " + clean(event["RRULE"].to_ical().decode()))
+        if event.get("RECURRENCE-ID"):
+            lines.append("Occurrence: " + when(event.decoded("RECURRENCE-ID")))
+        attendees = event.get("ATTENDEE", [])
+        for attendee in attendees if isinstance(attendees, list) else [attendees]:
+            status = str(attendee.params.get("PARTSTAT", "NEEDS-ACTION")).upper()
+            lines.append("Attendee: " + person(attendee) + " · " + STATUSES.get(status, clean(status)))
+        if event.get("DESCRIPTION"):
+            lines += [""] + [clean(line) for line in str(event["DESCRIPTION"]).splitlines()]
+        sections.append("\n".join(lines))
+    return "\n\n".join(sections)
 
 
 class Client:

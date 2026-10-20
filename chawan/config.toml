@@ -6,6 +6,7 @@ cookie = false
 
 [display]
 image-mode = "sixel"
+color-mode = "true-color"
 
 [status]
 # Use the terminal's One Dark colors, without the default inverted strip.

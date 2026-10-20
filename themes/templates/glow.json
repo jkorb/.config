@@ -8,7 +8,7 @@
   "block_quote": {
     "indent": 1,
     "indent_token": "│ ",
-    "color": "@@green@@"
+    "color": "@@comment@@"
   },
   "list": { "level_indent": 2 },
   "heading": { "block_suffix": "\n", "color": "@@blue@@", "bold": true },
@@ -26,7 +26,7 @@
   "enumeration": { "block_prefix": ". " },
   "task": { "ticked": "[✓] ", "unticked": "[ ] " },
   "link": { "color": "@@cyan@@", "underline": true },
-  "link_text": { "color": "@@blue@@", "bold": true },
+  "link_text": { "color": "@@cyan@@", "bold": true },
   "image": { "color": "@@magenta@@", "underline": true },
   "image_text": { "color": "@@foreground@@", "format": "Image: {{.text}} →" },
   "code": { "prefix": " ", "suffix": " ", "color": "@@yellow@@" },

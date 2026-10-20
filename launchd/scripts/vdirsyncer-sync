@@ -1,18 +1,20 @@
 #!/usr/bin/python3
 import json
 import os
+import shlex
 import socket
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
-KHAL = "/opt/homebrew/bin/khal"
 NOTIFIER = "/opt/homebrew/bin/terminal-notifier"
 VDIRSYNCER = "/opt/homebrew/bin/vdirsyncer"
 PGRP = "/usr/bin/pgrep"
 DEBUG = "--debug" in sys.argv
 XDG_CONFIG_HOME = os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config"))
+KHAL = str(Path(XDG_CONFIG_HOME) / "khal/scripts/khal-personal")
+TEAMS_JOIN = str(Path(XDG_CONFIG_HOME) / "khal/scripts/teams-join")
 ICON_PATH = os.path.join(XDG_CONFIG_HOME, "launchd", "assets", "calendar_icon.png")
 ACTIVATE_APP = "com.jkorbmacher.tmux"
 
@@ -83,7 +85,8 @@ def save_cache(data):
 def notify_upcoming():
     stderr = None if DEBUG else subprocess.DEVNULL
     result = subprocess.run(
-        [KHAL, "list", "now", "15m", "--json", "start-time", "--json", "title", "--json", "calendar", "--day-format", ""],
+        [KHAL, "list", "now", "15m", "--json", "start-time", "--json", "title",
+         "--json", "calendar", "--json", "teams-url", "--day-format", ""],
         stdout=subprocess.PIPE,
         stderr=stderr,
         text=True,
@@ -122,9 +125,12 @@ def notify_upcoming():
             "-group",
             group,
             "-ignoreDnD",
-            "-activate",
-            ACTIVATE_APP,
         ]
+        meeting = event.get("teams-url")
+        if meeting:
+            cmd += ["-execute", shlex.join([TEAMS_JOIN, meeting])]
+        else:
+            cmd += ["-activate", ACTIVATE_APP]
         if os.path.exists(ICON_PATH):
             cmd += ["-contentImage", ICON_PATH]
         run_cmd(cmd)

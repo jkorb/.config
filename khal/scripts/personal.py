@@ -1,12 +1,15 @@
-"""UU meeting organizers and contact completion for khal."""
+"""Meeting organizers, contact completion and Teams links for khal."""
 
 import subprocess
 
 from contacts import pick_contacts
+from teams import event_meeting, open_meeting
 
 from icalendar import vCalAddress
+from khal.utils import CONTENT_ATTRIBUTES
 from khal.khalendar import CalendarCollection
 from khal.khalendar.event import Event
+from khal.ui import EventColumn
 from khal.ui.editor import EventEditor, ExtendedEdit
 
 
@@ -78,6 +81,15 @@ class AttendeesEdit(ExtendedEdit):
 
 def install():
     Event.update_attendees = update_attendees
+    CONTENT_ATTRIBUTES.append("teams-url")
+    attributes = Event.attributes
+
+    def event_attributes(self, *args, **kwargs):
+        result = attributes(self, *args, **kwargs)
+        result["teams-url"] = event_meeting(self) or ""
+        return result
+
+    Event.attributes = event_attributes
     create = CalendarCollection.create_event_from_dict
     insert = CalendarCollection.insert
 
@@ -109,3 +121,21 @@ def install():
         )
 
     EventEditor.__init__ = initialize
+
+    keypress = EventColumn.keypress
+
+    def event_keypress(self, size, key):
+        if key != "J":
+            return keypress(self, size, key)
+        if self.focus_event:
+            url = event_meeting(self.focus_event.event)
+            if not url:
+                self.pane.window.alert("No Teams meeting link in this event.")
+            else:
+                try:
+                    open_meeting(url)
+                except (OSError, ValueError, subprocess.SubprocessError):
+                    self.pane.window.alert("Could not open Teams.")
+        return None
+
+    EventColumn.keypress = event_keypress

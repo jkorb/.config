@@ -14,7 +14,7 @@ local c = {
   magenta = "#c162de",
   cyan = "#42b3c2",
   white = "#d7dae0",
-  bright_black = "#4f5666",
+  bright_black = "#7f848e",
   bright_red = "#ff616e",
   bright_green = "#a5e075",
   bright_yellow = "#f0a45d",
@@ -33,7 +33,7 @@ end
 return {
   colors = c,
   highlights = {
-    Visual = { fg = "#1e1e1e", bg = "#4aa5f0" },
+    Visual = { fg = "#d7dae0", bg = "#30363f" },
     NormalFloat = { fg = c.foreground, bg = c.surface },
     FloatBorder = { fg = "#3f4451", bg = c.surface },
   },

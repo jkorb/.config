@@ -7,8 +7,9 @@ set   mbox_type           = Maildir
 set   folder              = $HOME/.mail/
 
 set   mailcap_path        = "~/.config/neomutt/core/mailcap"
-set   header_cache        = "~/.cache/neomutt"
-set   message_cache_dir   = "~/.cache/neomutt"
+# Separate folder caches keep a slow IMAP download from blocking local browsing.
+set   header_cache        = "~/.cache/neomutt-headers/"
+set   message_cache_dir   = "~/.cache/neomutt-bodies"
 # set   tmpdir              = "~/.cache/mutt" # where to keep temp files
 
 set   attach_save_dir     = "~/Downloads"
@@ -18,12 +19,15 @@ set   attach_save_dir     = "~/Downloads"
 
 # named-mailboxes "─"   '+div1'
 
-named-mailboxes "uu.inbox"      '+uu/Inbox'          
-named-mailboxes "uu.archive"    '+uu/Archive'
-named-mailboxes "uu.sent"       '+uu/Sent'    
-named-mailboxes "uu.drafts"     '+uu/Drafts' 
-named-mailboxes "uu.junk"       '+uu/Junk'
-named-mailboxes "uu.trash"      '+uu/Trash'
+set my_uu_folder = "imap://j.korbmacher%40uu.nl@127.0.0.1:2143"
+
+# Notifications come from the local downloads; avoid polling Graph while in Gmail.
+named-mailboxes -nopoll "uu.inbox"      "$my_uu_folder/INBOX"
+named-mailboxes -nopoll "uu.archive"    "$my_uu_folder/Archive"
+named-mailboxes -nopoll "uu.sent"       "$my_uu_folder/Sent"
+named-mailboxes "uu.drafts"     '+uu/LocalDrafts'
+named-mailboxes -nopoll "uu.junk"       "$my_uu_folder/Junk"
+named-mailboxes -nopoll "uu.trash"      "$my_uu_folder/Trash"
 
 # named-mailboxes "󰢐"   '+div2'
 named-mailboxes " "   '+div2'
@@ -48,7 +52,7 @@ set   editor              = "nvim"
 # Viewing 
 # ----------------------------------------
 
-auto_view         text/html
+auto_view         text/html text/calendar application/ics
 alternative_order text/html text/plain text 
 
 # Composing
@@ -111,7 +115,7 @@ set date_format   = "%d.%m.%Y %H:%M"
 
 # Use the native status bar as a column header without taking another row.
 set status_on_top = yes
-set status_format = "  From:                    Subject:%* Date:    "
+set status_format = "     From                 Subject%* Date     "
 
 
 ###
@@ -119,11 +123,11 @@ set status_format = "  From:                    Subject:%* Date:    "
 # The subject uses available width; soft-fill reserves the right-hand metadata.
 # Keep one literal space after the %* padding character, even when the row is full.
 # Four trailing spaces inset the date and match the header's right margin.
-set index_format="%@flag@ %@who@ | %-18.18F   %s%*  %@attachflag@%@provinence@  %<[y?%<[d?%[%H:%M]&%[%m/%d]>&%[%m/%d/%y]>    "
+set index_format=" %@flag@ %@who@  %-18.18F   %s%*  %@attachflag@%@provinence@  %<[y?%<[d?%[%H:%M]&%[%m/%d]>&%[%m/%d/%y]>    "
 
 # Replace the complete set on reload, including older fallback hooks.
 unhook index-format-hook
-index-format-hook flag "~T" ""
+index-format-hook flag "~T" ""
 index-format-hook flag "~D" "󰛌"
 index-format-hook flag "~U" ""
 index-format-hook flag "~Q" "󱞵"
@@ -142,7 +146,7 @@ index-format-hook provinence "~A"                        ""
 index-format-hook who "~F" ""   # flagged/important
 index-format-hook who "~P" ""   # from me
 index-format-hook who "~l" ""   # known mailing list
-index-format-hook who "~A" ""   # other senders
+index-format-hook who "~A" " "   # leave ordinary mail uncluttered
 
 ###
 

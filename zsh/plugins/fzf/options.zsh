@@ -4,8 +4,9 @@ FZF_DEFAULT_OPTS+="
   --no-info
   --no-bold
   --prompt=' '
-  --pointer=''
-  --marker=' '
+  --pointer='▏'
+  --marker=''
+  --border=rounded
   --no-height
   --layout=reverse
   --cycle

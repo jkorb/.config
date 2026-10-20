@@ -14,6 +14,12 @@ The page contains a blue image. Use `j`/`k` to scroll, `/` to search, and `q` to
 quit. Test scrolling, pane resizing, and switching away and back: a successful
 first image does not guarantee every redraw works in every terminal version.
 
+In nnn, Enter or `l` opens images in this pane; `q` returns. NeoMutt uses the
+same viewer for image attachments. PNG, JPEG, GIF, WebP, BMP and SVG display
+directly; other formats supported by macOS, including HEIC and TIFF, use a
+temporary PNG. Originals stay unchanged. Use an ordinary tmux pane for images;
+tmux popups discard Sixel output.
+
 ## Navigation and appearance
 
 `h`/`j`/`k`/`l` scroll the page directly. Chawan normally uses these keys to
@@ -34,8 +40,9 @@ inheriting the shared One Dark colors. Cursor coordinates are hidden; page
 titles, messages and hovered link destinations remain. Chawan's status settings
 offer text attributes, but no separate color palette or custom layout.
 These settings apply when Chawan next opens. Mail views also load the generated
-[One Dark reader stylesheet](mail.css), with cyan links and subdued quotes.
-It overrides viewing colors without changing stored or outgoing messages.
+[One Dark reader stylesheet](mail.css), with a centered column up to 88 characters
+wide, cyan links and subdued quotes. Images fit the column; code wraps when needed.
+These changes affect viewing only, keeping stored and outgoing messages intact.
 Ordinary web browsing keeps website colors.
 
 ## Neovim live preview
@@ -67,8 +74,10 @@ account-specific filing work directly from the HTML reader.
 
 Clicking a mail notification opens NeoMutt in a temporary tmux window and starts
 this HTML view automatically when the notified message has an HTML body. Press
-`q` once to close notification mail and return to your previous window. Plain-text messages,
-or notifications whose source file is no longer available, use the normal pager.
+`q` once to close notification mail and return to your previous window.
+Plain-text messages use the normal pager. If the message has left its inbox,
+clicking only dismisses the notification. Maildir read/flag renames are followed
+within the original inbox.
 The centered popup was replaced because tmux discards Sixel output in popups;
 the identical image renders in a normal pane. See the
 [upstream popup report](https://github.com/tmux/tmux/issues/4867).

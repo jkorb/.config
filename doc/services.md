@@ -4,19 +4,24 @@
 
 ## Mail and calendars
 
-NeoMutt reads local Maildirs. `mbsync` downloads mail, mu indexes it, and
-`msmtp` sends outgoing messages. Institutional accounts use DavMail as a local
-gateway. Account-specific NeoMutt files select the sender and msmtp account;
-the main config selects a default account and changes it through folder hooks.
+NeoMutt opens UU mail directly through DavMail IMAP and reads Gmail from local
+Maildirs. mbsync retains new UU downloads and syncs Gmail both ways.
+mu indexes the local copies for search; msmtp sends outgoing messages.
 
 ```text
-Mail service → mbsync → ~/.mail → mu index → NeoMutt search
-                                  └──────→ mail notifications
-NeoMutt → msmtp → outgoing mail service
+UU Graph ↔ DavMail ↔ NeoMutt
+                  → mbsync → retained mail → mu search / notifications
+Gmail ↔ mbsync ↔ local Maildir ↔ NeoMutt
 
-Calendar service → vdirsyncer → local calendar files → khal
-                                                       └→ upcoming alerts
+Calendar service ↔ DavMail ↔ vdirsyncer ↔ khal
 ```
+
+UU filing and read flags take effect on the server. `/` searches local,
+read-only copies and hides duplicates. UU downloads retain their original flags
+and stay available after server filing or deletion. UU drafts stay in
+`~/.mail/uu/LocalDrafts`, are backed up, and do not appear on other devices.
+In UU, `ga` opens the downloaded Archive read-only; `gA` opens the live Archive
+for moving or deleting mail. The sidebar's UU Archive entry opens the live folder.
 
 DavMail connects the personal UU account to Microsoft Graph. The
 `davmail-graph` launchd job provides IMAP, SMTP, CalDAV and LDAP on localhost;
@@ -30,19 +35,9 @@ organizer for new UU events so DavMail can create the meeting.
 In ikhal, press Tab in Attendees to open a searchable contact picker. See
 [Khal](../khal/README.md) for the keys and launcher.
 
-On a UU invitation, `ci` opens a response popup from the index, text reader,
-or Chawan. Review the organizer, time, scope and current reply; choose Accept,
-Tentative or Decline with ←/→, Tab or Ctrl-N/P, then confirm Send. Escape or
-`q` closes the popup. The response goes
-through DavMail to the existing server event and notifies the organizer.
-The next calendar sync brings the result into khal.
-
-Series invitations apply to the whole series; occurrence invitations apply
-only to that occurrence if it is present on the server. Missing, ambiguous
-or changed meetings stop without sending. An uncertain send is never retried
-automatically; check Outlook before trying again. Private response records
-live in `~/.local/state/neomutt-invites`. The attachment list's calendar action
-still only imports into khal; use `ci` to respond.
+On a UU invitation, `ci` opens a popup with Accept, Tentative and Decline.
+Confirm Send to respond through DavMail; calendar sync brings the status into
+khal. Opening a calendar attachment shows its meeting details as a preview.
 
 Sources: [isyncrc](../isyncrc), [msmtp](../msmtp/config),
 [NeoMutt](../neomutt/muttrc), [DavMail template](../davmail/graph.properties.template),
@@ -156,12 +151,23 @@ The plugin supplies mail highlighting and spell-check captures.
 | Job | Schedule | Script behavior |
 | --- | --- | --- |
 | `davmail-graph` | Run at load, keep alive | Personal UU Graph gateway |
-| `mail-sync` | Run at load and at minutes 00, 05, …, 55 | Check connectivity and DavMail, run `mbsync -a`, index mu, then run mail notifications |
+| `mail-sync` | Run at load and at minutes 00, 05, …, 55 | Back up both accounts, download UU mail, sync Gmail, back up again, index mu, then notify |
 | `vdirsyncer-sync` | Run at load and at minutes 00, 05, …, 55 | Discover/sync when online with DavMail running; check upcoming local events either way |
 
 The connectivity probe opens a TCP connection to `1.1.1.1:53`. It is a gate for
 these scripts, not a check of the mail or calendar server. The mail script skips
 all accounts when DavMail is absent, including accounts that do not use it.
+Failed backups or syncs stop before indexing and new-mail notifications, return
+a failure to launchd, and show an error notification. Details stay in
+`$XDG_CACHE_DIR/mail-sync/last-error.log` and `errors.log`.
+Retained backups live in `~/Backups/Mail/uu/` and `~/Backups/Mail/gmail/`:
+removed messages remain in `maildir/`, and replaced versions go into `versions/`.
+No backup files are automatically deleted. These copies are on the same Mac;
+include them in an external backup. Recovery evidence and retired custom code
+are archived under `~/Backups/Mail/recovery/`, outside the config repository.
+UU mbsync uses `Sync Pull` and `Expunge Near`, so it cannot upload local edits or
+delete server messages. Use `mail-sync` for a manual run. Gmail retains its
+existing sync settings.
 
 [lctl](../launchd/scripts/lctl) accepts short service names:
 
@@ -186,15 +192,16 @@ paths to be checked. Linux service files in [systemd](../systemd) are separate.
 
 [mail-notify](../launchd/scripts/mail-notify) uses mu's JSON output and a cached
 last-run time. It checks today's mail on the first run and groups notifications
-by message ID. Its query is limited to the `uu/Inbox` Maildir, so the other
-accounts do not receive these alerts. The sync script uses
+by account and message ID. It checks unread mail in `uu/Inbox` and `gmail/Inbox`,
+using a blue briefcase for work mail and a red Gmail icon for Gmail. The sync script uses
 `$XDG_CACHE_DIR/mu` as the mu home.
 
 [vdirsyncer-sync](../launchd/scripts/vdirsyncer-sync) asks khal for events in the
 next 15 minutes and stores a daily notification cache under
 `$XDG_CACHE_DIR/vdirsyncer`. Notifications include a start time and event title.
-Both notification paths use terminal-notifier. Calendar alerts activate the Tmux
-app. New mail notifications run
+Both notification paths use terminal-notifier. Teams alerts open the meeting's
+pre-join screen in Teams; other calendar alerts activate Tmux. You can also
+press `J` on an event in ikhal's event list. New mail notifications run
 [neomutt-notification](../neomutt/scripts/neomutt-notification): activate Tmux,
 then open NeoMutt in a temporary tmux window in the active client's session.
 The helper uses the notified Maildir and limits the index to the exact Message-ID
@@ -211,17 +218,19 @@ discards them. A local test with identical image output confirmed that a normal
 pane renders the image while a popup drops it. Notification windows close when
 NeoMutt exits; existing windows and panes are not resized or replaced.
 
-If the message path has disappeared, the helper opens `uu/Inbox` and searches
-there by ID. A message moved elsewhere may therefore show an empty index. Alerts
-already posted with this helper also pick up script changes when clicked;
-older alerts that only activated the Tmux app retain that old action. No
-launchd reload is needed.
+Notification clicks check the inbox copy and Message-ID before opening mail.
+UU clicks also check the live server Inbox and open that IMAP folder. Read/flag renames within that inbox are followed. If the message has been
+archived, moved or deleted, the click only dismisses the notification. Existing
+alerts using this helper also pick up the check. No launchd reload is needed;
+new calendar alerts get the Teams action on the next scheduled run.
 
 Start diagnosis with `lctl info`. The sync scripts suppress command output
 unless passed `--debug`. A debug invocation still performs sync and may display
-notifications; it is not a dry run. The scripts currently discard several child
-exit codes, so launchd reporting a successful exit does not establish that sync
-worked. [Audit A2](audits.md#a2-sync-failures-can-look-successful) records this.
+notifications; it is not a dry run. Mail sync now reports failed backups, syncs,
+indexing and notifications. A successful exit can also mean it skipped a run
+while offline or while DavMail was absent. The calendar job still ignores
+discover/sync failures, so its exit status alone does not confirm calendar sync.
+[Audit A2](audits.md#a2-sync-failures-can-look-successful) tracks that remaining issue.
 
 ## Writing HTML mail
 
